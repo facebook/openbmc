@@ -1,4 +1,4 @@
-From 2ee2161c8afd5be3f01978e0884e582147fcdcdf Mon Sep 17 00:00:00 2001
+From 19dc658f193fa68cbc1ede3a508c6c2d32f525e2 Mon Sep 17 00:00:00 2001
 From: x <x@x>
 Date: Tue, 11 Aug 2026 16:21:14 -0700
 Subject: [PATCH] oem-meta: support MCTP I2C and I3C target configs

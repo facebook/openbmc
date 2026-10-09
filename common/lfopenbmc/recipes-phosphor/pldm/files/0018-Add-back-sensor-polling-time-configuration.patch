@@ -1,4 +1,4 @@
-From d24c05263ec5ff80ee1f3a4900358ddba3ad814b Mon Sep 17 00:00:00 2001
+From ddd1eccd7d9ddd8a56b12e8e7da7e2935b87a96b Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 21:24:06 -0700
 Subject: [PATCH] Add back sensor polling time configuration

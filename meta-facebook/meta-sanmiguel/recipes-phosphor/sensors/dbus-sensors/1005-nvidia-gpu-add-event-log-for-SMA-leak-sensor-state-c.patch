@@ -1,8 +1,7 @@
-From c27bc47cf3eeb4878e91f5de85d73c159502b7bc Mon Sep 17 00:00:00 2001
+From e26c544e3d804db5b66fd7f3036766799eec3b58 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Wed, 2 Sep 2026 19:17:22 +0800
-Subject: [PATCH 2/7] nvidia-gpu: add event log for SMA leak sensor state
- changes
+Subject: [PATCH] nvidia-gpu: add event log for SMA leak sensor state changes
 
 This commit enhances the Nvidia SMA leak sensor by generating standard
 OpenBMC event logs when the leak state or fault state changes.
@@ -53,7 +52,7 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  1 file changed, 32 insertions(+)
 
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-index 28fb8682..12f7089c 100644
+index 28fb868..12f7089 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 @@ -15,10 +15,12 @@
@@ -113,5 +112,5 @@ index 28fb8682..12f7089c 100644
      }
  }
 -- 
-2.53.0
+2.53.0-Meta
 

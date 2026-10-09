@@ -1,4 +1,4 @@
-From 0e16e7fcedab1263411f590eb3b8bcaa97b6155e Mon Sep 17 00:00:00 2001
+From 5fba3c7de24e86208a8dff30fd09e15cd8ccdcc1 Mon Sep 17 00:00:00 2001
 From: Angela Cheng <angelaptcheng@gmail.com>
 Date: Thu, 20 Aug 2026 05:40:21 +0000
 Subject: [PATCH] hwmon: (pmbus) Add MPQ82D00 support

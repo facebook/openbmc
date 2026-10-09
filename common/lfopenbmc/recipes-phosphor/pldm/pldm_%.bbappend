@@ -20,23 +20,22 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0012-terminus-replace-inventory-and-sensor-configuration.patch \
     file://0013-terminus-support-firmware-parameter-refresh.patch \
     file://0014-requester-refresh-MCTP-endpoints-after-host-reaches-.patch \
-    file://0015-requester-Parse-MCTP-endpoint-from-InterfacesRemoved.patch \
-    file://0016-oem-meta-Implement-special-event-handling.patch \
-    file://0017-oem-meta-Add-retry-event-deduplication-for-unified-B.patch \
-    file://0018-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
-    file://0019-Add-back-sensor-polling-time-configuration.patch \
-    file://0020-Add-back-maximum-transfer-size-configuration.patch \
-    file://0021-Add-back-instance-id-expiration-interval.patch \
-    file://0022-fw_update-Reimplement-package-parser-to-use-new-libp.patch \
-    file://0023-oem-meta-support-MCTP-I2C-and-I3C-target-configs.patch \
-    file://0024-platform-mc-add-helper-to-get-terminus-name.patch \
-    file://0025-oem-arm-handle-boot-progress-sensor-events.patch \
-    file://0026-oem-arm-support-UINT64-boot-progress-events.patch \
-    file://0027-platform-mc-use-tagged-numeric-sensor-decode.patch \
-    file://0028-oem-meta-don-t-drop-OEM-event-during-MCTP-endpoint-r.patch \
-    file://0029-oem-meta-bound-the-OEM-event-record-before-formattin.patch \
-    file://0030-fw-update-Fix-redundant-inventory-entries-for-single.patch \
-    file://0031-fw_update-stop-sensor-polling-during-update-when-con.patch \
+    file://0015-oem-meta-Implement-special-event-handling.patch \
+    file://0016-oem-meta-Add-retry-event-deduplication-for-unified-B.patch \
+    file://0017-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
+    file://0018-Add-back-sensor-polling-time-configuration.patch \
+    file://0019-Add-back-maximum-transfer-size-configuration.patch \
+    file://0020-Add-back-instance-id-expiration-interval.patch \
+    file://0021-fw_update-Reimplement-package-parser-to-use-new-libp.patch \
+    file://0022-oem-meta-support-MCTP-I2C-and-I3C-target-configs.patch \
+    file://0023-platform-mc-add-helper-to-get-terminus-name.patch \
+    file://0024-oem-arm-handle-boot-progress-sensor-events.patch \
+    file://0025-oem-arm-support-UINT64-boot-progress-events.patch \
+    file://0026-platform-mc-use-tagged-numeric-sensor-decode.patch \
+    file://0027-oem-meta-don-t-drop-OEM-event-during-MCTP-endpoint-r.patch \
+    file://0028-oem-meta-bound-the-OEM-event-record-before-formattin.patch \
+    file://0029-fw-update-Fix-redundant-inventory-entries-for-single.patch \
+    file://0030-fw_update-stop-sensor-polling-during-update-when-con.patch \
 "
 
 # Must apply after common/lfopenbmc pldm patches.

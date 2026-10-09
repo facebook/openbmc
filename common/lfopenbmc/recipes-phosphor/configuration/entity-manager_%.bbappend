@@ -6,7 +6,6 @@ SRC_URI:append = " \
     file://0003-configurations-santabarbara-add-MB-ADI-VR-sensors.patch \
     file://0004-configuration-schema-add-MPQ82D00-PMBus-device-suppo.patch \
     file://0005-fru-device-fix-redundant-rescans-on-dbus-property-ch.patch \
-    file://0006-fru-device-defer-D-Bus-object-registration-to-preven.patch \
 "
 
 do_install:append() {

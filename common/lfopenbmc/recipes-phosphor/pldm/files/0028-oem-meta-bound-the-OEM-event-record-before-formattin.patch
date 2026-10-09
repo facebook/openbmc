@@ -1,4 +1,4 @@
-From 2389483ac05ee0fb907609ce4080a8d648cb4623 Mon Sep 17 00:00:00 2001
+From 2af7b3d3748aee5c9bf972412b2906e8ab761f2d Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Tue, 8 Sep 2026 15:47:56 -0700
 Subject: [PATCH] oem-meta: bound the OEM event record before formatting it

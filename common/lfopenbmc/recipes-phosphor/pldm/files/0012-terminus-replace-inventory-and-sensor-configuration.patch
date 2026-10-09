@@ -1,4 +1,4 @@
-From 374a89532310fc4e9a530a0c69f687f8c4f0c938 Mon Sep 17 00:00:00 2001
+From baee243c49eb43352f87f2922603abf3c1bc4d28 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
@@ -36,11 +36,11 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  platform-mc/terminus_manager.cpp              |  54 +++++-
  platform-mc/test/event_manager_test.cpp       |  12 +-
  platform-mc/test/platform_manager_test.cpp    |  24 +--
- platform-mc/test/terminus_manager_test.cpp    |  32 ++--
- requester/mctp_endpoint_discovery.cpp         | 181 +++++++++++++-----
+ platform-mc/test/terminus_manager_test.cpp    |  32 +--
+ requester/mctp_endpoint_discovery.cpp         | 183 +++++++++++++-----
  requester/mctp_endpoint_discovery.hpp         |  11 ++
- .../test/mctp_endpoint_discovery_test.cpp     |  31 +--
- 12 files changed, 435 insertions(+), 97 deletions(-)
+ .../test/mctp_endpoint_discovery_test.cpp     |  50 ++---
+ 12 files changed, 445 insertions(+), 108 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index 4e76ac0..d8b925a 100644
@@ -636,10 +636,10 @@ index 3b0173d..4bb39b4 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index ec77371..b3045c8 100644
+index 74b435d..e4a0a74 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -80,9 +80,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
+@@ -91,9 +91,9 @@ void MctpDiscovery::getMctpInfos(
              if (std::find(types.begin(), types.end(), mctpTypePLDM) !=
                  types.end())
              {
@@ -650,9 +650,9 @@ index ec77371..b3045c8 100644
 +                                         std::get<NetworkId>(epProps),
 +                                         std::nullopt, std::nullopt);
                  searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
-                 mctpInfoMap[std::move(mctpInfo)] = availability;
+                 mctpInfoMap[std::move(mctpInfo)] = {path, availability};
              }
-@@ -244,8 +244,8 @@ void MctpDiscovery::getAddedMctpInfos(sdbusplus::message_t& msg,
+@@ -255,8 +255,8 @@ void MctpDiscovery::getAddedMctpInfos(sdbusplus::message_t& msg,
                      info(
                          "Adding Endpoint networkId '{NETWORK}' and EID '{EID}' UUID '{UUID}'",
                          "NETWORK", networkId, "EID", eid, "UUID", uuid);
@@ -662,7 +662,7 @@ index ec77371..b3045c8 100644
 +                                             std::nullopt, std::nullopt);
                      searchConfigurationFor(pldm::utils::DBusHandler(),
                                             mctpInfo);
-                     mctpInfos.emplace_back(std::move(mctpInfo));
+                     mctpInfos.emplace_back(objPath.str, std::move(mctpInfo));
 @@ -343,7 +343,8 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
              const UUID& uuid = getEndpointUUIDProp(service, objPath);
  
@@ -671,9 +671,9 @@ index ec77371..b3045c8 100644
 +                              std::get<NetworkId>(epProps), std::nullopt,
 +                              std::nullopt);
              searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
-             if (!std::ranges::contains(existingMctpInfos, mctpInfo))
+             if (availability)
              {
-@@ -446,71 +447,163 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
+@@ -459,71 +460,165 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
             "/endpoints/" + std::to_string(eid) + "/configured_by";
  }
  
@@ -814,7 +814,7 @@ index ec77371..b3045c8 100644
 +            pldm::utils::DBusHandler::getBus(),
 +            sdbusplus::bus::match::rules::interfacesAdded() +
 +                sdbusplus::bus::match::rules::argNpath(0, matchPath),
-+            [this, mctpInfo,
++            [this, mctpInfo, matchPath,
 +             mctpReactorObjectPath](sdbusplus::message_t& msg) mutable {
 +                sdbusplus::object_path objPath;
 +                using InterfaceMap = std::map<
@@ -851,8 +851,10 @@ index ec77371..b3045c8 100644
 +                    // arrived
 +                    if (this->resolveAssociation(dhandler, mctpInfo))
 +                    {
-+                        this->addToExistingMctpInfos(MctpInfos(1, mctpInfo));
-+                        this->handleMctpEndpoints(MctpInfos(1, mctpInfo));
++                        const MctpInfosWithPath addedInfo(
++                            1, {matchPath, mctpInfo});
++                        this->addToExistingMctpInfos(addedInfo);
++                        this->handleMctpEndpoints(addedInfo);
 +                    }
 +                }
 +            });
@@ -876,10 +878,10 @@ index ec77371..b3045c8 100644
  
  void MctpDiscovery::removeConfigs(const MctpInfos& removedInfos)
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index a7a4378..d29f700 100644
+index a37d6f7..4049854 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -238,6 +238,17 @@ class MctpDiscovery
+@@ -249,6 +249,17 @@ class MctpDiscovery
       * information.
       */
      Configurations configurations;
@@ -898,89 +900,151 @@ index a7a4378..d29f700 100644
  
  } // namespace pldm
 diff --git a/requester/test/mctp_endpoint_discovery_test.cpp b/requester/test/mctp_endpoint_discovery_test.cpp
-index 3eb57cf..71ce9c4 100644
+index d532da3..95cc6af 100644
 --- a/requester/test/mctp_endpoint_discovery_test.cpp
 +++ b/requester/test/mctp_endpoint_discovery_test.cpp
-@@ -68,8 +68,9 @@ TEST(MctpEndpointDiscoveryTest, goodAddToExistingMctpInfos)
-     auto& bus = pldm::utils::DBusHandler::getBus();
+@@ -73,9 +73,11 @@ TEST(MctpEndpointDiscoveryTest, goodAddToExistingMctpInfos)
      pldm::MockManager manager;
-     const pldm::MctpInfos& mctpInfos = {
--        pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt),
--        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt)};
-+        pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt),
-+        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
-+                       std::nullopt)};
+     const pldm::MctpInfosWithPath& mctpInfos = {
+         {"/au/com/codeconstruct/mctp1/networks/1/endpoints/11",
+-         pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt)},
++         pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt,
++                        std::nullopt)},
+         {"/au/com/codeconstruct/mctp1/networks/1/endpoints/12",
+-         pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt)}};
++         pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
++                        std::nullopt)}};
  
      auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
          bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
-@@ -86,7 +87,7 @@ TEST(MctpEndpointDiscoveryTest, badAddToExistingMctpInfos)
-     auto& bus = pldm::utils::DBusHandler::getBus();
+@@ -94,7 +96,8 @@ TEST(MctpEndpointDiscoveryTest, badAddToExistingMctpInfos)
      pldm::MockManager manager;
-     const pldm::MctpInfos& mctpInfos = {
--        pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt)};
-+        pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt)};
+     const pldm::MctpInfosWithPath& mctpInfos = {
+         {"/au/com/codeconstruct/mctp1/networks/1/endpoints/11",
+-         pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt)}};
++         pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt,
++                        std::nullopt)}};
  
      auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
          bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
-@@ -99,8 +100,10 @@ TEST(MctpEndpointDiscoveryTest, goodRemoveFromExistingMctpInfos)
-     auto& bus = pldm::utils::DBusHandler::getBus();
-     pldm::MockManager manager;
-     const pldm::MctpInfos& mctpInfos = {
--        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt),
--        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt)};
-+        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt,
-+                       std::nullopt),
-+        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
-+                       std::nullopt)};
- 
+@@ -114,20 +117,23 @@ TEST(MctpEndpointDiscoveryTest, addToExistingMctpInfosMatchesByPath)
      auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
          bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
-@@ -112,8 +115,8 @@ TEST(MctpEndpointDiscoveryTest, goodRemoveFromExistingMctpInfos)
-     EXPECT_EQ(std::get<3>(mctpInfo), 1);
-     pldm::MctpInfos removedInfos;
-     pldm::MctpInfos remainMctpInfos;
--    remainMctpInfos.emplace_back(
--        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt));
-+    remainMctpInfos.emplace_back(pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1,
-+                                                std::nullopt, std::nullopt));
+     mctpDiscoveryHandler->addToExistingMctpInfos(
+-        {{pathA, pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt)}});
++        {{pathA, pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt,
++                                std::nullopt)}});
+     ASSERT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
  
-     mctpDiscoveryHandler->removeFromExistingMctpInfos(remainMctpInfos,
-                                                       removedInfos);
-@@ -134,8 +137,10 @@ TEST(MctpEndpointDiscoveryTest, goodRemoveEndpoints)
-     auto& bus = pldm::utils::DBusHandler::getBus();
-     pldm::MockManager manager;
-     const pldm::MctpInfos& mctpInfos = {
--        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt),
--        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt)};
-+        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt,
-+                       std::nullopt),
-+        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
-+                       std::nullopt)};
+     // Same path with a different MctpInfo is the same endpoint, keep the
+     // entry that is already tracked
+     mctpDiscoveryHandler->addToExistingMctpInfos(
+-        {{pathA, pldm::MctpInfo(11, pldm::emptyUUID, "abc", 1, std::nullopt)}});
++        {{pathA, pldm::MctpInfo(11, pldm::emptyUUID, "abc", 1, std::nullopt,
++                                std::nullopt)}});
+     ASSERT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
+     EXPECT_EQ(std::get<2>(mctpDiscoveryHandler->existingMctpInfos[0].second),
+               "");
  
-     auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
-         bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
-@@ -158,8 +163,8 @@ TEST(MctpEndpointDiscoveryTest, goodSearchConfigurationFor)
-     MockdBusHandler mockedDbusHandler;
-     auto& bus = mockedDbusHandler.getBus();
+     // A different path with an identical MctpInfo is another endpoint
+     mctpDiscoveryHandler->addToExistingMctpInfos(
+-        {{pathB, pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt)}});
++        {{pathB, pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt,
++                                std::nullopt)}});
+     EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 2);
+ }
+ 
+@@ -138,7 +144,8 @@ TEST(MctpEndpointDiscoveryTest, goodSearchConfigurationFor)
      pldm::MockManager manager;
--    const pldm::MctpInfos& mctpInfos = {
--        pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt)};
-+    const pldm::MctpInfos& mctpInfos = {pldm::MctpInfo(
-+        10, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
+     const pldm::MctpInfosWithPath& mctpInfos = {
+         {"/au/com/codeconstruct/mctp1/networks/1/endpoints/10",
+-         pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt)}};
++         pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt,
++                        std::nullopt)}};
  
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
-@@ -205,8 +210,8 @@ TEST(MctpEndpointDiscoveryTest, badSearchConfigurationFor)
-     MockdBusHandler mockedDbusHandler;
-     auto& bus = mockedDbusHandler.getBus();
+@@ -154,14 +161,6 @@ TEST(MctpEndpointDiscoveryTest, goodSearchConfigurationFor)
+     EXPECT_CALL(mockedDbusHandler, getAssociatedSubTree(_, _, _, _))
+         .WillOnce(testing::Return(mockedGetAssociatedSubTreeResponse));
+ 
+-    pldm::utils::PropertyMap mockGetI2CTargetPropertiesResponse{
+-        {"Address", uint64_t(0x1)},
+-        {"Bus", uint64_t(0)},
+-        {"Name", std::string("MockedDevice")}};
+-
+-    EXPECT_CALL(mockedDbusHandler, getDbusPropertiesVariant(_, _, _))
+-        .WillOnce(testing::Return(mockGetI2CTargetPropertiesResponse));
+-
+     auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+         bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+     mctpDiscoveryHandler->addToExistingMctpInfos(mctpInfos);
+@@ -175,9 +174,12 @@ TEST(MctpEndpointDiscoveryTest, goodSearchConfigurationFor)
+                                               mockedDbusHandler, mctpInfo);
+     EXPECT_EQ(std::get<4>(mctpInfo),
+               std::optional<std::string>("MockedDevice"));
++    EXPECT_EQ(std::get<5>(mctpInfo),
++              std::optional<std::string>(mockedDbusPath));
+     auto configuration =
+         TestMctpDiscovery::getConfigurations(*mctpDiscoveryHandler);
+-    EXPECT_EQ(configuration.size(), 1);
++    ASSERT_EQ(configuration.size(), 1);
++    EXPECT_EQ(configuration.at(mockedDbusPath), mctpInfo);
+ }
+ 
+ TEST(MctpEndpointDiscoveryTest, badSearchConfigurationFor)
+@@ -187,7 +189,8 @@ TEST(MctpEndpointDiscoveryTest, badSearchConfigurationFor)
      pldm::MockManager manager;
--    const pldm::MctpInfos& mctpInfos = {
--        pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt)};
-+    const pldm::MctpInfos& mctpInfos = {pldm::MctpInfo(
-+        10, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
+     const pldm::MctpInfosWithPath& mctpInfos = {
+         {"/au/com/codeconstruct/mctp1/networks/1/endpoints/10",
+-         pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt)}};
++         pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt,
++                        std::nullopt)}};
  
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
+@@ -203,9 +206,6 @@ TEST(MctpEndpointDiscoveryTest, badSearchConfigurationFor)
+     EXPECT_CALL(mockedDbusHandler, getAssociatedSubTree(_, _, _, _))
+         .WillOnce(testing::Return(mockedGetAssociatedSubTreeResponse));
+ 
+-    pldm::utils::PropertyMap mockGetI2CTargetPropertiesResponse{
+-        {"Address", uint64_t(0x1)}, {"Bus", uint64_t(0)}};
+-
+     auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+         bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+     mctpDiscoveryHandler->addToExistingMctpInfos(mctpInfos);
+@@ -226,7 +226,8 @@ TEST(MctpEndpointDiscoveryTest, removeEndpointsMatchFound)
+ {
+     auto& bus = pldm::utils::DBusHandler::getBus();
+     pldm::MockManager manager;
+-    const pldm::MctpInfo endpointInfo(10, pldm::emptyUUID, "", 1, std::nullopt);
++    const pldm::MctpInfo endpointInfo(10, pldm::emptyUUID, "", 1, std::nullopt,
++                                      std::nullopt);
+ 
+     // The handler should be told about exactly the removed endpoint
+     EXPECT_CALL(manager,
+@@ -269,7 +270,8 @@ TEST(MctpEndpointDiscoveryTest, removeEndpointsNoMatch)
+     // Seed with EID 10 on network 1
+     const pldm::MctpInfosWithPath& seedInfos = {
+         {"/au/com/codeconstruct/mctp1/networks/1/endpoints/10",
+-         pldm::MctpInfo(10, pldm::emptyUUID, "", 1, std::nullopt)}};
++         pldm::MctpInfo(10, pldm::emptyUUID, "", 1, std::nullopt,
++                        std::nullopt)}};
+     mctpDiscoveryHandler->addToExistingMctpInfos(seedInfos);
+     ASSERT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
+ 
+@@ -292,9 +294,9 @@ TEST(MctpEndpointDiscoveryTest, removeEndpointsSameEidDifferentNetwork)
+     auto& bus = pldm::utils::DBusHandler::getBus();
+     pldm::MockManager manager;
+     const pldm::MctpInfo networkOneInfo(10, pldm::emptyUUID, "", 1,
+-                                        std::nullopt);
++                                        std::nullopt, std::nullopt);
+     const pldm::MctpInfo networkTwoInfo(10, pldm::emptyUUID, "", 2,
+-                                        std::nullopt);
++                                        std::nullopt, std::nullopt);
+ 
+     // Only the endpoint on the matching network should be removed
+     EXPECT_CALL(manager,
 -- 
 2.53.0-Meta
 

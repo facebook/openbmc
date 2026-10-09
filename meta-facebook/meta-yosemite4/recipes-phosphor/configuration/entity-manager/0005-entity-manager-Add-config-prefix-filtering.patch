@@ -1,4 +1,4 @@
-From 00b7bb47d2ec4d99a041253aed5b44ac71519786 Mon Sep 17 00:00:00 2001
+From 01329e224a1e434942539c290ed4221be0c025e9 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH] entity-manager: Add config-prefix filtering
@@ -49,10 +49,10 @@ index 8cdd903..efbf48c 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index 22ac896..1f5f1dc 100644
+index f41f3be..780dbe9 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
-@@ -64,10 +64,15 @@ void Configuration::loadSingleConfigFile(const std::filesystem::path& jsonPath,
+@@ -73,10 +73,15 @@ void Configuration::loadSingleConfigFile(const std::filesystem::path& jsonPath,
  void Configuration::loadConfigurations()
  {
      const auto start = std::chrono::steady_clock::now();

@@ -1,7 +1,7 @@
-From 319fbd82d3a6d65da5e64a83d7a9839723264a2a Mon Sep 17 00:00:00 2001
+From 3fda9dbd564a7916a8f4687675349139c2b0526b Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 17 Sep 2026 15:48:45 +0800
-Subject: [PATCH 1/1] ARM: dts: aspeed: sanmiguel: enable i2c slave timeout
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: enable i2c slave timeout
 
 Enable the I2C slave timeout property in the SanMiguel device tree to
 prevent the slave interface from hanging due to incomplete or abnormal
@@ -25,5 +25,5 @@ index 0d9cbbb101b0..efd533b037b6 100644
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
 -- 
-2.52.0
+2.53.0-Meta
 

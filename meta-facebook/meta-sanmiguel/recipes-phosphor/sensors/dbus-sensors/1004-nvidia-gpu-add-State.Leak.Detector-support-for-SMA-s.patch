@@ -1,8 +1,7 @@
-From 8269983d384e4e555ae4f91c8575c0c8f417308a Mon Sep 17 00:00:00 2001
+From 11a2b89d5d57329421071e96a35ebed0c0fb26da Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Fri, 21 Aug 2026 17:56:52 +0800
-Subject: [PATCH 1/7] nvidia-gpu: add State.Leak.Detector support for SMA
- sensors
+Subject: [PATCH] nvidia-gpu: add State.Leak.Detector support for SMA sensors
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -86,7 +85,7 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  2 files changed, 151 insertions(+)
 
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-index 8b27f26a..28fb8682 100644
+index 8b27f26..28fb868 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 @@ -85,6 +85,52 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
@@ -250,7 +249,7 @@ index 8b27f26a..28fb8682 100644
 +    }
 +}
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
-index 83a1bcec..5bda4579 100644
+index 83a1bce..5bda457 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
 @@ -38,6 +38,8 @@ struct NvidiaSmaLeakSensor :
@@ -282,5 +281,5 @@ index 83a1bcec..5bda4579 100644
 +    LeakState lastLeakFault = LeakState::Normal;
  };
 -- 
-2.53.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 4a4862068409b13ed08f73fdf16454d06f66549a Mon Sep 17 00:00:00 2001
+From 0501e38618438b90a71597584a3b819504d8f332 Mon Sep 17 00:00:00 2001
 From: Ender Hsieh <andhsieh@nvidia.com>
 Date: Thu, 11 Jun 2026 02:45:13 +0900
-Subject: [PATCH 6/7] nvidia-gpu: react to MCTP endpoint connectivity
+Subject: [PATCH] nvidia-gpu: react to MCTP endpoint connectivity
 
 An MCTP endpoint can stop answering while the device behind it stays
 configured. Nothing notices today: the device keeps polling an endpoint
@@ -72,7 +72,7 @@ Signed-off-by: Ender Hsieh <andhsieh@nvidia.com>
  create mode 100644 src/tests/nvidia-gpu/test_EndpointState.cpp
 
 diff --git a/src/nvidia-gpu/DeviceManager.cpp b/src/nvidia-gpu/DeviceManager.cpp
-index 67a780fd..873493c3 100644
+index 67a780f..873493c 100644
 --- a/src/nvidia-gpu/DeviceManager.cpp
 +++ b/src/nvidia-gpu/DeviceManager.cpp
 @@ -10,12 +10,16 @@
@@ -408,7 +408,7 @@ index 67a780fd..873493c3 100644
 +    }
 +}
 diff --git a/src/nvidia-gpu/DeviceManager.hpp b/src/nvidia-gpu/DeviceManager.hpp
-index dbe22700..9bf4cb64 100644
+index dbe2270..9bf4cb6 100644
 --- a/src/nvidia-gpu/DeviceManager.hpp
 +++ b/src/nvidia-gpu/DeviceManager.hpp
 @@ -5,6 +5,7 @@
@@ -500,7 +500,7 @@ index dbe22700..9bf4cb64 100644
  };
 diff --git a/src/nvidia-gpu/EndpointState.hpp b/src/nvidia-gpu/EndpointState.hpp
 new file mode 100644
-index 00000000..96186085
+index 0000000..9618608
 --- /dev/null
 +++ b/src/nvidia-gpu/EndpointState.hpp
 @@ -0,0 +1,76 @@
@@ -581,7 +581,7 @@ index 00000000..96186085
 +    return {s, EndpointAction::None};
 +}
 diff --git a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
-index 5c2d76c8..91f43c3d 100644
+index 5c2d76c..91f43c3 100644
 --- a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
 +++ b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
 @@ -8,11 +8,8 @@
@@ -661,7 +661,7 @@ index 5c2d76c8..91f43c3d 100644
      {
          io.run();
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.cpp b/src/nvidia-gpu/NvidiaSmaDevice.cpp
-index b5544f33..8db42c19 100644
+index b5544f3..8db42c1 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.cpp
 @@ -59,7 +59,17 @@ void SmaDevice::makeSensors()
@@ -683,7 +683,7 @@ index b5544f33..8db42c19 100644
  }
  
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.hpp b/src/nvidia-gpu/NvidiaSmaDevice.hpp
-index b8987ea7..39227636 100644
+index b8987ea..3922763 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.hpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.hpp
 @@ -31,13 +31,24 @@ class SmaDevice : public std::enable_shared_from_this<SmaDevice>
@@ -712,7 +712,7 @@ index b8987ea7..39227636 100644
      void makeSensors();
  
 diff --git a/src/tests/nvidia-gpu/meson.build b/src/tests/nvidia-gpu/meson.build
-index 56f5690f..f79bf66d 100644
+index 56f5690..f79bf66 100644
 --- a/src/tests/nvidia-gpu/meson.build
 +++ b/src/tests/nvidia-gpu/meson.build
 @@ -94,3 +94,14 @@ test(
@@ -732,7 +732,7 @@ index 56f5690f..f79bf66d 100644
 +)
 diff --git a/src/tests/nvidia-gpu/test_EndpointState.cpp b/src/tests/nvidia-gpu/test_EndpointState.cpp
 new file mode 100644
-index 00000000..c17c208c
+index 0000000..c17c208
 --- /dev/null
 +++ b/src/tests/nvidia-gpu/test_EndpointState.cpp
 @@ -0,0 +1,54 @@
@@ -791,7 +791,7 @@ index 00000000..c17c208c
 +    EXPECT_EQ(t.action, EndpointAction::GoOffline);
 +}
 diff --git a/src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp b/src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp
-index 78f1d861..99716f8e 100644
+index 78f1d86..99716f8 100644
 --- a/src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp
 +++ b/src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp
 @@ -63,6 +63,7 @@ TEST_F(NvidiaSmaDeviceTest, InitSendsAtLeastOneRequest)
@@ -811,5 +811,5 @@ index 78f1d861..99716f8e 100644
          // While the device is alive the poll timer keeps re-arming the loop,
          // so a later round has to produce more requests.
 -- 
-2.53.0
+2.53.0-Meta
 

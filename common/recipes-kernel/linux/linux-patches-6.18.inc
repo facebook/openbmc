@@ -97,16 +97,16 @@ SRC_URI:append = " \
     file://0602-hwmon-pmbus-Add-xdpe132g5c-driver.patch \
     file://0603-hwmon-Add-net_brcm-driver.patch \
     file://0604-misc-amd-apml-support-APML-driver.patch \
-    file://0606-hwmon-pmbus-tda38640-Add-identification-for-PMBUS_VO.patch \
-    file://0607-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
-    file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
-    file://0610-nfc-nxp-nci-Add-ISO15693-support.patch \
-    file://0612-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
-    file://0613-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
-    file://0614-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \
-    file://0615-hwmon-kb9002-Add-driver-for-Kandou-KB9002-retimer.patch \
-    file://0616-hwmon-pmbus-Add-MPQ82D00-support.patch \
-    file://0617-hwmon-pmbus-ltc4286-Add-writable-shunt_resistor-sysf.patch \
+    file://0605-hwmon-pmbus-tda38640-Add-identification-for-PMBUS_VO.patch \
+    file://0606-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
+    file://0607-iio-adc-ltc2309-add-support-for-ltc2305.patch \
+    file://0608-nfc-nxp-nci-Add-ISO15693-support.patch \
+    file://0609-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
+    file://0610-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
+    file://0611-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \
+    file://0612-hwmon-kb9002-Add-driver-for-Kandou-KB9002-retimer.patch \
+    file://0613-hwmon-pmbus-Add-MPQ82D00-support.patch \
+    file://0614-hwmon-pmbus-ltc4286-Add-writable-shunt_resistor-sysf.patch \
 "
 
 #

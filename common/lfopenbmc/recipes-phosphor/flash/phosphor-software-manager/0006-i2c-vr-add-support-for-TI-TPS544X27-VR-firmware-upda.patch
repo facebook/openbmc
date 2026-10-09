@@ -979,7 +979,7 @@ index 0000000..c9f78e0
 @@ -0,0 +1,952 @@
 +#include "tps544x27.hpp"
 +
-+#include "common/include/host_power.hpp"
++#include "common/include/system_state.hpp"
 +#include "common/include/utils.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -993,7 +993,7 @@ index 0000000..c9f78e0
 +namespace phosphor::software::VR
 +{
 +
-+using namespace phosphor::software::host_power;
++using namespace phosphor::software::system_state;
 +
 +namespace
 +{
@@ -1831,7 +1831,7 @@ index 0000000..c9f78e0
 +        co_return false;
 +    }
 +
-+    auto powerState = co_await HostPower::getState(ctx);
++    auto powerState = co_await SystemState::getHostState(ctx);
 +
 +    if (powerState != stateOff)
 +    {

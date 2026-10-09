@@ -1,4 +1,4 @@
-From 3927d55453d9d5e52bc2172bc87edfc8d8a0ec4b Mon Sep 17 00:00:00 2001
+From 601a45377750c8ad1a964b52feab99dd002a6c5b Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
 Subject: [PATCH] terminus: support firmware parameter refresh
@@ -296,10 +296,10 @@ index 924f4fc..7a04ea0 100644
       *         the updated EM configurations
       *
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index b3045c8..2a019c6 100644
+index e4a0a74..4227f34 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -427,6 +427,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
+@@ -440,6 +440,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
      }
  }
  
@@ -319,10 +319,10 @@ index b3045c8..2a019c6 100644
      const utils::PropertyMap& properties)
  {
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index d29f700..5b33e13 100644
+index 4049854..a5611b5 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -45,6 +45,7 @@ class MctpDiscoveryHandlerIntf
+@@ -56,6 +56,7 @@ class MctpDiscoveryHandlerIntf
      virtual void handleRemovedMctpEndpoints(const MctpInfos& mctpInfos) = 0;
      virtual void updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
                                                  Availability availability) = 0;
@@ -330,7 +330,7 @@ index d29f700..5b33e13 100644
      /** @brief Get Active EIDs.
       *
       *  @param[in] addr - MCTP address of terminus
-@@ -141,6 +142,13 @@ class MctpDiscovery
+@@ -154,6 +155,13 @@ class MctpDiscovery
      void updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
                                          Availability availability);
  
@@ -343,7 +343,7 @@ index d29f700..5b33e13 100644
 +
      /** @brief Get list of MctpInfos in MCTP control interface.
       *
-      *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
+      *  @param[out] mctpInfoMap - information of discovered MCTP endpoints
 -- 
 2.53.0-Meta
 

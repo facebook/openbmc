@@ -1,4 +1,4 @@
-From 1e8cf0edd4fa644f7f794903a03c4e22482a120d Mon Sep 17 00:00:00 2001
+From 28888f9298bfcb250024a40cb23fbac0b2a5b2f6 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Fri, 13 Mar 2026 13:02:16 +0800
 Subject: [PATCH] oem-meta: Add retry event deduplication for unified BIOS

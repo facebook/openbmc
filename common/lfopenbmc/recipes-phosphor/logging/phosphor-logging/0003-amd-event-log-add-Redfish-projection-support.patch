@@ -1,4 +1,4 @@
-From 6438456d79355483436bffc557bdbf9bbaa66be0 Mon Sep 17 00:00:00 2001
+From da8cc22cc062824485bfbad4c31b4808bfb1812b Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 10 Sep 2026 03:17:47 -0500
 Subject: [PATCH] amd-event-log: add Redfish projection support

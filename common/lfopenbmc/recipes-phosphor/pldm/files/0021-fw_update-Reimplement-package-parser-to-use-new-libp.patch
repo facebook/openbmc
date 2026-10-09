@@ -1,4 +1,4 @@
-From 20084bcb743e7ab11fbea28f8f1a0f9c21132f1c Mon Sep 17 00:00:00 2001
+From f4bb3817dd761cb0d0ce8a693785f20ff0362b51 Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
 Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
@@ -37,8 +37,8 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
  fw-update/test/inventory_manager_test.cpp     |   2 +-
  fw-update/test/package_parser_test.cpp        | 247 +++++++--
  fw-update/update_manager.cpp                  | 329 ++++++++++--
- fw-update/update_manager.hpp                  |  37 +-
- 15 files changed, 1028 insertions(+), 604 deletions(-)
+ fw-update/update_manager.hpp                  |  42 +-
+ 15 files changed, 1027 insertions(+), 610 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index d8b925a..feaa802 100644
@@ -166,7 +166,7 @@ index 6a82238..f06cd70 100644
      {}
  
 diff --git a/fw-update/device_updater.cpp b/fw-update/device_updater.cpp
-index 55f8d31..fb1feb0 100644
+index 246c3b5..f2ac651 100644
 --- a/fw-update/device_updater.cpp
 +++ b/fw-update/device_updater.cpp
 @@ -10,6 +10,9 @@
@@ -2024,7 +2024,7 @@ index b8dc1e0..bab9f36 100644
 +    EXPECT_THROW(PackageParser{fwPkgHdr}, InternalFailure);
  }
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index dbe88ee..e9ba33f 100644
+index 170dac3..b10ccfa 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
 @@ -5,14 +5,22 @@
@@ -2050,7 +2050,7 @@ index dbe88ee..e9ba33f 100644
  PHOSPHOR_LOG2_USING;
  
  namespace pldm
-@@ -48,9 +56,17 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
+@@ -47,9 +55,17 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
          if (activation->activation() ==
              software::Activation::Activations::Activating)
          {
@@ -2071,7 +2071,7 @@ index dbe88ee..e9ba33f 100644
              std::filesystem::remove(packageFilePath);
              return -1;
          }
-@@ -60,38 +76,160 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
+@@ -59,35 +75,36 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
          }
      }
  
@@ -2100,21 +2100,45 @@ index dbe88ee..e9ba33f 100644
      }
  
 -    uintmax_t packageSize = package.tellg();
-+    try
-+    {
+-
+-    auto swId = getSwId();
+-    objPath = swRootPath + swId;
+-
+-    fwPackageFilePath = packageFilePath;
+-
+     try
+     {
+-        processStream(package, packageSize);
+-        return 0;
 +        parser = std::make_unique<PackageParser>(
 +            std::span<const uint8_t>(packageMap, packageSize));
-+    }
+     }
+-    catch (sdbusplus::exception_t& e)
 +    catch (const InternalFailure&)
-+    {
+     {
+-        error("Exception occurred while processing the package: {ERROR}",
+-              "ERROR", e);
+-        package.close();
 +        error("Failed to parse the PLDM fw update package header");
 +        packageMMapHandler.reset();
 +        packageMap = nullptr;
 +        packageSize = 0;
 +        parser.reset();
-+        std::filesystem::remove(packageFilePath);
-+        return -1;
-+    }
+         std::filesystem::remove(packageFilePath);
+         return -1;
+     }
+@@ -95,10 +112,134 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
+     {
+         error("Exception occurred while processing the package: {ERROR}",
+               "ERROR", e);
+-        package.close();
++        parser.reset();
++        packageMMapHandler.reset();
++        packageMap = nullptr;
++        packageSize = 0;
+         std::filesystem::remove(packageFilePath);
+         return -1;
+     }
 +    if (parser == nullptr)
 +    {
 +        error("Invalid PLDM package header information");
@@ -2125,19 +2149,15 @@ index dbe88ee..e9ba33f 100644
 +        std::filesystem::remove(packageFilePath);
 +        return -1;
 +    }
- 
--    auto swId = getSwId();
--    objPath = swRootPath + swId;
++
 +    // Populate object path with the hash of the package version
 +    size_t versionHash = std::hash<std::string>{}(parser->packageVersion);
 +    objPath = swRootPath + std::to_string(versionHash);
- 
--    fwPackageFilePath = packageFilePath;
++
 +    auto deviceUpdaterInfos = associatePkgToDevices(
 +        parser->getFwDeviceIDRecords(), parser->getDownstreamDeviceIDRecords(),
 +        descriptorMap, downstreamDescriptorMap, totalNumComponentUpdates);
- 
--    try
++
 +    auto markPackageInvalid = [this, &packageFilePath]() {
 +        activation = std::make_unique<Activation>(
 +            pldm::utils::DBusHandler::getBus(), objPath,
@@ -2153,14 +2173,12 @@ index dbe88ee..e9ba33f 100644
 +    };
 +
 +    if (!deviceUpdaterInfos.size())
-     {
--        processStream(package, packageSize);
++    {
 +        error(
 +            "No matching devices found with the PLDM firmware update package");
 +        markPackageInvalid();
-         return 0;
-     }
--    catch (sdbusplus::exception_t& e)
++        return 0;
++    }
 +
 +    const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
 +    const auto& downstreamDeviceIDRecords =
@@ -2168,11 +2186,7 @@ index dbe88ee..e9ba33f 100644
 +    const auto& compImageInfos = parser->getComponentImageInfos();
 +
 +    for (const auto& deviceUpdaterInfo : deviceUpdaterInfos)
-     {
--        error("Exception occurred while processing the package: {ERROR}",
--              "ERROR", e);
--        package.close();
--        std::filesystem::remove(packageFilePath);
++    {
 +        auto [eid, isDownstream, offset] = deviceUpdaterInfo;
 +
 +        DeviceIDRecord deviceIDRecord;
@@ -2235,8 +2249,8 @@ index dbe88ee..e9ba33f 100644
 +        deviceUpdaterMap.clear();
 +        deviceUpdateCompletionMap.clear();
 +        totalNumComponentUpdates = 0;
-         return -1;
-     }
++        return -1;
++    }
 +
 +    // The activation objects are in place, so RequestedActivation can now
 +    // reach activatePackage(). That entry point is gated on updateInProgress,
@@ -2249,14 +2263,16 @@ index dbe88ee..e9ba33f 100644
  }
  
  std::string UpdateManager::processStreamDefer(std::istream& package,
-@@ -129,45 +267,50 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
-             pldm::utils::DBusHandler::getBus(), objPath,
-             software::Activation::Activations::Invalid, this);
-         parser.reset();
-+        packageData.clear();
-+        packageData.shrink_to_fit();
-         throw sdbusplus::error::xyz::openbmc_project::software::update::
-             InvalidImage();
+@@ -129,6 +270,8 @@ void UpdateManager::markPackageInvalid()
+         pldm::utils::DBusHandler::getBus(), objPath,
+         software::Activation::Activations::Invalid, this);
+     parser.reset();
++    packageData.clear();
++    packageData.shrink_to_fit();
+ }
+ 
+ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -146,34 +289,33 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
      }
  
      package.seekg(0);
@@ -2268,19 +2284,15 @@ index dbe88ee..e9ba33f 100644
 -    parser = parsePkgHeader(packageHeader);
 -    if (parser == nullptr)
 +    try
-+    {
+     {
+-        error("Invalid PLDM package header information");
 +        parser = std::make_unique<PackageParser>(
 +            std::span<const uint8_t>(packageData.data(), packageSize));
 +    }
-+    catch (const InternalFailure&)
-     {
-         error("Invalid PLDM package header information");
-         activation = std::make_unique<Activation>(
-             pldm::utils::DBusHandler::getBus(), objPath,
-             software::Activation::Activations::Invalid, this);
-         parser.reset();
-+        packageData.clear();
-+        packageData.shrink_to_fit();
++    catch (const std::exception& e)
++    {
++        error("Invalid PLDM package header, error - {ERROR}", "ERROR", e);
+         markPackageInvalid();
          throw sdbusplus::error::xyz::openbmc_project::software::update::
              InvalidImage();
      }
@@ -2295,12 +2307,7 @@ index dbe88ee..e9ba33f 100644
      {
 -        error("Invalid PLDM package header, error - {ERROR}", "ERROR", e);
 +        error("Invalid PLDM package header");
-         activation = std::make_unique<Activation>(
-             pldm::utils::DBusHandler::getBus(), objPath,
-             software::Activation::Activations::Invalid, this);
-         parser.reset();
-+        packageData.clear();
-+        packageData.shrink_to_fit();
+         markPackageInvalid();
          throw sdbusplus::error::xyz::openbmc_project::software::update::
              InvalidImage();
      }
@@ -2314,14 +2321,7 @@ index dbe88ee..e9ba33f 100644
      if (!deviceUpdaterInfos.size())
      {
          error(
-@@ -176,23 +319,64 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
-             pldm::utils::DBusHandler::getBus(), objPath,
-             software::Activation::Activations::Invalid, this);
-         parser.reset();
-+        packageData.clear();
-+        packageData.shrink_to_fit();
-         throw sdbusplus::error::xyz::openbmc_project::software::update::
-             Incompatible();
+@@ -184,18 +326,52 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
      }
  
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
@@ -2376,18 +2376,13 @@ index dbe88ee..e9ba33f 100644
 +    {
 +        error(
 +            "Failed to create a device updater for any device matched by the PLDM firmware update package");
-+        activation = std::make_unique<Activation>(
-+            pldm::utils::DBusHandler::getBus(), objPath,
-+            software::Activation::Activations::Invalid, this);
-+        parser.reset();
-+        packageData.clear();
-+        packageData.shrink_to_fit();
++        markPackageInvalid();
 +        throw sdbusplus::error::xyz::openbmc_project::software::update::
 +            Incompatible();
      }
  
      updateInProgress = true;
-@@ -209,7 +393,9 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -212,7 +388,9 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
  
  DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
      const FirmwareDeviceIDRecords& fwDeviceIDRecords,
@@ -2397,7 +2392,7 @@ index dbe88ee..e9ba33f 100644
      TotalComponentUpdates& totalNumComponentUpdates)
  {
      DeviceUpdaterInfos deviceUpdaterInfos;
-@@ -217,19 +403,56 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
+@@ -220,19 +398,56 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
      {
          const auto& deviceIDDescriptors =
              std::get<Descriptors>(fwDeviceIDRecords[index]);
@@ -2458,7 +2453,7 @@ index dbe88ee..e9ba33f 100644
      return deviceUpdaterInfos;
  }
  
-@@ -393,13 +616,19 @@ void UpdateManager::resetActivationState()
+@@ -395,13 +610,19 @@ void UpdateManager::resetActivationState()
      activationProgress.reset();
      objPath.clear();
  
@@ -2483,7 +2478,7 @@ index dbe88ee..e9ba33f 100644
      totalNumComponentUpdates = 0;
  }
 diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
-index 883b254..d58eb48 100644
+index 0aa5303..db57d41 100644
 --- a/fw-update/update_manager.hpp
 +++ b/fw-update/update_manager.hpp
 @@ -21,6 +21,7 @@
@@ -2545,7 +2540,19 @@ index 883b254..d58eb48 100644
          TotalComponentUpdates& totalNumComponentUpdates);
  
      /** @brief Generate a unique software ID based on current timestamp
-@@ -189,6 +206,8 @@ class UpdateManager : public UpdateManagerBase
+@@ -178,8 +195,9 @@ class UpdateManager : public UpdateManagerBase
+ 
+   private:
+     /** @brief Marks the in-progress package activation as Invalid and
+-     *         discards the package parser. Used by processStream() before
+-     *         throwing on an unrecoverable package error.
++     *         discards the package parser and stream buffer. Used by
++     *         processStream() before throwing on an unrecoverable package
++     *         error.
+      */
+     void markPackageInvalid();
+ 
+@@ -195,6 +213,8 @@ class UpdateManager : public UpdateManagerBase
  
      /** @brief Device identifiers of the managed FDs */
      const DescriptorMap& descriptorMap;
@@ -2554,7 +2561,7 @@ index 883b254..d58eb48 100644
      /** @brief Component information needed for the update of the managed FDs */
      const ComponentInfoMap& componentInfoMap;
  #ifdef FW_UPDATE_INOTIFY_ENABLED
-@@ -201,8 +220,20 @@ class UpdateManager : public UpdateManagerBase
+@@ -207,8 +227,20 @@ class UpdateManager : public UpdateManagerBase
      std::string objPath;
  
      std::filesystem::path fwPackageFilePath;

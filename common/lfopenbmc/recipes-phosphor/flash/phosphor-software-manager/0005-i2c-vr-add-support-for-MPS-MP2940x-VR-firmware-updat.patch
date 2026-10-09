@@ -290,7 +290,7 @@ index 0000000..bc3c729
 @@ -0,0 +1,741 @@
 +#include "mp2940x.hpp"
 +
-+#include "common/include/host_power.hpp"
++#include "common/include/system_state.hpp"
 +#include "common/include/utils.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -304,7 +304,7 @@ index 0000000..bc3c729
 +namespace phosphor::software::VR
 +{
 +
-+using namespace phosphor::software::host_power;
++using namespace phosphor::software::system_state;
 +
 +static constexpr size_t statusByteLength = 1;
 +static constexpr size_t pecLength = 1;
@@ -807,7 +807,7 @@ index 0000000..bc3c729
 +{
 +    (void)force;
 +
-+    auto powerState = co_await HostPower::getState(ctx);
++    auto powerState = co_await SystemState::getHostState(ctx);
 +
 +    if (powerState != stateOff)
 +    {

@@ -54,5 +54,5 @@ SRC_URI:append = " \
 # Oem/Meta/Metrics in ManagerDiagnosticData, from Metric.Value objects under
 # /xyz/openbmc_project/metric/bmc/oem (adhoc-sensor's /run/openbmc/metrics)
 SRC_URI:append = " \
-    file://0420-ManagerDiagnosticData-report-Oem-Meta-Metrics-from-metr.patch \
+    file://0420-ManagerDiagnosticData-report-Oem-Meta-Metrics-from-m.patch \
 "

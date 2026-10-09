@@ -1,4 +1,4 @@
-From 7cdbc3b72c629f5b231dc1dd3d6bc61eceb7738f Mon Sep 17 00:00:00 2001
+From 7067a2a6c7dd7bf4759c68e46820dd57b079ab80 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
 Subject: [PATCH] oem-meta: Add call to the fw-versions-sd-retimer service

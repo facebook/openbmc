@@ -1,7 +1,7 @@
-From 4021c930f195709e00641422ddd7a6e72395d769 Mon Sep 17 00:00:00 2001
+From def74a403f0d3ca40463096a2730c2e4edf4da6e Mon Sep 17 00:00:00 2001
 From: Ender Hsieh <andhsieh@nvidia.com>
 Date: Mon, 29 Jun 2026 14:23:40 +0900
-Subject: [PATCH 7/7] nvidia-gpu: recover from MCTP endpoint removal
+Subject: [PATCH] nvidia-gpu: recover from MCTP endpoint removal
 
 mctpd takes an endpoint object away when recovery fails within Treclaim,
 or when the device is reset or power cycled. Nothing here noticed: the
@@ -83,7 +83,7 @@ Signed-off-by: Ender Hsieh <andhsieh@nvidia.com>
  8 files changed, 353 insertions(+), 21 deletions(-)
 
 diff --git a/src/nvidia-gpu/DeviceManager.cpp b/src/nvidia-gpu/DeviceManager.cpp
-index 873493c3..342da24e 100644
+index 873493c..342da24 100644
 --- a/src/nvidia-gpu/DeviceManager.cpp
 +++ b/src/nvidia-gpu/DeviceManager.cpp
 @@ -23,6 +23,7 @@
@@ -319,7 +319,7 @@ index 873493c3..342da24e 100644
 -    }
  }
 diff --git a/src/nvidia-gpu/DeviceManager.hpp b/src/nvidia-gpu/DeviceManager.hpp
-index 9bf4cb64..231f9e35 100644
+index 9bf4cb6..231f9e3 100644
 --- a/src/nvidia-gpu/DeviceManager.hpp
 +++ b/src/nvidia-gpu/DeviceManager.hpp
 @@ -37,11 +37,14 @@ class DeviceManager
@@ -367,7 +367,7 @@ index 9bf4cb64..231f9e35 100644
          EndpointState state{EndpointState::Init};
      };
 diff --git a/src/nvidia-gpu/EndpointState.hpp b/src/nvidia-gpu/EndpointState.hpp
-index 96186085..e40b5e64 100644
+index 9618608..e40b5e6 100644
 --- a/src/nvidia-gpu/EndpointState.hpp
 +++ b/src/nvidia-gpu/EndpointState.hpp
 @@ -8,14 +8,19 @@ enum class EndpointState
@@ -448,7 +448,7 @@ index 96186085..e40b5e64 100644
      return {s, EndpointAction::None};
  }
 diff --git a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
-index 91f43c3d..dc3025db 100644
+index 91f43c3..dc3025d 100644
 --- a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
 +++ b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
 @@ -79,6 +79,24 @@ int main()
@@ -477,7 +477,7 @@ index 91f43c3d..dc3025db 100644
      {
          io.run();
 diff --git a/src/nvidia-gpu/NvidiaGpuTempSensor.hpp b/src/nvidia-gpu/NvidiaGpuTempSensor.hpp
-index d5e09243..e798dfc5 100644
+index d5e0924..e798dfc 100644
 --- a/src/nvidia-gpu/NvidiaGpuTempSensor.hpp
 +++ b/src/nvidia-gpu/NvidiaGpuTempSensor.hpp
 @@ -44,6 +44,13 @@ struct NvidiaGpuTempSensor :
@@ -495,7 +495,7 @@ index d5e09243..e798dfc5 100644
      void processResponse(const std::error_code& ec,
                           std::span<const uint8_t> buffer);
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.cpp b/src/nvidia-gpu/NvidiaSmaDevice.cpp
-index 8db42c19..2e4019ba 100644
+index 8db42c1..2e4019b 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.cpp
 @@ -45,6 +45,7 @@ SmaDevice::SmaDevice(const SensorConfigs& configs, const std::string& name,
@@ -584,7 +584,7 @@ index 8db42c19..2e4019ba 100644
  {
      tempSensor->update();
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.hpp b/src/nvidia-gpu/NvidiaSmaDevice.hpp
-index 39227636..a3da54ef 100644
+index 3922763..a3da54e 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.hpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.hpp
 @@ -49,6 +49,8 @@ class SmaDevice : public std::enable_shared_from_this<SmaDevice>
@@ -632,7 +632,7 @@ index 39227636..a3da54ef 100644
 +    std::string inventoryPath;
  };
 diff --git a/src/tests/nvidia-gpu/test_EndpointState.cpp b/src/tests/nvidia-gpu/test_EndpointState.cpp
-index c17c208c..6a6cea88 100644
+index c17c208..6a6cea8 100644
 --- a/src/tests/nvidia-gpu/test_EndpointState.cpp
 +++ b/src/tests/nvidia-gpu/test_EndpointState.cpp
 @@ -52,3 +52,45 @@ TEST(EndpointStateTest, InitDegradedGoesRecovering)
@@ -682,5 +682,5 @@ index c17c208c..6a6cea88 100644
 +    EXPECT_EQ(available.action, EndpointAction::None);
 +}
 -- 
-2.53.0
+2.53.0-Meta
 

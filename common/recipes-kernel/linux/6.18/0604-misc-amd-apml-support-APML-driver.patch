@@ -1,4 +1,4 @@
-From cff1ac9f941439eafd40abad57cf23b8bf678f19 Mon Sep 17 00:00:00 2001
+From 85ae9d07302281d8313f1019cd388e35e45ed2f0 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Mon, 5 Oct 2026 14:18:06 +0800
 Subject: [PATCH] misc: amd-apml: support APML driver
@@ -36,7 +36,7 @@ Link: https://github.com/amd/apml_modules
  create mode 100644 include/uapi/linux/amd-apml.h
 
 diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index a2045ba8e..1eb778f6b 100644
+index a2045ba8eab5..1eb778f6b598 100644
 --- a/drivers/misc/Kconfig
 +++ b/drivers/misc/Kconfig
 @@ -654,6 +654,7 @@ config MCHP_LAN966X_PCI
@@ -48,7 +48,7 @@ index a2045ba8e..1eb778f6b 100644
  source "drivers/misc/eeprom/Kconfig"
  source "drivers/misc/cb710/Kconfig"
 diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 87dbf02ab..f27a042e7 100644
+index 87dbf02ab2f9..f27a042e7251 100644
 --- a/drivers/misc/Makefile
 +++ b/drivers/misc/Makefile
 @@ -3,6 +3,7 @@
@@ -61,7 +61,7 @@ index 87dbf02ab..f27a042e7 100644
  obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
 diff --git a/drivers/misc/amd-apml/Kconfig b/drivers/misc/amd-apml/Kconfig
 new file mode 100644
-index 000000000..94a245f6a
+index 000000000000..94a245f6a3ac
 --- /dev/null
 +++ b/drivers/misc/amd-apml/Kconfig
 @@ -0,0 +1,55 @@
@@ -122,7 +122,7 @@ index 000000000..94a245f6a
 +	  be called apml_alertl.
 diff --git a/drivers/misc/amd-apml/Makefile b/drivers/misc/amd-apml/Makefile
 new file mode 100644
-index 000000000..a8f78ab0a
+index 000000000000..a8f78ab0a05b
 --- /dev/null
 +++ b/drivers/misc/amd-apml/Makefile
 @@ -0,0 +1,11 @@
@@ -139,7 +139,7 @@ index 000000000..a8f78ab0a
 +obj-$(CONFIG_APML_ALERTL)	+= apml_alertl.o
 diff --git a/drivers/misc/amd-apml/apml_alertl.c b/drivers/misc/amd-apml/apml_alertl.c
 new file mode 100644
-index 000000000..0ea3562f3
+index 000000000000..0ea3562f3f4d
 --- /dev/null
 +++ b/drivers/misc/amd-apml/apml_alertl.c
 @@ -0,0 +1,394 @@
@@ -539,7 +539,7 @@ index 000000000..0ea3562f3
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/amd-apml/apml_alertl.h b/drivers/misc/amd-apml/apml_alertl.h
 new file mode 100644
-index 000000000..db470b178
+index 000000000000..db470b1784ea
 --- /dev/null
 +++ b/drivers/misc/amd-apml/apml_alertl.h
 @@ -0,0 +1,17 @@
@@ -562,7 +562,7 @@ index 000000000..db470b178
 +#endif /*_AMD_APML_ALERT_L__*/
 diff --git a/drivers/misc/amd-apml/apml_common.c b/drivers/misc/amd-apml/apml_common.c
 new file mode 100644
-index 000000000..2ef0033bb
+index 000000000000..2ef0033bb21e
 --- /dev/null
 +++ b/drivers/misc/amd-apml/apml_common.c
 @@ -0,0 +1,208 @@
@@ -776,7 +776,7 @@ index 000000000..2ef0033bb
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/amd-apml/apml_common.h b/drivers/misc/amd-apml/apml_common.h
 new file mode 100644
-index 000000000..4bbea5122
+index 000000000000..4bbea5122a8a
 --- /dev/null
 +++ b/drivers/misc/amd-apml/apml_common.h
 @@ -0,0 +1,56 @@
@@ -838,7 +838,7 @@ index 000000000..4bbea5122
 +#endif /* _AMD_APML_COMMON_H_ */
 diff --git a/drivers/misc/amd-apml/apml_sbtsi.c b/drivers/misc/amd-apml/apml_sbtsi.c
 new file mode 100644
-index 000000000..ef8465ab8
+index 000000000000..ef8465ab897b
 --- /dev/null
 +++ b/drivers/misc/amd-apml/apml_sbtsi.c
 @@ -0,0 +1,605 @@
@@ -1449,7 +1449,7 @@ index 000000000..ef8465ab8
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/amd-apml/sbrmi-common.c b/drivers/misc/amd-apml/sbrmi-common.c
 new file mode 100644
-index 000000000..a8610944e
+index 000000000000..a8610944e8ea
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi-common.c
 @@ -0,0 +1,678 @@
@@ -2133,7 +2133,7 @@ index 000000000..a8610944e
 +}
 diff --git a/drivers/misc/amd-apml/sbrmi-common.h b/drivers/misc/amd-apml/sbrmi-common.h
 new file mode 100644
-index 000000000..513afbbc7
+index 000000000000..513afbbc7fff
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi-common.h
 @@ -0,0 +1,38 @@
@@ -2177,7 +2177,7 @@ index 000000000..513afbbc7
 +#endif /*_AMD_APML_SBRMI_H_*/
 diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
 new file mode 100644
-index 000000000..f68cd4111
+index 000000000000..f68cd4111f09
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi.c
 @@ -0,0 +1,1042 @@
@@ -3225,7 +3225,7 @@ index 000000000..f68cd4111
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/amd-apml/sbtsi-common.h b/drivers/misc/amd-apml/sbtsi-common.h
 new file mode 100644
-index 000000000..f05ca7965
+index 000000000000..f05ca796547d
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbtsi-common.h
 @@ -0,0 +1,39 @@
@@ -3270,7 +3270,7 @@ index 000000000..f05ca7965
 +#endif
 diff --git a/include/uapi/linux/amd-apml.h b/include/uapi/linux/amd-apml.h
 new file mode 100644
-index 000000000..4a6bd7057
+index 000000000000..4a6bd7057b4b
 --- /dev/null
 +++ b/include/uapi/linux/amd-apml.h
 @@ -0,0 +1,80 @@
@@ -3355,5 +3355,5 @@ index 000000000..4a6bd7057
 +
 +#endif /*_AMD_APML_H_*/
 -- 
-2.47.3
+2.53.0-Meta
 

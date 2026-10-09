@@ -1,4 +1,4 @@
-From 11bf3fd3d65b2062ff12e4a3c4bf0983c273b62d Mon Sep 17 00:00:00 2001
+From f2aeae8a096ece57733f19bdfd26dad9c5efa6a0 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 10 Sep 2026 02:17:43 -0500
 Subject: [PATCH] amd-event-log: add runtime AFID integration

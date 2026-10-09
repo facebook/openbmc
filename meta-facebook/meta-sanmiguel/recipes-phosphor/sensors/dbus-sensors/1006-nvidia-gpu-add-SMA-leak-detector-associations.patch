@@ -1,7 +1,7 @@
-From da096a27fc4f61b3fb4c2e8bf2e6870af64fe4d6 Mon Sep 17 00:00:00 2001
+From 2b365633123b0b4b7e7fe4f040058538e194ac1e Mon Sep 17 00:00:00 2001
 From: Eric Liu <liuer@nvidia.com>
 Date: Wed, 2 Sep 2026 21:50:34 +0900
-Subject: [PATCH 3/7] nvidia-gpu: add SMA leak detector associations
+Subject: [PATCH] nvidia-gpu: add SMA leak detector associations
 
 Publish the association naming the inventory item each SMA leak
 detector monitors, and an object manager so the mapper indexes the
@@ -69,7 +69,7 @@ Signed-off-by: Eric Liu <liuer@nvidia.com>
  3 files changed, 51 insertions(+)
 
 diff --git a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
-index 17cd36e8..5c2d76c8 100644
+index 17cd36e..5c2d76c 100644
 --- a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
 +++ b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
 @@ -43,6 +43,7 @@ int main()
@@ -81,7 +81,7 @@ index 17cd36e8..5c2d76c8 100644
  
      mctp::MctpRequester mctpRequester(io);
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-index 12f7089c..0ef5fb91 100644
+index 12f7089..0ef5fb9 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 @@ -111,6 +111,12 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
@@ -145,7 +145,7 @@ index 12f7089c..0ef5fb91 100644
  
  void NvidiaSmaLeakSensor::checkThresholds()
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
-index 5bda4579..4bc9cd9d 100644
+index 5bda457..4bc9cd9 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
 @@ -12,6 +12,7 @@
@@ -181,5 +181,5 @@ index 5bda4579..4bc9cd9d 100644
      {
          Normal,
 -- 
-2.53.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 5aedb36a17b2e1aa0f6018ca86b9f5ef88665aca Mon Sep 17 00:00:00 2001
+From a26309c29e8ddea1b96752b72e97639d7a8845cd Mon Sep 17 00:00:00 2001
 From: "Sue.Wang" <Sue.Wang@quantatw.com>
 Date: Thu, 17 Sep 2026 16:51:54 +0800
 Subject: [PATCH] Add 200ms delay before creating vt status log
@@ -33,5 +33,5 @@ index 87369e9..45356a5 100644
      }
  
 -- 
-2.34.1
+2.53.0-Meta
 

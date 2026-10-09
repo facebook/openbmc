@@ -1,4 +1,4 @@
-From ccbce254d293d4b42e20ededfa6a8d2697ffd111 Mon Sep 17 00:00:00 2001
+From b8b348575236de24093ba5085d122841973ba7ef Mon Sep 17 00:00:00 2001
 From: Abhishek R <abhishek.ramireddygarireddy@arm.com>
 Date: Thu, 6 Aug 2026 14:47:48 +0000
 Subject: [PATCH] oem/arm: support UINT64 boot progress events
@@ -26,7 +26,7 @@ Signed-off-by: Abhishek R <abhishek.ramireddygarireddy@arm.com>
  2 files changed, 21 insertions(+), 6 deletions(-)
 
 diff --git a/oem/arm/event/oem_event_manager.cpp b/oem/arm/event/oem_event_manager.cpp
-index 6f27efd..b408181 100644
+index 266d319..85dc0da 100644
 --- a/oem/arm/event/oem_event_manager.cpp
 +++ b/oem/arm/event/oem_event_manager.cpp
 @@ -38,9 +38,13 @@ constexpr auto bootProgressProperty = "BootProgress";

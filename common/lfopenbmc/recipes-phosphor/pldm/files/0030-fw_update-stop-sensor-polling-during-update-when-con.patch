@@ -1,4 +1,4 @@
-From 136dd32c01ead3ce429aaa4bc5782f6a4891d8ca Mon Sep 17 00:00:00 2001
+From e610cb6701e2b2c983dc58eef1982157a2a047b6 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Mon, 17 Aug 2026 20:23:51 +0800
 Subject: [PATCH] fw_update: stop sensor polling during update when configured
@@ -731,10 +731,10 @@ index 7144618..29ce77b 100644
 +    EXPECT_FALSE(manager.getCondition("BIC").stopSensorPolling);
  }
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index e9ba33f..5187522 100644
+index b10ccfa..7268c3a 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
-@@ -549,6 +549,14 @@ void UpdateManager::activatePackage()
+@@ -543,6 +543,14 @@ void UpdateManager::activatePackage()
          return;
      }
  
@@ -749,7 +749,7 @@ index e9ba33f..5187522 100644
      if (!preConditionPath.empty())
      {
          SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
-@@ -595,6 +603,14 @@ void UpdateManager::completeUpdate(bool status)
+@@ -589,6 +597,14 @@ void UpdateManager::completeUpdate(bool status)
          return;
      }
  
@@ -765,7 +765,7 @@ index e9ba33f..5187522 100644
      auto endTime = std::chrono::steady_clock::now();
      auto dur =
 diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
-index d58eb48..9db5feb 100644
+index db57d41..03b35cc 100644
 --- a/fw-update/update_manager.hpp
 +++ b/fw-update/update_manager.hpp
 @@ -42,6 +42,15 @@ using DeviceUpdaterInfo =
@@ -823,7 +823,7 @@ index d58eb48..9db5feb 100644
      /** @brief Handle PLDM request for the commands in the FW update
       *         specification
       *
-@@ -250,7 +268,23 @@ class UpdateManager : public UpdateManagerBase
+@@ -257,7 +275,23 @@ class UpdateManager : public UpdateManagerBase
      std::string preConditionPath;
      std::string postConditionPath;
      std::string conditionArg;

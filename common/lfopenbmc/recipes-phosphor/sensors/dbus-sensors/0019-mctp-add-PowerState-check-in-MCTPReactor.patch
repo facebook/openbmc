@@ -1,4 +1,4 @@
-From 2a5906b8eafc015d8ee38183e1afb3275c98f2ef Mon Sep 17 00:00:00 2001
+From 0be025d602351b71f526a414e3b9ae7c65742460 Mon Sep 17 00:00:00 2001
 From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
 Date: Fri, 5 Jun 2026 08:12:59 +0000
 Subject: [PATCH] mctp: add PowerState check in MCTPReactor
@@ -32,10 +32,10 @@ Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
  5 files changed, 57 insertions(+), 9 deletions(-)
 
 diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
-index c710dae..0186cd3 100644
+index 8a939b1..0cdb91a 100644
 --- a/src/mctp/MCTPEndpoint.cpp
 +++ b/src/mctp/MCTPEndpoint.cpp
-@@ -48,8 +48,10 @@ static constexpr const char* mctpdEndpointControlInterface =
+@@ -50,8 +50,10 @@ static constexpr const char* mctpdEndpointControlInterface =
  
  MCTPDDevice::MCTPDDevice(
      const std::shared_ptr<sdbusplus::asio::connection>& connection,
@@ -48,7 +48,7 @@ index c710dae..0186cd3 100644
  {}
  
  void MCTPDDevice::onEndpointInterfacesRemoved(
-@@ -457,9 +459,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
+@@ -459,9 +461,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
          throw std::invalid_argument("Bad bus index");
      }
  
@@ -61,7 +61,7 @@ index c710dae..0186cd3 100644
      }
      catch (const MCTPException& ex)
      {
-@@ -512,9 +516,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
+@@ -514,9 +518,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
          throw std::invalid_argument("Bad bus index");
      }
  
@@ -171,7 +171,7 @@ index 9548d53..ddde631 100644
          "Attempting to setup up MCTP endpoint for device at [ {MCTP_DEVICE} ]",
          "MCTP_DEVICE", dev->describe());
 diff --git a/src/mctp/MCTPReactorMain.cpp b/src/mctp/MCTPReactorMain.cpp
-index ad2802d..db7fee0 100644
+index 9b7f930..a206a20 100644
 --- a/src/mctp/MCTPReactorMain.cpp
 +++ b/src/mctp/MCTPReactorMain.cpp
 @@ -251,6 +251,8 @@ int main()

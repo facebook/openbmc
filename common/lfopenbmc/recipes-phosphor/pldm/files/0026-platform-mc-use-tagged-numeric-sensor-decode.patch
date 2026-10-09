@@ -1,4 +1,4 @@
-From 5f9d7f40780212b1fa8a333ca95df0b7a107379d Mon Sep 17 00:00:00 2001
+From e972f9cd32953196b966c13b51cfe8a94d21f6ab Mon Sep 17 00:00:00 2001
 From: Abhishek R <abhishek.ramireddygarireddy@arm.com>
 Date: Thu, 6 Aug 2026 14:48:45 +0000
 Subject: [PATCH] platform-mc: use tagged numeric sensor decode

@@ -1,4 +1,4 @@
-From 403748a5634a07a55d1a494452814d8608b10639 Mon Sep 17 00:00:00 2001
+From fe1d1decf43567bc66a7606c92cf960d57bf9c61 Mon Sep 17 00:00:00 2001
 From: Unive Tien <unive.tien.wiwynn@gmail.com>
 Date: Fri, 7 Aug 2026 06:29:45 +0000
 Subject: [PATCH] oem-meta: don't drop OEM event during MCTP endpoint

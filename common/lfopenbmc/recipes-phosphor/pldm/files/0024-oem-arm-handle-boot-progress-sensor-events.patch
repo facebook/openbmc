@@ -1,4 +1,4 @@
-From 046f21128e38c9e8194e07824b24a281e5b09443 Mon Sep 17 00:00:00 2001
+From 479068798a4966868cfcaf18f8dafc2a6db3c275 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 9 Jun 2026 21:59:35 +0530
 Subject: [PATCH] oem: arm: handle boot progress sensor events

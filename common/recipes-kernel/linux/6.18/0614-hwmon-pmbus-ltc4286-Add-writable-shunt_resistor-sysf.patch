@@ -1,4 +1,4 @@
-From 19d311f8054e740ab504377348b14683a08b4ec1 Mon Sep 17 00:00:00 2001
+From ac62da2603ad65acb883fba2498d994d11c03be8 Mon Sep 17 00:00:00 2001
 From: Carl Lee <carl.lee@amd.com>
 Date: Tue, 1 Sep 2026 17:29:05 +0800
 Subject: [PATCH] hwmon: (pmbus/ltc4286) Add writable shunt_resistor sysfs

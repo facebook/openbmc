@@ -1,4 +1,4 @@
-From fd4ec56a8931027bb1187f210a7b55e5ec70ee60 Mon Sep 17 00:00:00 2001
+From a2e1a1ca249e56677f0671bca5023e8dfeb843ff Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Wed, 7 Oct 2026 20:28:04 -0700
 Subject: [PATCH] ManagerDiagnosticData: report Oem/Meta/Metrics from

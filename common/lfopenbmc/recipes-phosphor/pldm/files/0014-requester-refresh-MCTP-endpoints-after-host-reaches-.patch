@@ -1,4 +1,4 @@
-From 2f4204c0810893c553e0a4ff4f82d02db6b8326a Mon Sep 17 00:00:00 2001
+From 4da500b80fcf034129056cd1b381553e9514492c Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
 Subject: [PATCH] requester: refresh MCTP endpoints after host reaches running
@@ -24,15 +24,15 @@ https://gerrit.openbmc.org/c/openbmc/pldm/+/88403
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
- requester/mctp_endpoint_discovery.cpp | 144 ++++++++++++++++++++++++++
+ requester/mctp_endpoint_discovery.cpp | 145 ++++++++++++++++++++++++++
  requester/mctp_endpoint_discovery.hpp |  14 +++
- 2 files changed, 158 insertions(+)
+ 2 files changed, 159 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 2a019c6..d1f4ccf 100644
+index 4227f34..814b578 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -32,6 +32,12 @@ MctpDiscovery::MctpDiscovery(
+@@ -40,6 +40,12 @@ MctpDiscovery::MctpDiscovery(
      mctpEndpointPropChangedSignal(
          bus, propertiesChangedNamespace(MCTPPath, MCTPInterfaceCC),
          [this](sdbusplus::message_t& msg) { this->propertiesChangedCb(msg); }),
@@ -44,8 +44,8 @@ index 2a019c6..d1f4ccf 100644
 +        [this](sdbusplus::message_t& msg) { this->hostStateChangedCb(msg); }),
      handlers(list)
  {
-     std::map<MctpInfo, Availability> currentMctpInfoMap;
-@@ -369,6 +375,144 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+     std::map<MctpInfo, std::pair<dbus::ObjectPath, Availability>>
+@@ -362,6 +368,145 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
      }
  }
  
@@ -116,8 +116,9 @@ index 2a019c6..d1f4ccf 100644
 +{
 +    MctpInfos matchedInfos;
 +
-+    for (const auto& mctpInfo : existingMctpInfos)
++    for (const auto& endpoint : existingMctpInfos)
 +    {
++        const auto& mctpInfo = endpoint.second;
 +        const auto& associatedPath = std::get<5>(mctpInfo);
 +        if (!associatedPath.has_value())
 +        {
@@ -189,12 +190,12 @@ index 2a019c6..d1f4ccf 100644
 +
  void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
  {
-     MctpInfos addedInfos;
+     MctpInfosWithPath addedInfosWithPath;
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 5b33e13..a9aadb2 100644
+index a5611b5..6f6879e 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -91,6 +91,9 @@ class MctpDiscovery
+@@ -102,6 +102,9 @@ class MctpDiscovery
      /** @brief Used to watch for new MCTP endpoints */
      sdbusplus::match mctpEndpointPropChangedSignal;
  
@@ -204,7 +205,7 @@ index 5b33e13..a9aadb2 100644
      /** @brief List of handlers need to notify when new MCTP
       * Endpoint is Added/Removed */
      std::vector<MctpDiscoveryHandlerIntf*> handlers;
-@@ -105,6 +108,17 @@ class MctpDiscovery
+@@ -116,6 +119,17 @@ class MctpDiscovery
       */
      void propertiesChangedCb(sdbusplus::message_t& msg);
  

@@ -1,8 +1,7 @@
-From 1f59aa65f178961662b492471483721c62d70f7e Mon Sep 17 00:00:00 2001
+From c8babcfa3e34865064fff97f14e8d95bb3da019d Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 22 Sep 2026 20:47:21 +0800
-Subject: [PATCH 5/7] nvidia-gpu: fix first-set threshold drift in SMA leak
- sensor
+Subject: [PATCH] nvidia-gpu: fix first-set threshold drift in SMA leak sensor
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -38,7 +37,7 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  2 files changed, 15 insertions(+), 9 deletions(-)
 
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-index 317b7f29..3e4d0a03 100644
+index 317b7f2..3e4d0a0 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 @@ -442,7 +442,13 @@ void NvidiaSmaLeakSensor::updateThresholds(
@@ -57,7 +56,7 @@ index 317b7f29..3e4d0a03 100644
  
      std::ranges::copy(reported, deviceThresholds.begin());
 diff --git a/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp b/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
-index 4b417b52..a12048d3 100644
+index 4b417b5..a12048d 100644
 --- a/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
 +++ b/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
 @@ -535,7 +535,7 @@ TEST_F(NvidiaSmaLeakSensorTest, WriteReachesTheDeviceInWireOrder)
@@ -133,5 +132,5 @@ index 4b417b52..a12048d3 100644
  
  TEST_F(NvidiaSmaLeakSensorTest, FailedReadingDoesNotWedgeTheGate)
 -- 
-2.53.0
+2.53.0-Meta
 

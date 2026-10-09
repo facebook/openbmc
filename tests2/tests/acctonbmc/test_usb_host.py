@@ -28,7 +28,7 @@ from utils.test_utils import qemu_check
 class USBHostDeviceTest(BaseUSBHostTest, unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT"])
+        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT", "WEDGE800BNHP", "WEDGE800CNHP"])
         super().setUpClass()
 
     def set_usb_devices(self):

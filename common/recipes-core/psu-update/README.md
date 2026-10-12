@@ -385,23 +385,32 @@ than one per vendor. Shelf and slot ranges above are ventura2's
 ## `firmware-upgrade` (oobit path)
 
 `common/recipes-core/modbus-device-util/files/firmware-upgrade` is the entry
-point oobit drives, and it changed shape too:
+point oobit drives, through `firmware-upgrade@<instance>.service`, and it
+changed shape too:
 
-* It now takes **one** device at a time instead of a list of addresses.
-* The second argument is a location in `<position>_<device number>` format
-  rather than a raw unique device address. On RMCv1, `position` *is* the unique
-  device address and `device_number` is the literal string `NA`; RMCv2 will use
-  shelf (100+) and slot. Anything other than `NA` is currently rejected with
-  "This upgrade is not supported yet".
-* It still resolves the manufacturer through `get-manufacturer` and still
-  invokes the per-vendor scripts under
-  `flock /tmp/modbus_dynamo_solitonbeam.lock`.
-
-Heads up: the comment in `firmware-upgrade` says RMCv2 positions start at 100,
-while `modbus-update.py` treats position >= 100 as *legacy ORv3 on rackmon* and
-positions 1..N as phosphor-modbus (matching ventura2's `allowed-devices.json`,
-which numbers PSU/BBU shelves 1-4 and CBU shelves 1-10). The two need to agree
-before the non-`NA` branch of `firmware-upgrade` is turned on.
+* **One device per request.** The service instance is
+  `<device type>:<location>:<component>:<uuid>`, e.g.
+  `psu:1024_NA:NA:<uuid>` or `rpu:100_NA:HEX:<uuid>`, instead of a
+  hyphen-separated list of addresses. The unit passes the instance straight
+  through (`ExecStart=.../firmware-upgrade %i`) and the script splits it;
+  `get-firmware-upgrade-status` takes the same string.
+* **The location is `<position>_<device number>`** rather than a raw unique
+  device address. On RMCv1, `position` *is* the unique device address and
+  `device_number` is the literal string `NA`; otherwise it is shelf and slot.
+* **The component** picks a sub-component of a device that has more than one
+  firmware (`PLC` or `HEX` on an RPU, the AALCv2 components on an RPU2), and
+  is `NA` for everything else.
+* **The firmware image is `/tmp/firmware-<device type>-<location>-<component>`**,
+  e.g. `/tmp/firmware-psu-1024_NA-NA` or `/tmp/firmware-rpu-100_NA-HEX`. The
+  component was added to the name so that two components of one device can be
+  staged at the same time.
+* **It is a thin wrapper around `modbus-update.py`.** A location with `NA` and a
+  position above 255 is a unique device address and becomes `--address`;
+  anything else becomes `--name <TYPE>_<position>[_<device number>]`, and
+  `modbus-update.py` decides from the position whether that is rackmon (100+)
+  or phosphor-modbus. `get-manufacturer`, the per-vendor dispatch and the
+  `flock` are gone: `modbus-update.py` detects the vendor and takes the modbus
+  lock itself.
 
 ---
 

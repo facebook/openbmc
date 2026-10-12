@@ -194,6 +194,7 @@ extern "C" {
 
 #define SCC_STBY_BUS    2
 #define SCC_STBY_ADDR   0x80
+#define SCC_STBY_LOCAL_BUS   14   // the real I2C bus number BMC can access directly
 
 #define EXPANDER_NETFN      0x06
 #define EXPANDER_CMD        0x52
@@ -202,6 +203,7 @@ extern "C" {
 #define INPUT_FAULT_BIT BIT_MASK(13)
 #define OUT_STATUS_BIT BIT_MASK(15)
 #define STATUS_OUT_VOUT_UV_WARN BIT_MASK(5)
+#define STATUS_WORD_CML_BIT  BIT_MASK(1)
 #define MPS_OTHER_FAULT_MASK \
   (BIT_MASK(2)  |  /* OT */ \
    BIT_MASK(4)  |  /* IOUT_OC_FAULT */ \
@@ -218,6 +220,26 @@ extern "C" {
 #define PAL_ERR_CODE_BMC_FILE_FAIL    (1 << 1)  // BMC local error-code file read failed
 #define CPU_VR_UNR_KEY "cpu_vr_unr"
 #define FSC_FAN_MODE_EVENT_KEY "fan_mode_event"
+
+
+#define MPS_STATUS_WORD_FAULT_WARN_MASK \
+  (BIT_MASK(0)  |  /* SLAVE_FAULT */ \
+   BIT_MASK(1)  |  /* CML_FAULT */ \
+   BIT_MASK(2)  |  /* TEMPERATURE */ \
+   BIT_MASK(3)  |  /* VIN_UV_FAULT */ \
+   BIT_MASK(4)  |  /* IOUT_OC_FAULT */ \
+   BIT_MASK(12) |  /* FET */ \
+   BIT_MASK(13) |  /* INPUT */ \
+   BIT_MASK(14))   /* IOUT_POUT */
+
+#define TI_STATUS_WORD_FAULT_WARN_MASK \
+  (BIT_MASK(1)  |  /* CML_ERR */ \
+   BIT_MASK(2)  |  /* STATUS_TEMP */ \
+   BIT_MASK(3)  |  /* VIN_UV_FLT */ \
+   BIT_MASK(12) |  /* MFR_STATUS */ \
+   BIT_MASK(13) |  /* INPUT_STATUS */ \
+   BIT_MASK(14) |  /* IOUT_STATUS */ \
+   BIT_MASK(15))   /* OUT_STATUS */
 
 typedef enum {
   STATUS_LED_OFF,
@@ -343,7 +365,7 @@ enum {
   PVCCINFAON_CPU0 = 2,
   PVCCFA_EHV_CPU0 = 3,
   PVCCD_HV_CPU = 4,
-  P1V05_PCH_STB = 5,
+  P1V05_PCH_STBY = 5,
   P1V8_STBY = 6,
   P5V_STBY = 7,
   P3V3_STBY = 8,
@@ -596,10 +618,10 @@ enum NIC_P12V_STATUS {
 // PMBus control
 enum {
   WRITE_BYTE = 0x00,
-  BLOCK_READ_1BYTE,
-  BLOCK_READ_2BYTE,
-  BLOCK_READ_3BYTE,
-  BLOCK_READ_4BYTE,
+  BLOCK_READ_1BYTE = 0x01,
+  BLOCK_READ_2BYTE = 0x02,
+  BLOCK_READ_3BYTE = 0x03,
+  BLOCK_READ_4BYTE = 0x04,
 };
 
 // PMBus register
@@ -666,6 +688,12 @@ typedef struct {
   uint8_t pmbus_bus;
   uint8_t pmbus_addr;
   int last_gpio_value;
+  bool cml_alert_masked;         /*set true if CML is masked at IC level */
+  bool is_alert_pin;             /*true: ALT#/SMBA# pin, logged as "PWR warning". false: FLT(B) pin, logged as "PWR fault" */
+  bool use_local_i2c;            /*true: pmbus_bus is a direct local I2C bus number. false: pmbus_bus goes through the IPMB expander */
+  uint8_t location;
+  const char *coupled_src_name;  /*name of another source on the same physical eFuse, or NULL if none*/
+  size_t coupled_src_idx;
 } power_fault_source_t;
 
 typedef struct {
@@ -754,7 +782,10 @@ int pal_clear_mrc_warning(uint8_t slot);
 int pal_nic_poweroff_action();
 int pal_nic_poweron_action();
 int pal_reset_nic();
-mfr_id_t pal_detect_efuse_mfr_id(uint8_t bus, uint8_t addr);
+mfr_id_t pal_detect_efuse_mfr_id(uint8_t fru, uint8_t bus, uint8_t addr);
+void pal_clear_efuse_mfr_id_cache(uint8_t fru, uint8_t addr);
+mfr_id_t pal_detect_efuse_mfr_id_local(uint8_t bus, uint8_t addr);
+int pal_efuse_local_bus_for(uint8_t exp_bus);
 const char *pal_get_mfr_name(mfr_id_t mfr);
 int pal_read_pmbus_byte_from_exp(uint8_t bus, uint8_t addr, uint8_t cmd, uint8_t rlen, uint8_t *data);
 uint8_t pal_detect_nic_pmon_module(void);

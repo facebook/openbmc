@@ -52,6 +52,7 @@
 #define SSD1_P12V_EN_BIT                        6
 #define SSD0_P12V_EN_BIT                        7
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define PMBUS_STATUS_REG_MAX                    9
 #endif
 
 
@@ -467,6 +468,7 @@ scc_stby_power_monitor() {
         scc_startup_clear_done = false;
         scc_flag_unlock(__func__);
       }
+      pal_clear_efuse_mfr_id_cache(FRU_SCC, SCC_STBY_ADDR);
     }
 #endif
 
@@ -549,14 +551,47 @@ read_status_word(uint8_t bus, uint8_t addr, uint16_t *status_word)
 }
 
 static int
+clear_faults_by_i2c(uint8_t bus, uint8_t addr)
+{
+  int fd = -1, ret = -1;
+  uint8_t retry = MAX_RETRY;
+  uint8_t tbuf[1] = {PMBUS_CLEAR_FAULTS};
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open I2C bus=%u addr=0x%02X", __func__, bus, addr);
+    return -1;
+  }
+
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, sizeof(tbuf), NULL, 0);
+  }
+
+  close(fd);
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: CLEAR_FAULTS failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return -1;
+  }
+
+  return 0;
+}
+
+
+static int
 clear_faults(uint8_t bus, uint8_t addr)
 {
   uint8_t txbuf[4] = {0};
   uint8_t rxbuf[4] = {0};
   uint8_t rxlen = 0;
   uint8_t bus_sel = bus * 2 + 1;
+  int local_bus = pal_efuse_local_bus_for(bus);
   int ret;
   int retry;
+
+  if (local_bus >= 0 && clear_faults_by_i2c((uint8_t)local_bus, addr) == 0) {
+    return 0;
+  }
 
   txbuf[0] = bus_sel;
   txbuf[1] = addr;
@@ -813,7 +848,7 @@ scc_stby_uv_fault_check_and_config_setting(void)
 
   sleep(SCC_STARTUP_DELAY_S);
 
-  mfr = pal_detect_efuse_mfr_id(SCC_STBY_BUS, SCC_STBY_ADDR);
+  mfr = pal_detect_efuse_mfr_id(FRU_SCC, SCC_STBY_BUS, SCC_STBY_ADDR);
 
   if (init_scc_efuse_thresholds(mfr, SCC_STBY_BUS, SCC_STBY_ADDR) < 0) {
     syslog(LOG_WARNING,"%s: %s failed to init eFuse thresholds, continue UV fault check", __func__, comp);
@@ -952,6 +987,9 @@ static power_fault_source_t power_fault_sources[] = {
     .pmbus_bus = 9,
     .pmbus_addr = 0x8A,
     .last_gpio_value = GPIO_VALUE_INVALID,
+    .cml_alert_masked = true,
+    .is_alert_pin = true,
+    .use_local_i2c = true,
   },
   {  //index 1
     .name = "E1S_1_12VEFUSE_FLT_R_N",         /* A: E1SA_1_12VEFUSE_FLT_R_N / B: E1SB_1_12VEFUSE_FLT_R_N */
@@ -1013,17 +1051,34 @@ static power_fault_source_t power_fault_sources[] = {
     .pmbus_addr = 0,
     .last_gpio_value = GPIO_VALUE_INVALID,
   },
-  {  //index 7
-    .name = "ALRT_P12V_STBY_SCC_N",
-    .gpio_id = GPIO_ALRT_P12V_STBY_SCC_N,
+  {  //index 7 -- FLT(B) pin, processed before its coupled ALT# (index 8)
+     //so handle_pmbus_fault_assert()'s result can gate that one
+    .name = "FM_HSC_FAULT_N",
+    .gpio_id = GPIO_FM_HSC_FAULT_N,
     .gpio_shadow_name = NULL,
     .type = PMBUS,
     .active_low = true,
     .pmbus_bus = 2,                           /*expander bus*/
     .pmbus_addr = 0x80,
     .last_gpio_value = GPIO_VALUE_INVALID,
+    .use_local_i2c = true,
+    .location = FRU_SCC,
   },
   {  //index 8
+    .name = "ALRT_P12V_STBY_SCC_N",
+    .gpio_id = GPIO_ALRT_P12V_STBY_SCC_N,
+    .gpio_shadow_name = NULL,
+    .type = PMBUS,
+    .active_low = true,
+    .pmbus_bus = 2,                            /*expander bus*/
+    .pmbus_addr = 0x80,
+    .last_gpio_value = GPIO_VALUE_INVALID,
+    .is_alert_pin = true,
+    .coupled_src_name = "FM_HSC_FAULT_N",
+    .use_local_i2c = true,
+    .location = FRU_SCC,
+  },
+  {  //index 9
     .name = "P3V3_STBY_PG_R",                 /* A: P3V3_STBY_A_PG_R / B: P3V3_STBY_B_PG_R */
     .gpio_id = GPIO_P3V3_STBY_PG_R,
     .gpio_shadow_name = NULL,
@@ -1033,7 +1088,7 @@ static power_fault_source_t power_fault_sources[] = {
     .pmbus_addr = 0,
     .last_gpio_value = GPIO_VALUE_INVALID,
   },
-  {  //index 9
+  {  //index 10
     .name = "P5V_1_PG",                       /* A: P5V_A_1_PG / B: P5V_B_1_PG */
     .gpio_id = GPIO_P5V_1_PG,
     .gpio_shadow_name = NULL,
@@ -1043,7 +1098,7 @@ static power_fault_source_t power_fault_sources[] = {
     .pmbus_addr = 0,
     .last_gpio_value = GPIO_VALUE_INVALID,
   },
- {  //index 10
+ {  //index 11
     .name = "P5V_2_PG",                       /* A: P5V_A_2_PG / B: P5V_B_2_PG */
     .gpio_id = GPIO_P5V_2_PG,
     .gpio_shadow_name = NULL,
@@ -1053,7 +1108,7 @@ static power_fault_source_t power_fault_sources[] = {
     .pmbus_addr = 0,
     .last_gpio_value = GPIO_VALUE_INVALID,
   },
-  {  //index 11
+  {  //index 12
     .name = "P5V_3_PG",                       /* A: P5V_A_3_PG / B: P5V_B_3_PG */
     .gpio_id = GPIO_P5V_3_PG,
     .gpio_shadow_name = NULL,
@@ -1063,7 +1118,7 @@ static power_fault_source_t power_fault_sources[] = {
     .pmbus_addr = 0,
     .last_gpio_value = GPIO_VALUE_INVALID,
   },
-  {  //index 12
+  {  //index 13
     .name = "P5V_4_PG",                       /* A: P5V_A_4_PG / B: P5V_B_4_PG */
     .gpio_id = GPIO_P5V_4_PG,
     .gpio_shadow_name = NULL,
@@ -1071,16 +1126,6 @@ static power_fault_source_t power_fault_sources[] = {
     .active_low = true,
     .pmbus_bus = 0,
     .pmbus_addr = 0,
-    .last_gpio_value = GPIO_VALUE_INVALID,
-  },
-  {  //index 13
-    .name = "FM_HSC_FAULT_N",
-    .gpio_id = GPIO_FM_HSC_FAULT_N,
-    .gpio_shadow_name = NULL,
-    .type = NON_PMBUS,
-    .active_low = true,
-    .pmbus_bus = 2,                           /*expander bus*/
-    .pmbus_addr = 0x80,
     .last_gpio_value = GPIO_VALUE_INVALID,
   },
 };
@@ -1094,7 +1139,7 @@ enum {
   PMBUS_STATUS_REG_LIST_INA233,
 };
 
-static const uint8_t pmbus_status_reg_list[][9] = {
+static const uint8_t pmbus_status_reg_list[][PMBUS_STATUS_REG_MAX] = {
   // MPS
   { PMBUS_STATUS_WORD, PMBUS_STATUS_BYTE, PMBUS_STATUS_IOUT, PMBUS_STATUS_INPUT, PMBUS_STATUS_TEMPERATURE,
     PMBUS_STATUS_CML, PMBUS_STATUS_MFR_SPECIFIC},
@@ -1102,7 +1147,6 @@ static const uint8_t pmbus_status_reg_list[][9] = {
   { PMBUS_STATUS_WORD, PMBUS_STATUS_BYTE, PMBUS_STATUS_VOUT, PMBUS_STATUS_IOUT, PMBUS_STATUS_INPUT,
     PMBUS_STATUS_TEMPERATURE, PMBUS_STATUS_CML, PMBUS_STATUS_MFR_SPECIFIC, STATUS_MFR_SPECIFIC_2 },
   //INA233
-    // INA233
   {PMBUS_STATUS_WORD, PMBUS_STATUS_BYTE, PMBUS_STATUS_IOUT, PMBUS_STATUS_INPUT, PMBUS_STATUS_CML, PMBUS_STATUS_MFR_SPECIFIC},
 };
 
@@ -1113,7 +1157,7 @@ read_pmbus_status_reg_by_i2c(uint8_t bus, uint8_t addr, uint8_t reg, uint16_t *s
   uint8_t retry = MAX_RETRY;
   uint8_t tbuf[1] = {0};
   uint8_t rbuf[2] = {0};
-  uint8_t rlen = (reg == PMBUS_STATUS_WORD) ? BLOCK_READ_2BYTE : BLOCK_READ_1BYTE;
+  uint8_t rlen = (reg == PMBUS_STATUS_WORD || reg == STATUS_MFR_SPECIFIC_2) ? BLOCK_READ_2BYTE : BLOCK_READ_1BYTE;
 
   if (status_val == NULL) {
     return -1;
@@ -1138,7 +1182,7 @@ read_pmbus_status_reg_by_i2c(uint8_t bus, uint8_t addr, uint8_t reg, uint16_t *s
   }
 
   if (rlen == 1) {
-    *status_val = ((uint16_t)reg << 8) | rbuf[0];
+    *status_val = rbuf[0];
   } else {
     *status_val = (uint16_t)rbuf[0] | ((uint16_t)rbuf[1] << 8);
   }
@@ -1153,14 +1197,15 @@ read_pmbus_status_reg_by_expander(uint8_t bus, uint8_t addr, uint8_t reg,
   uint8_t txbuf[4] = {0};
   uint8_t rxbuf[2] = {0};
   uint8_t rxlen = 0;
+  uint8_t bus_sel = bus * 2 + 1;
 
   if (status_val == NULL) {
     return -1;
   }
 
-  txbuf[0] = bus;
+  txbuf[0] = bus_sel;
   txbuf[1] = addr;
-  txbuf[2] = (reg == PMBUS_STATUS_WORD) ? BLOCK_READ_2BYTE : BLOCK_READ_1BYTE;
+  txbuf[2] = (reg == PMBUS_STATUS_WORD || reg == STATUS_MFR_SPECIFIC_2) ? BLOCK_READ_2BYTE : BLOCK_READ_1BYTE;
   txbuf[3] = reg;
 
   if (expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD,
@@ -1169,7 +1214,7 @@ read_pmbus_status_reg_by_expander(uint8_t bus, uint8_t addr, uint8_t reg,
   }
 
   if (rxlen == 1) {
-    *status_val = ((uint16_t)reg << 8) | rxbuf[0];
+    *status_val = rxbuf[0];
   } else if (rxlen == 2) {
     *status_val = (uint16_t)rxbuf[0] | ((uint16_t)rxbuf[1] << 8);
   } else {
@@ -1177,6 +1222,18 @@ read_pmbus_status_reg_by_expander(uint8_t bus, uint8_t addr, uint8_t reg,
   }
 
   return 0;
+}
+
+static int
+read_pmbus_status_reg(uint8_t bus, uint8_t addr, uint8_t reg, bool use_local_i2c, uint16_t *status_val)
+{
+  if (use_local_i2c) {
+    int local_bus = pal_efuse_local_bus_for(bus);
+
+    return read_pmbus_status_reg_by_i2c(local_bus >= 0 ? (uint8_t)local_bus : bus, addr, reg, status_val);
+  }
+
+  return read_pmbus_status_reg_by_expander(bus, addr, reg, status_val);
 }
 
 static int
@@ -1305,41 +1362,174 @@ static const uint8_t pmbus_status_reg_list_len[] = {
   [PMBUS_STATUS_REG_LIST_INA233] = 6,
 };
 
+/* handle_pmbus_fault_assert() result codes */
+#define FAULT_ASSERT_PWR_FAULT    0  /* logged "PWR fault:"/"PWR warning:" via the else branch */
+#define FAULT_ASSERT_CML_ONLY     1  /* cml_only branch: cleared, no PWR fault logged */
+#define FAULT_ASSERT_INVALID_ARG (-1)
+
+typedef struct {
+  uint8_t reg;
+  uint16_t fault_mask;
+  uint16_t warning_mask;
+} reg_fault_warn_mask_t;
+
+static const reg_fault_warn_mask_t mps_reg_fault_warn_masks[] = {
+  { PMBUS_STATUS_WORD,
+    BIT_MASK(12) | BIT_MASK(4) | BIT_MASK(3) | BIT_MASK(0),  /* FET, IOUT_OC_FAULT, VIN_UV_FAULT, SLAVE_FAULT */
+    0
+  },
+  { PMBUS_STATUS_IOUT,
+    BIT_MASK(7) | BIT_MASK(6) | BIT_MASK(4),                 /* IOUT_OC_NOR, IOUT_SC_FAULT, IOUT_OC_SS */
+    0
+  },
+  { PMBUS_STATUS_INPUT,
+    BIT_MASK(7) | BIT_MASK(4) | BIT_MASK(2),                 /* VIN_OV_FAULT, VIN_UV_FAULT, IIN_OC_FAULT */
+    BIT_MASK(6) | BIT_MASK(5) | BIT_MASK(1) | BIT_MASK(0)    /* VIN_OV/UV_WARNING, IIN_OC_WARNING, PIN_OP_WARNING */
+  },
+  { PMBUS_STATUS_TEMPERATURE,
+    BIT_MASK(7) | BIT_MASK(0),                                /* OT_FAULT_ANA, OT_FAULT_DIG */
+    BIT_MASK(6)                                               /* OT_WARNING */
+  },
+  { PMBUS_STATUS_MFR_SPECIFIC,                                /* STATUS_FET on MP5998 */
+    BIT_MASK(1) | BIT_MASK(0),                                /* MAX_SS_FAULT, DS_SHORT */
+    0
+  },
+};
+
+static const reg_fault_warn_mask_t ti_reg_fault_warn_masks[] = {
+  { PMBUS_STATUS_WORD,
+    BIT_MASK(3),                                               /* VIN_UV_FLT */
+    0
+  },
+  { PMBUS_STATUS_VOUT,                                        /* STATUS_OUT on TI */
+    0,
+    BIT_MASK(5)                                               /* VOUT_UV_WARN */
+  },
+  { PMBUS_STATUS_INPUT,
+    BIT_MASK(7) | BIT_MASK(4) | BIT_MASK(2),                  /* VIN_OV_FLT, VIN_UV_FLT, OC_FLT */
+    BIT_MASK(6) | BIT_MASK(5) | BIT_MASK(1) | BIT_MASK(0)     /* VIN_OV/UV_WARN, OC_WARN, IN_OP_WARN */
+  },
+  { PMBUS_STATUS_TEMPERATURE,
+    BIT_MASK(7),                                              /* OT_FLT */
+    BIT_MASK(6)                                               /* OT_WARN */
+  },
+  { PMBUS_STATUS_MFR_SPECIFIC,
+    BIT_MASK(7) | BIT_MASK(6) | BIT_MASK(5) |                 /* FET_FAULT_GD/GS/DS */
+    BIT_MASK(3) | BIT_MASK(2) |                               /* SOA_FLT, EXT_FLT */
+    BIT_MASK(1) | BIT_MASK(0),                                /* CMP2_FLT, CMP1_FLT -- see comment above */
+    0
+  },
+  { STATUS_MFR_SPECIFIC_2,
+    BIT_MASK(12) | BIT_MASK(11) | BIT_MASK(4),                /* SPFAIL, SC_FLT, VIN_CABLE_FLT */
+    BIT_MASK(10) | BIT_MASK(9) | BIT_MASK(8)                  /* OC_DET, EIN_OF_WARN, VIN_TRAN */
+  },
+};
+
+static bool
+get_reg_fault_warn_mask(mfr_id_t mfr_id, uint8_t reg, uint16_t *fault_mask, uint16_t *warning_mask)
+{
+  const reg_fault_warn_mask_t *table;
+  size_t table_len;
+  size_t i;
+
+  if (mfr_id == MFR_TI) {
+    table = ti_reg_fault_warn_masks;
+    table_len = ARRAY_SIZE(ti_reg_fault_warn_masks);
+  } else if (mfr_id == MFR_MPS) {
+    table = mps_reg_fault_warn_masks;
+    table_len = ARRAY_SIZE(mps_reg_fault_warn_masks);
+  } else {
+    return false;
+  }
+
+  for (i = 0; i < table_len; i++) {
+    if (table[i].reg == reg) {
+      *fault_mask = table[i].fault_mask;
+      *warning_mask = table[i].warning_mask;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static const char *
+pmbus_reg_name(mfr_id_t mfr_id, uint8_t reg)
+{
+  switch (reg) {
+  case PMBUS_STATUS_WORD: return "STATUS_WORD";
+  case PMBUS_STATUS_BYTE: return "STATUS_BYTE";
+  case PMBUS_STATUS_VOUT: return (mfr_id == MFR_TI) ? "STATUS_OUT" : "STATUS_VOUT";
+  case PMBUS_STATUS_IOUT: return "STATUS_IOUT";
+  case PMBUS_STATUS_INPUT: return "STATUS_INPUT";
+  case PMBUS_STATUS_TEMPERATURE: return (mfr_id == MFR_TI) ? "STATUS_TEMP" : "STATUS_TEMPERATURE";
+  case PMBUS_STATUS_CML: return "STATUS_CML";
+  case PMBUS_STATUS_MFR_SPECIFIC: return (mfr_id == MFR_MPS) ? "STATUS_FET" : "STATUS_MFR_SPECIFIC";
+  case STATUS_MFR_SPECIFIC_2: return "STATUS_MFR_SPECIFIC_2";
+  default: return "STATUS_UNKNOWN";
+  }
+}
+
+/* Longest name from pmbus_reg_name() ("STATUS_MFR_SPECIFIC_2") plus a
+ * 1-column gap, so the "(XXh):" column lines up across all registers. */
+#define PMBUS_REG_NAME_WIDTH 22
+
+/* STATUS_WORD(79h) and STATUS_MFR_SPECIFIC_2(F3h) are the only 2-byte
+ * PMBus status registers in use here; everything else is 1 byte. */
+static inline int
+pmbus_reg_width(uint8_t reg)
+{
+  return (reg == PMBUS_STATUS_WORD || reg == STATUS_MFR_SPECIFIC_2) ? 2 : 1;
+}
+
 static int
 handle_pmbus_fault_assert(const power_fault_source_t *src)
 {
-  mfr_id_t mfr_id;
+  mfr_id_t mfr_id = MFR_UNKNOWN;
   uint8_t bus = 0, addr = 0;
   uint8_t reg_list_idx = PMBUS_STATUS_REG_LIST_MPS;
   uint8_t reg_list_len = 0;
-  bool use_local_i2c = false;
+  uint16_t status_word = 0, status_cml = 0;
+  uint16_t fault_warn_mask = MPS_STATUS_WORD_FAULT_WARN_MASK;
+  bool use_local_i2c = false,  has_status_word = false, has_status_cml = false, cml_fault_only = false;
+  int result = FAULT_ASSERT_PWR_FAULT;
+  const char *label = "PWR fault";
+  bool is_efuse_source;
 
   if (src == NULL || src->name == NULL) {
-    return -1;
+    return FAULT_ASSERT_INVALID_ARG;
   }
 
   addr = src->pmbus_addr;
+  bus = src->pmbus_bus;
+  use_local_i2c = src->use_local_i2c;
+  is_efuse_source = (strcmp(src->name, "SMB_NIC_INA233_ALRT_N") != 0);
 
-  if (strcmp(src->name, "SMB_NIC_INA233_ALRT_N") == 0) {
+  if (!is_efuse_source) {
     reg_list_idx = PMBUS_STATUS_REG_LIST_INA233;
     reg_list_len = pmbus_status_reg_list_len[reg_list_idx];
-    bus = src->pmbus_bus;
-    use_local_i2c = true;
+    label = "PWR warning";
   } else {
-    bus = (src->pmbus_bus * 2) + 1;
-    mfr_id = pal_detect_efuse_mfr_id(src->pmbus_bus, src->pmbus_addr);
+    mfr_id = pal_detect_efuse_mfr_id(src->location, bus, addr);
 
     switch (mfr_id) {
     case MFR_TI:
       reg_list_idx = PMBUS_STATUS_REG_LIST_TI;
+      fault_warn_mask = TI_STATUS_WORD_FAULT_WARN_MASK;
       break;
     case MFR_MPS:
     default:
       reg_list_idx = PMBUS_STATUS_REG_LIST_MPS;
+      fault_warn_mask = MPS_STATUS_WORD_FAULT_WARN_MASK;
       break;
     }
 
     reg_list_len = pmbus_status_reg_list_len[reg_list_idx];
+  }
+
+  int32_t status_vals[PMBUS_STATUS_REG_MAX];
+  for (int i = 0; i < PMBUS_STATUS_REG_MAX; i++) {
+    status_vals[i] = -1;  /* -1 = read failed, not available */
   }
 
   for (int reg_id = 0; reg_id < reg_list_len; reg_id++) {
@@ -1347,22 +1537,100 @@ handle_pmbus_fault_assert(const power_fault_source_t *src)
     uint16_t status_val = 0;
     int ret = -1;
 
-    if (use_local_i2c) {
-      ret = read_pmbus_status_reg_by_i2c(bus, addr, reg, &status_val);
-    } else {
-      ret = read_pmbus_status_reg_by_expander(bus, addr, reg, &status_val);
-    }
+    ret = read_pmbus_status_reg(bus, addr, reg, use_local_i2c, &status_val);
 
     if (ret < 0) {
-      syslog(LOG_WARNING, "%s(): read register %02Xh failed, source=%s bus=%u addr=0x%02X",
-             __func__, reg, src->gpio_shadow_name ? src->gpio_shadow_name : src->name, bus, addr);
+      syslog(LOG_WARNING, "%s(): read register %02Xh failed, source=%s bus=%u addr=0x%02X", __func__, reg, src->gpio_shadow_name ? src->gpio_shadow_name : src->name, bus, addr);
       continue;
     }
 
-    syslog(LOG_CRIT, "PWR fault: %s status: 0x%04X, ASSERTED", src->gpio_shadow_name ? src->gpio_shadow_name : src->name, status_val);
+    status_vals[reg_id] = status_val;
+
+    if (reg == PMBUS_STATUS_WORD) {
+      status_word = status_val;
+      has_status_word = true;
+    } else if (reg == PMBUS_STATUS_CML) {
+      status_cml = status_val;
+      has_status_cml = true;
+    }
   }
 
-  return 0;
+  if (src->is_alert_pin && src->cml_alert_masked == false) {
+    cml_fault_only = has_status_word && has_status_cml &&
+                    (status_word & STATUS_WORD_CML_BIT) &&
+                    ((status_word & fault_warn_mask & ~STATUS_WORD_CML_BIT) == 0);
+  }
+
+  if (cml_fault_only) {
+    syslog(LOG_CRIT, "CML fault: %s STATUS_WORD(79h): 0x%04X, STATUS_CML(7Eh): 0x%02X, ASSERTED", src->gpio_shadow_name ? src->gpio_shadow_name : src->name, status_word, status_cml);
+
+    if (clear_faults(bus, addr) == 0) {
+       syslog(LOG_WARNING, "Clear Fault done. src: %s", src->gpio_shadow_name ? src->gpio_shadow_name : src->name);
+    } else {
+       syslog(LOG_WARNING, "Clear Fault failed. src: %s", src->gpio_shadow_name ? src->gpio_shadow_name : src->name);
+    }
+
+    result = FAULT_ASSERT_CML_ONLY;
+  } else {
+
+    /*
+     * is_efuse_source (not "mfr_id != MFR_UNKNOWN") is the right
+     * guard here: a genuine eFuse whose MFR detection just failed
+     * this time should still fall through to the "cannot classify
+     * reliably -> default PWR fault" behavior already set above, not
+     * be conflated with INA233 (which has no MFR concept at all and
+     * is already set to PWR warning above, for a different reason).
+     */
+    if (src->is_alert_pin && is_efuse_source) {
+      bool has_fault = false;
+      bool has_warning = false;
+
+      for (int reg_id = 0; reg_id < reg_list_len; reg_id++) {
+        uint8_t reg = pmbus_status_reg_list[reg_list_idx][reg_id];
+        uint16_t reg_fault_mask = 0, reg_warning_mask = 0;
+
+        if (status_vals[reg_id] < 0) {
+          continue;
+        }
+
+        if (!get_reg_fault_warn_mask(mfr_id, reg, &reg_fault_mask, &reg_warning_mask)) {
+          continue;
+        }
+
+        if (status_vals[reg_id] & reg_fault_mask) {
+          has_fault = true;
+        }
+        if (status_vals[reg_id] & reg_warning_mask) {
+          has_warning = true;
+        }
+      }
+
+      if (!has_fault && has_warning) {
+        label = "PWR warning";
+      }
+    }
+
+    for (int reg_id = 0; reg_id < reg_list_len; reg_id++) {
+      uint8_t reg = pmbus_status_reg_list[reg_list_idx][reg_id];
+      const char *reg_name = pmbus_reg_name(mfr_id, reg);
+      const char *src_name = src->gpio_shadow_name ? src->gpio_shadow_name : src->name;
+
+      if (status_vals[reg_id] < 0) {
+        syslog(LOG_WARNING, "%s: %s %-*s(%02Xh): unavailable, ASSERTED", label, src_name, PMBUS_REG_NAME_WIDTH, reg_name, reg);
+        continue;
+      }
+
+      if (pmbus_reg_width(reg) == 2) {
+        syslog(LOG_CRIT, "%s: %s %-*s(%02Xh): 0x%04X, ASSERTED", label, src_name, PMBUS_REG_NAME_WIDTH, reg_name, reg, status_vals[reg_id]);
+      } else {
+        syslog(LOG_CRIT, "%s: %s %-*s(%02Xh): 0x%02X, ASSERTED", label, src_name, PMBUS_REG_NAME_WIDTH, reg_name, reg, status_vals[reg_id]);
+      }
+    }
+
+    result = FAULT_ASSERT_PWR_FAULT;
+  }
+
+  return result;
 }
 
 static int
@@ -1398,26 +1666,51 @@ is_main_ina233_source()
 static bool
 power_fault_monitor_init(void)
 {
-  size_t i;
+  size_t src_idx;
   int mismatch = 0;
 
-  for (i = 0; i < power_fault_source_count; i++) {
-    power_fault_sources[i].gpio_shadow_name = fbgc_get_gpio_name(power_fault_sources[i].gpio_id);
-    if (power_fault_sources[i].gpio_shadow_name == NULL) {
-      syslog(LOG_WARNING, "%s(): %u name mapping failed", __func__, power_fault_sources[i].gpio_id);
-      power_fault_sources[i].last_gpio_value = GPIO_VALUE_INVALID;
+  for (src_idx = 0; src_idx < power_fault_source_count; src_idx++) {
+    power_fault_sources[src_idx].gpio_shadow_name = fbgc_get_gpio_name(power_fault_sources[src_idx].gpio_id);
+    if (power_fault_sources[src_idx].gpio_shadow_name == NULL) {
+      syslog(LOG_WARNING, "%s(): %u name mapping failed", __func__, power_fault_sources[src_idx].gpio_id);
+      power_fault_sources[src_idx].last_gpio_value = GPIO_VALUE_INVALID;
       mismatch ++;
       continue;
     }
 
-    if (strcmp(power_fault_sources[i].name, "SMB_NIC_INA233_ALRT_N") == 0) {
+    if (strcmp(power_fault_sources[src_idx].name, "SMB_NIC_INA233_ALRT_N") == 0) {
       if (!is_main_ina233_source()) {
         syslog(LOG_WARNING, "%s(): Skip for second-source SQ52205: standard PMBus registers are not supported.", __func__);
         continue;
       }
     }
 
-    power_fault_sources[i].last_gpio_value = gpio_get_value_by_shadow(power_fault_sources[i].gpio_shadow_name);
+    power_fault_sources[src_idx].last_gpio_value = gpio_get_value_by_shadow(power_fault_sources[src_idx].gpio_shadow_name);
+  }
+
+  for (src_idx = 0; src_idx < power_fault_source_count; src_idx++) {
+    size_t candidate_idx;
+    bool found = false;
+
+    if (power_fault_sources[src_idx].coupled_src_name == NULL) {
+      continue;
+    }
+
+    power_fault_sources[src_idx].coupled_src_idx = power_fault_source_count;
+
+    for (candidate_idx = 0; candidate_idx < power_fault_source_count; candidate_idx++) {
+      if (strcmp(power_fault_sources[candidate_idx].name, power_fault_sources[src_idx].coupled_src_name) == 0) {
+        power_fault_sources[src_idx].coupled_src_idx = candidate_idx;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      syslog(LOG_ERR, "%s(): coupled_src_name \"%s\" (for \"%s\") not found in power_fault_sources list", __func__, power_fault_sources[src_idx].coupled_src_name, power_fault_sources[src_idx].name);
+    } else if (power_fault_sources[power_fault_sources[src_idx].coupled_src_idx].type != PMBUS) {
+      syslog(LOG_WARNING, "%s(): coupled source \"%s\" (for \"%s\") is not PMBUS type", __func__, power_fault_sources[src_idx].coupled_src_name, power_fault_sources[src_idx].name);
+    }
   }
 
   if (mismatch == power_fault_source_count) {
@@ -1442,6 +1735,9 @@ power_fault_monitor(void *arg)
   kv_set("flag_gpiod_power_fault_monitor", STR_VALUE_1, 0, 0);
 
   while (1) {
+    bool pwr_fault_logged[power_fault_source_count];
+    memset(pwr_fault_logged, 0, sizeof(pwr_fault_logged));
+
     for (i = 0; i < power_fault_source_count; i++) {
       power_fault_source_t *src = &power_fault_sources[i];
       int curr_value;
@@ -1473,7 +1769,14 @@ power_fault_monitor(void *arg)
         if (src->type == NON_PMBUS) {
           handle_non_pmbus_fault_assert(src);
         } else if (src->type == PMBUS) {
-          handle_pmbus_fault_assert(src);
+          /* skip if already reported via the coupled FLT(B) source above */
+          if (!(src->coupled_src_name != NULL && src->coupled_src_idx < power_fault_source_count && pwr_fault_logged[src->coupled_src_idx])) {
+            int ret = handle_pmbus_fault_assert(src);
+
+            if (!src->is_alert_pin && ret == FAULT_ASSERT_PWR_FAULT) {
+              pwr_fault_logged[i] = true;
+            }
+          }
         }
       }
 

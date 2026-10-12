@@ -4576,7 +4576,7 @@ static const vr_source_map_t vr_name_map[] = {
   { PVCCINFAON_CPU0,         "PVCCINFAON_CPU0" },
   { PVCCFA_EHV_CPU0,         "PVCCFA_EHV_CPU0" },
   { PVCCD_HV_CPU,            "PVCCD_HV_CPU" },
-  { P1V05_PCH_STB,           "P1V05_PCH_STB"},
+  { P1V05_PCH_STBY,           "P1V05_PCH_STBY"},
   { P1V8_STBY,               "P1V8_STBY"},
   { P5V_STBY,                "P5V_STBY"},
   { P3V3_STBY,               "P3V3_STBY"},
@@ -6267,59 +6267,223 @@ pal_get_mfr_name(mfr_id_t mfr)
   }
 }
 
-int
-pal_exp_get_mfr_id(uint8_t bus, uint8_t addr, uint8_t *buf, uint8_t *len)
+mfr_id_t
+pal_exp_get_mfr_id(uint8_t bus, uint8_t addr)
 {
   uint8_t txbuf[4] = {0};
+  uint8_t rxbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t bus_sel = bus * 2 + 1;
-  int ret;
+  uint8_t len = 0;
+  uint8_t mfr_len;
+  int ret = -1;
   int retry = 0;
-
-  if (buf == NULL || len == NULL) {
-    return -1;
-  }
 
   txbuf[0] = bus_sel;
   txbuf[1] = addr;
-  txbuf[2] = BLOCK_READ_4BYTE;
+  txbuf[2] = BLOCK_READ_1BYTE;
   txbuf[3] = PMBUS_MFR_ID;
 
+  /* Step 1: read just the length byte. */
   while (retry < MAX_RETRY) {
-    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD, txbuf, sizeof(txbuf), buf, len);
-    if (ret == 0) {
-      return 0;
+    len = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD, txbuf, sizeof(txbuf), rxbuf, &len);
+    if (ret == 0 && len == 1) {
+      break;
     }
+    ret = -1;
     retry++;
     msleep(100);
   }
 
-  syslog(LOG_WARNING, "%s: read MFR_ID failed after %d retries, len=%u data=%02X %02X %02X %02X",
-         __func__, MAX_RETRY, *len, buf[0], buf[1], buf[2], buf[3]);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s: read MFR_ID length failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  mfr_len = rxbuf[0];
+
+  /* Step 2: re-send MFR_ID, now reading the full response for that length. */
+  if (mfr_len == 3) {
+    txbuf[2] = BLOCK_READ_4BYTE;
+  } else if (mfr_len == 2) {
+    txbuf[2] = BLOCK_READ_3BYTE;
+  } else {
+    syslog(LOG_WARNING, "%s: unexpected MFR_ID length=%u, bus=%u addr=0x%02X", __func__, mfr_len, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  retry = 0;
+  ret = -1;
+  while (retry < MAX_RETRY) {
+    len = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD, txbuf, sizeof(txbuf), rxbuf, &len);
+    if (ret == 0 && len == (uint8_t)(mfr_len + 1)) {
+      break;
+    }
+    ret = -1;
+    retry++;
+    msleep(100);
+  }
+
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s: read MFR_ID data failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  if (rxbuf[0] == 3 && memcmp(&rxbuf[1], "SPM", 3) == 0) {
+    return MFR_MPS;
+  }
+  if (rxbuf[0] == 2 && memcmp(&rxbuf[1], "TI", 2) == 0) {
+    return MFR_TI;
+  }
+
+  syslog(LOG_WARNING, "%s: Unknown MFR_ID len=%u data=%02X %02X %02X %02X",
+         __func__, rxbuf[0], rxbuf[0], rxbuf[1], rxbuf[2], rxbuf[3]);
+  return MFR_UNKNOWN;
+}
+
+static bool
+efuse_mfr_id_cache_get(uint8_t fru, uint8_t addr, mfr_id_t *mfr)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, sizeof(key), "efuse_mfr_id_fru%u_0x%02x", fru, addr);
+  if (kv_get(key, value, NULL, 0) != 0) {
+    return false;
+  }
+
+  *mfr = (mfr_id_t)atoi(value);
+  return (*mfr != MFR_UNKNOWN);
+}
+
+static void
+efuse_mfr_id_cache_set(uint8_t fru, uint8_t addr, mfr_id_t mfr)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (mfr == MFR_UNKNOWN) {
+    return;
+  }
+
+  snprintf(key, sizeof(key), "efuse_mfr_id_fru%u_0x%02x", fru, addr);
+  snprintf(value, sizeof(value), "%d", mfr);
+  kv_set(key, value, 0, 0);
+}
+
+static const struct {
+  uint8_t exp_bus;
+  uint8_t local_bus;
+} efuse_bus_pairs[] = {
+  { SCC_STBY_BUS, SCC_STBY_LOCAL_BUS },
+};
+
+/* Returns the matching local bus (0-255), or -1 if exp_bus has none. */
+int
+pal_efuse_local_bus_for(uint8_t exp_bus)
+{
+  size_t i;
+
+  for (i = 0; i < ARRAY_SIZE(efuse_bus_pairs); i++) {
+    if (efuse_bus_pairs[i].exp_bus == exp_bus) {
+      return efuse_bus_pairs[i].local_bus;
+    }
+  }
+
   return -1;
 }
 
 mfr_id_t
-pal_detect_efuse_mfr_id(uint8_t bus, uint8_t addr)
+pal_detect_efuse_mfr_id(uint8_t fru, uint8_t bus, uint8_t addr)
 {
-  uint8_t buf[4] = {0};
-  uint8_t len = 0;
-  int ret;
+  int local_bus = pal_efuse_local_bus_for(bus);
+  mfr_id_t mfr = MFR_UNKNOWN;
 
-  ret = pal_exp_get_mfr_id(bus, addr, buf, &len);
-  if (ret < 0) {
+  if (efuse_mfr_id_cache_get(fru, addr, &mfr)) {
+    return mfr;
+  }
+
+  if (local_bus >= 0) {
+    mfr = pal_detect_efuse_mfr_id_local((uint8_t)local_bus, addr);
+  }
+
+  if (mfr == MFR_UNKNOWN) {
+    mfr = pal_exp_get_mfr_id(bus, addr);
+  }
+
+  efuse_mfr_id_cache_set(fru, addr, mfr);
+  return mfr;
+}
+
+void
+pal_clear_efuse_mfr_id_cache(uint8_t fru, uint8_t addr)
+{
+  char key[MAX_KEY_LEN] = {0};
+
+  snprintf(key, sizeof(key), "efuse_mfr_id_fru%u_0x%02x", fru, addr);
+  kv_del(key, 0);
+}
+
+/* Same MFR_ID detection as pal_detect_efuse_mfr_id(), but reads over a
+ * local I2C bus directly instead of going through the IPMB expander. */
+mfr_id_t
+pal_detect_efuse_mfr_id_local(uint8_t bus, uint8_t addr)
+{
+  int fd = -1, ret = -1;
+  uint8_t retry = MAX_RETRY;
+  uint8_t tbuf[1] = {PMBUS_MFR_ID};
+  uint8_t rbuf[4] = {0};
+  uint8_t mfr_len;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open I2C bus=%u addr=0x%02X", __func__, bus, addr);
     return MFR_UNKNOWN;
   }
 
-if (buf[0] == 3 && memcmp(&buf[1], "SPM", 3) == 0){
+  /* Step 1: read just the length byte. */
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, sizeof(tbuf), rbuf, 1);
+  }
+
+  if (ret < 0) {
+    close(fd);
+    syslog(LOG_WARNING, "%s: read MFR_ID length failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  mfr_len = rbuf[0];
+
+  /* Step 2: re-send MFR_ID, now reading the full response for that length. */
+  if (mfr_len != 3 && mfr_len != 2) {
+    close(fd);
+    syslog(LOG_WARNING, "%s: unexpected MFR_ID length=%u, bus=%u addr=0x%02X", __func__, mfr_len, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  retry = MAX_RETRY;
+  ret = -1;
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, sizeof(tbuf), rbuf, mfr_len + 1);
+  }
+
+  close(fd);
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: read MFR_ID data failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  if (rbuf[0] == 3 && memcmp(&rbuf[1], "SPM", 3) == 0) {
     return MFR_MPS;
   }
-
-if (buf[0] == 2 && memcmp(&buf[1], "TI", 2) == 0) {
+  if (rbuf[0] == 2 && memcmp(&rbuf[1], "TI", 2) == 0) {
     return MFR_TI;
   }
-  syslog(LOG_WARNING, "%s: Unknown MFR_ID len=%u data=%02X %02X %02X %02X",
-         __func__, len, buf[0], buf[1], buf[2], buf[3]);
 
+  syslog(LOG_WARNING, "%s: Unknown MFR_ID len=%u data=%02X %02X %02X %02X",
+         __func__, rbuf[0], rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
   return MFR_UNKNOWN;
 }
 

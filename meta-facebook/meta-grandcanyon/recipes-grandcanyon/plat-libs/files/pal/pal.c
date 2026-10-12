@@ -163,6 +163,9 @@ struct pal_key_cfg {
   {"server_sensor_health", "1", NULL},
   {"uic_sensor_health", "1", NULL},
   {"dpb_sensor_health", "1", NULL},
+#ifdef CONFIG_GRANDCANYON2
+  {"dpb_sel_error", "1", NULL},
+#endif
   {"scc_sensor_health", "1", NULL},
   {"scc_sel_error", "1", NULL},
   {"nic_sensor_health", "1", NULL},
@@ -3930,6 +3933,10 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   } else if (fru == FRU_SCC) {
     snprintf(key, sizeof(key), "scc_sel_error");
+#ifdef CONFIG_GRANDCANYON2
+  } else if (fru == FRU_DPB) {
+    snprintf(key, sizeof(key), "dpb_sel_error");
+#endif
   } else {
     return 0;
   }
@@ -3962,9 +3969,15 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
       snprintf(key, sizeof(key), "uic_sensor_health");
       break;
     case FRU_DPB:
+#ifdef CONFIG_GRANDCANYON2
+      // PTB TSENSE temperatures are monitoring by BMC and the rest of sensors of DPB are monitoring by Expander.
+      snprintf(key, sizeof(key), "dpb_sensor_health");
+      break;
+#else
       // DPB sensor event SEL are sent by Expander
       // health value will change when get SEL
       return 0;
+#endif
     case FRU_SCC:
       // SCC IOC temperature is monitoring by BMC and the rest of sensors of SCC are monitoring by Expander.
       snprintf(key, sizeof(key), "scc_sensor_health");
@@ -4030,6 +4043,13 @@ pal_log_clear(char *fru) {
       syslog(LOG_ERR, "%s(): failed to clear dpb seneor health value", __func__);
     }
 
+#ifdef CONFIG_GRANDCANYON2
+    ret = pal_set_key_value("dpb_sel_error", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear dpb sel error value", __func__);
+    }
+#endif
+
   } else if (strcmp(fru, "scc") == 0) {
     ret = pal_set_key_value("scc_sensor_health", val);
     if (ret < 0) {
@@ -4075,6 +4095,13 @@ pal_log_clear(char *fru) {
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear dpb seneor health value", __func__);
     }
+
+#ifdef CONFIG_GRANDCANYON2
+    ret = pal_set_key_value("dpb_sel_error", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear dpb sel error value", __func__);
+    }
+#endif
 
     ret = pal_set_key_value("scc_sensor_health", val);
     if (ret < 0) {
@@ -5486,7 +5513,11 @@ pal_handle_string_sel(char *log, uint8_t log_len)
   if ((strstr(log, "DPB_") != NULL) || (strstr(log, "HDD_") != NULL)
        || (strstr(log, "FAN_") != NULL) || (strstr(log, "AIRFLOW") != NULL)) {
     fru = FRU_DPB;
+#ifdef CONFIG_GRANDCANYON2
+    snprintf(key, sizeof(key), "dpb_sel_error");
+#else
     snprintf(key, sizeof(key), "dpb_sensor_health");
+#endif
   } else if (strstr(log, "SCC_") != NULL) {
     fru = FRU_SCC;
     snprintf(key, sizeof(key), "scc_sel_error");
@@ -5906,10 +5937,20 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 int
 pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
   // The threshold of DPB's and SCC's sensors are monitoring by expander
+#ifdef CONFIG_GRANDCANYON2
+  // SCC IOC temperature and the PTB TSENSE temperatures are monitoring by BMC,
+  // because the expander does not know these sensor numbers.
+  if (((fru == FRU_DPB) && (snr_num != PTB_TSENSE_48V_TEMP_C) &&
+       (snr_num != PTB_TSENSE_GND_TEMP_C)) ||
+      ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP))) {
+    return 1;
+  }
+#else
   // Only SCC IOC temperature is monitoring by BMC
   if ((fru == FRU_DPB) || ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP))) {
     return 1;
   }
+#endif
 
 #ifdef CONFIG_GRANDCANYON2
   {

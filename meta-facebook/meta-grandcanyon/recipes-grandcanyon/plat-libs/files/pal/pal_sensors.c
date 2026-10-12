@@ -34,6 +34,9 @@ static int read_ioc_temp(uint8_t id, float *value);
 static int set_e1s_sensor_name(char *sensor_name, char side);
 static void apply_inlet_correction(float *value, inlet_corr_t *ict, size_t ict_cnt);
 static int read_dpb_vol_wrapper(uint8_t id, float *value);
+#ifdef CONFIG_GRANDCANYON2
+static int read_ptb_tsense_temp(uint8_t id, float *value);
+#endif
 
 static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
@@ -757,6 +760,10 @@ PAL_SENSOR_MAP dvt_dpb_sensor_map[] = {
   {"PTB_TSENSE_GND_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_P48V_AUX_TEMP] =
   {"PTB_HSC_48V_AUX_TEMP_C", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [PTB_TSENSE_48V_TEMP_C] =
+  {"PTB_TSENSE_48V_TEMP_C", PTB_U34_ADC_MONITOR_V, read_ptb_tsense_temp, false, {105, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [PTB_TSENSE_GND_TEMP_C] =
+  {"PTB_TSENSE_GND_TEMP_C", PTB_U35_ADC_MONITOR_V, read_ptb_tsense_temp, false, {105, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [FAN_0_FRONT] =
   {"DPB_FAN0_FRONT_TACH_RPM", EXPANDER, NULL, false, {13000, 12700, 0, 700, 800, 0, 0, 0}, FAN},
   [FAN_0_REAR] =
@@ -1688,6 +1695,174 @@ const uint8_t dvt_dpb_sensor_list[] = {
   AIRFLOW,
 };
 
+// PVT/MP stage only: dvt_dpb_sensor_list plus the two derived tsense temperature sensors.
+const uint8_t pvt_dpb_sensor_list[] = {
+  DPB_FAN_EFUSE0_12V_TEMP_C,
+  DPB_FAN_EFUSE1_12V_TEMP_C,
+  DPB_FAN_EFUSE2_12V_TEMP_C,
+  DPB_FAN_EFUSE3_12V_TEMP_C,
+  DPB_FAN_EFUSE0_12V_VOLT_V,
+  DPB_FAN_EFUSE1_12V_VOLT_V,
+  DPB_FAN_EFUSE2_12V_VOLT_V,
+  DPB_FAN_EFUSE3_12V_VOLT_V,
+  DPB_FAN_EFUSE0_12V_CURR_A,
+  DPB_FAN_EFUSE1_12V_CURR_A,
+  DPB_FAN_EFUSE2_12V_CURR_A,
+  DPB_FAN_EFUSE3_12V_CURR_A,
+  DPB_FAN_EFUSE0_12V_PWR_W,
+  DPB_FAN_EFUSE1_12V_PWR_W,
+  DPB_FAN_EFUSE2_12V_PWR_W,
+  DPB_FAN_EFUSE3_12V_PWR_W,
+  HDD_SMART_TEMP_00,
+  HDD_SMART_TEMP_01,
+  HDD_SMART_TEMP_02,
+  HDD_SMART_TEMP_03,
+  HDD_SMART_TEMP_04,
+  HDD_SMART_TEMP_05,
+  HDD_SMART_TEMP_06,
+  HDD_SMART_TEMP_07,
+  HDD_SMART_TEMP_08,
+  HDD_SMART_TEMP_09,
+  HDD_SMART_TEMP_10,
+  HDD_SMART_TEMP_11,
+  HDD_SMART_TEMP_12,
+  HDD_SMART_TEMP_13,
+  HDD_SMART_TEMP_14,
+  HDD_SMART_TEMP_15,
+  HDD_SMART_TEMP_16,
+  HDD_SMART_TEMP_17,
+  HDD_SMART_TEMP_18,
+  HDD_SMART_TEMP_19,
+  HDD_SMART_TEMP_20,
+  HDD_SMART_TEMP_21,
+  HDD_SMART_TEMP_22,
+  HDD_SMART_TEMP_23,
+  HDD_SMART_TEMP_24,
+  HDD_SMART_TEMP_25,
+  HDD_SMART_TEMP_26,
+  HDD_SMART_TEMP_27,
+  HDD_SMART_TEMP_28,
+  HDD_SMART_TEMP_29,
+  HDD_SMART_TEMP_30,
+  HDD_SMART_TEMP_31,
+  HDD_SMART_TEMP_32,
+  HDD_SMART_TEMP_33,
+  HDD_SMART_TEMP_34,
+  HDD_SMART_TEMP_35,
+  HDD_P5V_SENSE_0,
+  HDD_P12V_SENSE_0,
+  HDD_P5V_SENSE_1,
+  HDD_P12V_SENSE_1,
+  HDD_P5V_SENSE_2,
+  HDD_P12V_SENSE_2,
+  HDD_P5V_SENSE_3,
+  HDD_P12V_SENSE_3,
+  HDD_P5V_SENSE_4,
+  HDD_P12V_SENSE_4,
+  HDD_P5V_SENSE_5,
+  HDD_P12V_SENSE_5,
+  HDD_P5V_SENSE_6,
+  HDD_P12V_SENSE_6,
+  HDD_P5V_SENSE_7,
+  HDD_P12V_SENSE_7,
+  HDD_P5V_SENSE_8,
+  HDD_P12V_SENSE_8,
+  HDD_P5V_SENSE_9,
+  HDD_P12V_SENSE_9,
+  HDD_P5V_SENSE_10,
+  HDD_P12V_SENSE_10,
+  HDD_P5V_SENSE_11,
+  HDD_P12V_SENSE_11,
+  HDD_P5V_SENSE_12,
+  HDD_P12V_SENSE_12,
+  HDD_P5V_SENSE_13,
+  HDD_P12V_SENSE_13,
+  HDD_P5V_SENSE_14,
+  HDD_P12V_SENSE_14,
+  HDD_P5V_SENSE_15,
+  HDD_P12V_SENSE_15,
+  HDD_P5V_SENSE_16,
+  HDD_P12V_SENSE_16,
+  HDD_P5V_SENSE_17,
+  HDD_P12V_SENSE_17,
+  HDD_P5V_SENSE_18,
+  HDD_P12V_SENSE_18,
+  HDD_P5V_SENSE_19,
+  HDD_P12V_SENSE_19,
+  HDD_P5V_SENSE_20,
+  HDD_P12V_SENSE_20,
+  HDD_P5V_SENSE_21,
+  HDD_P12V_SENSE_21,
+  HDD_P5V_SENSE_22,
+  HDD_P12V_SENSE_22,
+  HDD_P5V_SENSE_23,
+  HDD_P12V_SENSE_23,
+  HDD_P5V_SENSE_24,
+  HDD_P12V_SENSE_24,
+  HDD_P5V_SENSE_25,
+  HDD_P12V_SENSE_25,
+  HDD_P5V_SENSE_26,
+  HDD_P12V_SENSE_26,
+  HDD_P5V_SENSE_27,
+  HDD_P12V_SENSE_27,
+  HDD_P5V_SENSE_28,
+  HDD_P12V_SENSE_28,
+  HDD_P5V_SENSE_29,
+  HDD_P12V_SENSE_29,
+  HDD_P5V_SENSE_30,
+  HDD_P12V_SENSE_30,
+  HDD_P5V_SENSE_31,
+  HDD_P12V_SENSE_31,
+  HDD_P5V_SENSE_32,
+  HDD_P12V_SENSE_32,
+  HDD_P5V_SENSE_33,
+  HDD_P12V_SENSE_33,
+  HDD_P5V_SENSE_34,
+  HDD_P12V_SENSE_34,
+  HDD_P5V_SENSE_35,
+  HDD_P12V_SENSE_35,
+  DPB_HSC_12V_TEMP_C,
+  DPB_INLET_TEMP_1,
+  DPB_INLET_TEMP_2,
+  DPB_OUTLET_TEMP,
+  DPB_HSC_P12V,
+  DPB_P3V3_STBY_SENSE,
+  DPB_P3V3_IN_SENSE,
+  DPB_P5V_1_SYS_SENSE,
+  DPB_P5V_2_SYS_SENSE,
+  DPB_P5V_3_SYS_SENSE,
+  DPB_P5V_4_SYS_SENSE,
+  DPB_HSC_CUR,
+  DPB_HSC_PWR,
+  PTB_P48V_AUX,
+  PTB_P12V_PU2_DC_MODULE,
+  PTB_P12V_PU3_DC_MODULE,
+  PTB_U19_ADC_MONITOR,
+  PTB_U20_ADC_MONITOR,
+  PTB_P48V_AUX_Current,
+  PTB_P12V_PU2_DC_MODULE_Current,
+  PTB_P12V_PU3_DC_MODULE_Current,
+  PTB_P48V_AUX_Power,
+  PTB_P12V_PU2_DC_MODULE_Power,
+  PTB_P12V_PU3_DC_MODULE_Power,
+  PTB_P12V_PU2_DC_MODULE_TEMP,
+  PTB_P12V_PU3_DC_MODULE_TEMP,
+  PTB_U34_ADC_MONITOR_V,
+  PTB_U35_ADC_MONITOR_V,
+  PTB_P48V_AUX_TEMP,
+  PTB_TSENSE_48V_TEMP_C,
+  PTB_TSENSE_GND_TEMP_C,
+  FAN_0_FRONT,
+  FAN_0_REAR,
+  FAN_1_FRONT,
+  FAN_1_REAR,
+  FAN_2_FRONT,
+  FAN_2_REAR,
+  FAN_3_FRONT,
+  FAN_3_REAR,
+  AIRFLOW,
+};
+
 #else
 const uint8_t dpb_sensor_list[] = {
   HDD_SMART_TEMP_00,
@@ -2015,6 +2190,235 @@ static inlet_corr_t uic_t7_ict[] = {
   { 265, 1.33 }, // airflow: 265-332
   { 333, 1.3 },  // airflow: 333-
 };
+
+// NTC (tsense) voltage(mV) -> temperature(C) mapping table, based on
+// "07_GC2_PVT_SDR Accuracy_Main 6(NTC_Cal).csv", Vcnom column (nominal shunt voltage).
+// PTB_TSENSE_48V/PTB_TSENSE_GND both use this same table (same NTC circuit design).
+// Voltage strictly increasing with temperature -> safe for step (floor) lookup.
+typedef struct {
+  float volt_mv;
+  float temp_c;
+} ntc_tsense_table_t;
+
+static ntc_tsense_table_t ptb_tsense_ntc_table[] = {
+  { 0.76f, -30 },
+  { 0.80f, -29 },
+  { 0.85f, -28 },
+  { 0.90f, -27 },
+  { 0.95f, -26 },
+  { 1.01f, -25 },
+  { 1.07f, -24 },
+  { 1.13f, -23 },
+  { 1.19f, -22 },
+  { 1.26f, -21 },
+  { 1.33f, -20 },
+  { 1.41f, -19 },
+  { 1.48f, -18 },
+  { 1.56f, -17 },
+  { 1.65f, -16 },
+  { 1.73f, -15 },
+  { 1.83f, -14 },
+  { 1.92f, -13 },
+  { 2.02f, -12 },
+  { 2.13f, -11 },
+  { 2.24f, -10 },
+  { 2.35f, -9 },
+  { 2.47f, -8 },
+  { 2.59f, -7 },
+  { 2.72f, -6 },
+  { 2.85f, -5 },
+  { 2.99f, -4 },
+  { 3.14f, -3 },
+  { 3.29f, -2 },
+  { 3.44f, -1 },
+  { 3.60f, 0 },
+  { 3.77f, 1 },
+  { 3.95f, 2 },
+  { 4.13f, 3 },
+  { 4.31f, 4 },
+  { 4.51f, 5 },
+  { 4.71f, 6 },
+  { 4.91f, 7 },
+  { 5.13f, 8 },
+  { 5.35f, 9 },
+  { 5.58f, 10 },
+  { 5.81f, 11 },
+  { 6.06f, 12 },
+  { 6.31f, 13 },
+  { 6.57f, 14 },
+  { 6.84f, 15 },
+  { 7.11f, 16 },
+  { 7.40f, 17 },
+  { 7.69f, 18 },
+  { 7.99f, 19 },
+  { 8.30f, 20 },
+  { 8.61f, 21 },
+  { 8.94f, 22 },
+  { 9.27f, 23 },
+  { 9.61f, 24 },
+  { 9.96f, 25 },
+  { 10.32f, 26 },
+  { 10.69f, 27 },
+  { 11.07f, 28 },
+  { 11.45f, 29 },
+  { 11.84f, 30 },
+  { 12.24f, 31 },
+  { 12.65f, 32 },
+  { 13.06f, 33 },
+  { 13.49f, 34 },
+  { 13.92f, 35 },
+  { 14.36f, 36 },
+  { 14.81f, 37 },
+  { 15.26f, 38 },
+  { 15.72f, 39 },
+  { 16.19f, 40 },
+  { 16.66f, 41 },
+  { 17.14f, 42 },
+  { 17.62f, 43 },
+  { 18.11f, 44 },
+  { 18.61f, 45 },
+  { 19.11f, 46 },
+  { 19.62f, 47 },
+  { 20.13f, 48 },
+  { 20.64f, 49 },
+  { 21.16f, 50 },
+  { 21.68f, 51 },
+  { 22.19f, 52 },
+  { 22.71f, 53 },
+  { 23.24f, 54 },
+  { 23.76f, 55 },
+  { 24.28f, 56 },
+  { 24.81f, 57 },
+  { 25.33f, 58 },
+  { 25.86f, 59 },
+  { 26.38f, 60 },
+  { 26.90f, 61 },
+  { 27.43f, 62 },
+  { 27.95f, 63 },
+  { 28.48f, 64 },
+  { 28.99f, 65 },
+  { 29.50f, 66 },
+  { 30.02f, 67 },
+  { 30.53f, 68 },
+  { 31.04f, 69 },
+  { 31.54f, 70 },
+  { 32.04f, 71 },
+  { 32.55f, 72 },
+  { 33.04f, 73 },
+  { 33.53f, 74 },
+  { 34.01f, 75 },
+  { 34.49f, 76 },
+  { 34.96f, 77 },
+  { 35.43f, 78 },
+  { 35.89f, 79 },
+  { 36.35f, 80 },
+  { 36.80f, 81 },
+  { 37.24f, 82 },
+  { 37.69f, 83 },
+  { 38.12f, 84 },
+  { 38.55f, 85 },
+  { 38.96f, 86 },
+  { 39.38f, 87 },
+  { 39.78f, 88 },
+  { 40.18f, 89 },
+  { 40.58f, 90 },
+  { 40.97f, 91 },
+  { 41.35f, 92 },
+  { 41.72f, 93 },
+  { 42.09f, 94 },
+  { 42.45f, 95 },
+  { 42.81f, 96 },
+  { 43.16f, 97 },
+  { 43.50f, 98 },
+  { 43.84f, 99 },
+  { 44.17f, 100 },
+  { 44.49f, 101 },
+  { 44.80f, 102 },
+  { 45.11f, 103 },
+  { 45.41f, 104 },
+  { 45.71f, 105 },
+  { 46.00f, 106 },
+  { 46.28f, 107 },
+  { 46.56f, 108 },
+  { 46.83f, 109 },
+  { 47.10f, 110 },
+  { 47.36f, 111 },
+  { 47.61f, 112 },
+  { 47.86f, 113 },
+  { 48.10f, 114 },
+  { 48.34f, 115 },
+  { 48.58f, 116 },
+  { 48.80f, 117 },
+  { 49.03f, 118 },
+  { 49.24f, 119 },
+  { 49.46f, 120 },
+  { 49.67f, 121 },
+  { 49.87f, 122 },
+  { 50.07f, 123 },
+  { 50.26f, 124 },
+  { 50.45f, 125 },
+  { 50.64f, 126 },
+  { 50.82f, 127 },
+  { 51.00f, 128 },
+  { 51.17f, 129 },
+  { 51.34f, 130 },
+  { 51.51f, 131 },
+  { 51.67f, 132 },
+  { 51.83f, 133 },
+  { 51.98f, 134 },
+  { 52.13f, 135 },
+  { 52.28f, 136 },
+  { 52.42f, 137 },
+  { 52.56f, 138 },
+  { 52.70f, 139 },
+  { 52.83f, 140 },
+  { 52.96f, 141 },
+  { 53.09f, 142 },
+  { 53.21f, 143 },
+  { 53.33f, 144 },
+  { 53.45f, 145 },
+  { 53.57f, 146 },
+  { 53.68f, 147 },
+  { 53.79f, 148 },
+  { 53.90f, 149 },
+  { 54.00f, 150 },
+};
+static size_t ptb_tsense_ntc_table_cnt = ARRAY_SIZE(ptb_tsense_ntc_table);
+
+// Step lookup: voltage(mV) -> temperature(C), no interpolation.
+// Use the largest table entry whose volt_mv <= reading (e.g. 0.79 doesn't reach
+// 0.80/-29C, so it stays at -30C; 0.96 doesn't reach 1.01/-25C, so it stays at -26C).
+// id is the source VOLT_mV sensor enum (PTB_U34_ADC_MONITOR_V / PTB_U35_ADC_MONITOR_V),
+// used to pick which raw voltage sensor to read from the cache.
+static int
+read_ptb_tsense_temp(uint8_t id, float *value) {
+  float mv = 0;
+  float temp_c = 0;
+  size_t i = 0;
+  int ret = 0;
+
+  if (value == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to convert vsense temperature because NULL parameter: *value", __func__);
+    return ERR_SENSOR_NA;
+  }
+
+  ret = sensor_cache_read(FRU_DPB, id, &mv);
+  if (ret < 0) {
+    return ret;
+  }
+
+  temp_c = ptb_tsense_ntc_table[0].temp_c;
+  for (i = 1; i < ptb_tsense_ntc_table_cnt; i++) {
+    if (mv >= ptb_tsense_ntc_table[i].volt_mv) {
+      temp_c = ptb_tsense_ntc_table[i].temp_c;
+    } else {
+      break;
+    }
+  }
+
+  *value = temp_c;
+  return 0;
+}
 #else
 static inlet_corr_t server_ict[] = {
   //airflow, offset value
@@ -2077,6 +2481,7 @@ size_t iocm_sensor_cnt = ARRAY_SIZE(iocm_sensor_list);
 
 #ifdef CONFIG_GRANDCANYON2
 size_t dvt_dpb_sensor_cnt = ARRAY_SIZE(dvt_dpb_sensor_list);
+size_t pvt_dpb_sensor_cnt = ARRAY_SIZE(pvt_dpb_sensor_list);
 size_t dvt_scc_sensor_cnt = ARRAY_SIZE(dvt_scc_sensor_list);
 size_t dvt_nic_sensor_cnt = ARRAY_SIZE(dvt_nic_sensor_list);
 #endif
@@ -2116,6 +2521,11 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   if (stage != UIC_STAGE_HACK){
     *sensor_list = (uint8_t *) dvt_dpb_sensor_list;
     *cnt = dvt_dpb_sensor_cnt;
+  }
+  if (stage == UIC_STAGE_PVT_MAX15090 || stage == UIC_STAGE_PVT_TPS25974_RS31332_INA233 ||
+      stage == UIC_STAGE_MP_MAX15090 || stage == UIC_STAGE_MP_TPS25974_RS31332_INA233){
+    *sensor_list = (uint8_t *) pvt_dpb_sensor_list;
+    *cnt = pvt_dpb_sensor_cnt;
   }
   #endif
     break;
@@ -3185,6 +3595,17 @@ exp_read_sensor_thresh_wrapper(uint8_t fru, uint8_t *sensor_list, thresh_sensor_
       low_crit  = scc_map[snr_num].snr_thresh.lcr_thresh;
       low_warn  = scc_map[snr_num].snr_thresh.lnc_thresh;
     }
+#ifdef CONFIG_GRANDCANYON2
+    // PTB_TSENSE_*_TEMP_C are BMC-derived (not real expander sensors) -- the
+    // expander doesn't know these sensor numbers, so always use the local
+    // sensor map's threshold instead of whatever the expander echoed back.
+    if ((fru == FRU_DPB) && (snr_num == PTB_TSENSE_48V_TEMP_C || snr_num == PTB_TSENSE_GND_TEMP_C)) {
+      high_crit = dvt_dpb_sensor_map[snr_num].snr_thresh.ucr_thresh;
+      high_warn = dvt_dpb_sensor_map[snr_num].snr_thresh.unc_thresh;
+      low_crit  = dvt_dpb_sensor_map[snr_num].snr_thresh.lcr_thresh;
+      low_warn  = dvt_dpb_sensor_map[snr_num].snr_thresh.lnc_thresh;
+    }
+#endif
     snr_thresh[snr_num].ucr_thresh = high_crit;
     snr_thresh[snr_num].unc_thresh = high_warn;
     snr_thresh[snr_num].lcr_thresh = low_crit;
@@ -4165,6 +4586,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         id = scc_sensor_map[sensor_num].id;
         ret = scc_sensor_map[sensor_num].read_sensor(id, (float*) value);
       }
+  #ifdef CONFIG_GRANDCANYON2
+    } else if (sensor_num == PTB_TSENSE_48V_TEMP_C || sensor_num == PTB_TSENSE_GND_TEMP_C) {
+      id = dvt_dpb_sensor_map[sensor_num].id;
+      ret = dvt_dpb_sensor_map[sensor_num].read_sensor(id, (float*) value);
+  #endif
     } else {
       if (0 != (ret = expander_sensor_check(fru, sensor_num))) {
         break;

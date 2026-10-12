@@ -180,12 +180,17 @@ class Modbus:
             return self.dev.read_string(reg, length).rstrip("\x00\x20")
 
     def write(self, reg, data, timeout=DEFAULT_TIMEOUT_MS):
-        # Callers pass either one register value or a sequence of them,
-        # minimalmodbus only takes a list.
-        values = [data] if isinstance(data, int) else list(data)
+        # Callers pass either one register value or a sequence of them. A
+        # single value goes out as Write Single Register (0x06), as some
+        # devices reject 0x10 for a one register write. This matches what
+        # rackmond sends for the pyrmd backend. A sequence, even of one
+        # value, is always 0x10.
         self._select(timeout)
         with _translate_errors():
-            self.dev.write_registers(reg, values)
+            if isinstance(data, int):
+                self.dev.write_register(reg, data, functioncode=6)
+            else:
+                self.dev.write_registers(reg, list(data))
 
     def raw(self, req, expected=0, timeout=DEFAULT_TIMEOUT_MS):
         self._select(timeout)

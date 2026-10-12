@@ -1,0 +1,730 @@
+From 5fe63e9d54a09b590cc494712bfa1bf9b7e6c9fb Mon Sep 17 00:00:00 2001
+From: Henry Wu <Henry_Wu@quantatw.com>
+Date: Tue, 6 Oct 2026 17:50:13 +0800
+Subject: [PATCH] platform-mc: drop stale discovery work on endpoint removal
+
+Track MCTP endpoint generations for queued discovery batches
+and mark endpoints stale when removal is reported. Remove
+stale entries from the pending discovery queue, cancel
+requester operations for removed EIDs, and avoid using
+termini that were initialized after their endpoint
+disappeared.
+
+Limit post-discovery platform initialization to TIDs added
+by the current batch and re-check terminus liveness across
+awaits. This prevents a removed endpoint from keeping
+discoverMctpTerminusTask and follow-on queues blocked.
+
+The link of upstream:
+https://gerrit.openbmc.org/c/openbmc/pldm/+/95350
+
+Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
+---
+ platform-mc/manager.cpp          |  16 ++
+ platform-mc/manager.hpp          |   9 +
+ platform-mc/platform_manager.cpp |  35 ++--
+ platform-mc/platform_manager.hpp |   7 +
+ platform-mc/terminus_manager.cpp | 294 +++++++++++++++++++++++++++++--
+ platform-mc/terminus_manager.hpp |  59 ++++++-
+ 6 files changed, 398 insertions(+), 22 deletions(-)
+
+diff --git a/platform-mc/manager.cpp b/platform-mc/manager.cpp
+index 1b5ff74..a3e2857 100644
+--- a/platform-mc/manager.cpp
++++ b/platform-mc/manager.cpp
+@@ -31,6 +31,22 @@ exec::task<int> Manager::afterDiscoverTerminus()
+     co_return rc;
+ }
+ 
++exec::task<int> Manager::afterDiscoverTerminus(
++    const std::vector<pldm_tid_t>& tids)
++{
++    auto rc = co_await platformManager.initTerminus(tids);
++    if (rc != PLDM_SUCCESS)
++    {
++        lg2::error("Failed to initialize platform manager, error {RC}", "RC",
++                   rc);
++    }
++    else
++    {
++        lg2::info("Successfully initialized platform manager");
++    }
++    co_return rc;
++}
++
+ exec::task<int> Manager::pollForPlatformEvent(
+     pldm_tid_t tid, uint16_t /* pollEventId */, uint32_t pollDataTransferHandle)
+ {
+diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
+index 6a389b3..7d7230f 100644
+--- a/platform-mc/manager.hpp
++++ b/platform-mc/manager.hpp
+@@ -13,6 +13,7 @@
+ #include <optional>
+ #include <string>
+ #include <string_view>
++#include <vector>
+ 
+ namespace pldm
+ {
+@@ -59,6 +60,14 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+      */
+     exec::task<int> afterDiscoverTerminus();
+ 
++    /** @brief Helper function to do the actions after discovering selected
++     *         termini
++     *
++     *  @param[in] tids - TIDs discovered by the current discovery batch
++     *  @return coroutine return_value - PLDM completion code
++     */
++    exec::task<int> afterDiscoverTerminus(const std::vector<pldm_tid_t>& tids);
++
+     /** @brief Helper function to invoke registered handlers for
+      *         the added MCTP endpoints
+      *
+diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
+index cd649ba..61ab684 100644
+--- a/platform-mc/platform_manager.cpp
++++ b/platform-mc/platform_manager.cpp
+@@ -7,6 +7,7 @@
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
++#include <algorithm>
+ #include <memory>
+ 
+ PHOSPHOR_LOG2_USING;
+@@ -18,28 +19,40 @@ namespace platform_mc
+ 
+ exec::task<int> PlatformManager::initTerminus()
+ {
+-    /* Snapshot TIDs before iterating. The termini map can be modified (entries
+-     * erased) by removeMctpTerminus() while this coroutine is suspended at a
+-     * co_await point, which would invalidate range-for iterators and references
+-     * into the map, causing use-after-free. */
+     std::vector<pldm_tid_t> tids;
+     for (auto& [tid, _] : termini)
+     {
+         tids.push_back(tid);
+     }
+ 
++    auto rc = co_await initTerminus(tids);
++    co_return rc;
++}
++
++exec::task<int> PlatformManager::initTerminus(
++    const std::vector<pldm_tid_t>& targetTids)
++{
++    auto tids = targetTids;
++    std::sort(tids.begin(), tids.end());
++    tids.erase(std::unique(tids.begin(), tids.end()), tids.end());
++
+     for (const auto tid : tids)
+     {
+         // termini[tid] would auto-insert if the TID was erased after the
+         // snapshot above.
+-        if (!termini.contains(tid))
++        auto terminusIt = termini.find(tid);
++        if (terminusIt == termini.end())
+         {
+             continue;
+         }
+ 
+         /* Take a local shared_ptr copy so the Terminus object stays alive even
+          * if the map entry is erased while this coroutine is suspended. */
+-        auto terminus = termini[tid];
++        auto terminus = terminusIt->second;
++        auto isCurrentTerminus = [&]() {
++            auto currentIt = termini.find(tid);
++            return currentIt != termini.end() && currentIt->second == terminus;
++        };
+ 
+         if (terminus->initialized)
+         {
+@@ -65,7 +78,7 @@ exec::task<int> PlatformManager::initTerminus()
+             }
+         }
+ 
+-        if (!termini.contains(tid))
++        if (!isCurrentTerminus())
+         {
+             continue;
+         }
+@@ -84,7 +97,7 @@ exec::task<int> PlatformManager::initTerminus()
+             }
+         }
+ 
+-        if (!termini.contains(tid))
++        if (!isCurrentTerminus())
+         {
+             continue;
+         }
+@@ -100,7 +113,7 @@ exec::task<int> PlatformManager::initTerminus()
+                 continue; // Continue to next terminus
+             }
+ 
+-            if (!termini.contains(tid))
++            if (!isCurrentTerminus())
+             {
+                 continue;
+             }
+@@ -138,7 +151,7 @@ exec::task<int> PlatformManager::initTerminus()
+             }
+         }
+ 
+-        if (!termini.contains(tid))
++        if (!isCurrentTerminus())
+         {
+             continue;
+         }
+@@ -148,7 +161,7 @@ exec::task<int> PlatformManager::initTerminus()
+ 
+         auto rc = co_await configEventReceiver(tid);
+ 
+-        if (!termini.contains(tid))
++        if (!isCurrentTerminus())
+         {
+             continue;
+         }
+diff --git a/platform-mc/platform_manager.hpp b/platform-mc/platform_manager.hpp
+index 1a9a5f1..2b42d7f 100644
+--- a/platform-mc/platform_manager.hpp
++++ b/platform-mc/platform_manager.hpp
+@@ -41,6 +41,13 @@ class PlatformManager
+      */
+     exec::task<int> initTerminus();
+ 
++    /** @brief Initialize selected termini which support PLDM Type 2
++     *
++     *  @param[in] tids - selected terminus IDs
++     *  @return coroutine return_value - PLDM completion code
++     */
++    exec::task<int> initTerminus(const std::vector<pldm_tid_t>& tids);
++
+     /** @brief Helper to get the supported event messages and set event receiver
+      *
+      *  @param[in] tid - Destination TID
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+index d9ae42b..59beff9 100644
+--- a/platform-mc/terminus_manager.cpp
++++ b/platform-mc/terminus_manager.cpp
+@@ -4,6 +4,13 @@
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
++#include <algorithm>
++#include <chrono>
++#include <optional>
++#include <set>
++#include <stdexcept>
++#include <string>
++
+ PHOSPHOR_LOG2_USING;
+ 
+ namespace pldm
+@@ -11,6 +18,31 @@ namespace pldm
+ namespace platform_mc
+ {
+ 
++namespace
++{
++constexpr auto terminusDiscoveryTaskTimeout = std::chrono::seconds(120);
++
++std::string eidsToString(const MctpInfos& mctpInfos)
++{
++    std::string eids;
++    for (const auto& mctpInfo : mctpInfos)
++    {
++        if (!eids.empty())
++        {
++            eids += ",";
++        }
++        eids += std::to_string(static_cast<unsigned>(std::get<0>(mctpInfo)));
++    }
++
++    if (eids.empty())
++    {
++        return "<none>";
++    }
++
++    return eids;
++}
++} // namespace
++
+ std::optional<MctpInfo> TerminusManager::toMctpInfo(const pldm_tid_t& tid)
+ {
+     if (tid == PLDM_TID_UNASSIGNED || tid == PLDM_TID_RESERVED)
+@@ -165,9 +197,138 @@ std::string TerminusManager::constructEndpointObjPath(const MctpInfo& mctpInfo)
+                        eidStr);
+ }
+ 
++TerminusManager::MctpEndpointKey TerminusManager::getMctpEndpointKey(
++    const MctpInfo& mctpInfo) const
++{
++    return MctpEndpointKey{std::get<0>(mctpInfo), std::get<3>(mctpInfo)};
++}
++
++uint64_t TerminusManager::markMctpEndpointPresent(const MctpInfo& mctpInfo)
++{
++    auto key = getMctpEndpointKey(mctpInfo);
++    auto wasPresent = mctpEndpointPresent[key];
++    mctpEndpointPresent[key] = true;
++    auto& generation = mctpEndpointGenerations[key];
++    if (!wasPresent)
++    {
++        generation++;
++    }
++    return generation;
++}
++
++void TerminusManager::markMctpEndpointRemoved(const MctpInfo& mctpInfo)
++{
++    auto key = getMctpEndpointKey(mctpInfo);
++    mctpEndpointPresent[key] = false;
++    mctpEndpointGenerations[key]++;
++}
++
++TerminusManager::QueuedMctpInfos TerminusManager::makeQueuedMctpInfos(
++    const MctpInfos& mctpInfos, bool refreshGenerations)
++{
++    QueuedMctpInfos queuedMctpInfos;
++    queuedMctpInfos.mctpInfos = mctpInfos;
++
++    for (const auto& mctpInfo : queuedMctpInfos.mctpInfos)
++    {
++        auto key = getMctpEndpointKey(mctpInfo);
++        auto generation = refreshGenerations ? markMctpEndpointPresent(mctpInfo)
++                                             : mctpEndpointGenerations[key];
++        queuedMctpInfos.generations[key] = generation;
++    }
++
++    return queuedMctpInfos;
++}
++
++bool TerminusManager::isQueuedMctpInfoCurrent(
++    const QueuedMctpInfos& queuedMctpInfos, const MctpInfo& mctpInfo) const
++{
++    auto key = getMctpEndpointKey(mctpInfo);
++    auto queuedGeneration = queuedMctpInfos.generations.find(key);
++    auto currentGeneration = mctpEndpointGenerations.find(key);
++    auto endpointPresent = mctpEndpointPresent.find(key);
++
++    return queuedGeneration != queuedMctpInfos.generations.end() &&
++           currentGeneration != mctpEndpointGenerations.end() &&
++           endpointPresent != mctpEndpointPresent.end() &&
++           endpointPresent->second &&
++           queuedGeneration->second == currentGeneration->second;
++}
++
++void TerminusManager::cleanupQueuedMctpInfos(const MctpInfos& mctpInfos)
++{
++    std::set<MctpEndpointKey> removedEndpoints;
++    for (const auto& mctpInfo : mctpInfos)
++    {
++        removedEndpoints.emplace(getMctpEndpointKey(mctpInfo));
++    }
++
++    std::queue<QueuedMctpInfos> filteredQueue;
++    while (!queuedMctpInfos.empty())
++    {
++        auto queuedMctpInfo = std::move(queuedMctpInfos.front());
++        queuedMctpInfos.pop();
++
++        std::erase_if(queuedMctpInfo.mctpInfos, [&](const auto& mctpInfo) {
++            return removedEndpoints.contains(getMctpEndpointKey(mctpInfo));
++        });
++
++        for (const auto& endpoint : removedEndpoints)
++        {
++            queuedMctpInfo.generations.erase(endpoint);
++        }
++
++        if (!queuedMctpInfo.mctpInfos.empty())
++        {
++            filteredQueue.emplace(std::move(queuedMctpInfo));
++        }
++    }
++
++    queuedMctpInfos = std::move(filteredQueue);
++}
++
++void TerminusManager::cancelMctpEndpointRequests(const MctpInfos& mctpInfos)
++{
++    std::set<mctp_eid_t> eids;
++    for (const auto& mctpInfo : mctpInfos)
++    {
++        eids.emplace(std::get<0>(mctpInfo));
++    }
++
++    for (auto eid : eids)
++    {
++        handler.cancelEndpointRequests(eid);
++    }
++}
++
++void TerminusManager::removeStaleDiscoveredTerminus(const MctpInfo& mctpInfo)
++{
++    auto tid = toTid(mctpInfo);
++    if (!tid)
++    {
++        mctpInfoAvailTable.erase(mctpInfo);
++        return;
++    }
++
++    if (manager)
++    {
++        manager->stopSensorPolling(tid.value());
++        manager->updateAvailableState(tid.value(), false);
++    }
++
++    auto termIt = termini.find(tid.value());
++    if (termIt != termini.end())
++    {
++        termini.erase(termIt);
++    }
++    unmapTid(tid.value());
++    mctpInfoAvailTable.erase(mctpInfo);
++    discoveryRetryMap.erase(mctpInfo);
++}
++
+ void TerminusManager::discoverMctpTerminus(const MctpInfos& mctpInfos)
+ {
+-    queuedMctpInfos.emplace(mctpInfos);
++    queuedMctpInfos.emplace(makeQueuedMctpInfos(mctpInfos, true));
+     if (discoverMctpTerminusTaskHandle.has_value())
+     {
+         auto& [scope, rcOpt] = *discoverMctpTerminusTaskHandle;
+@@ -202,20 +363,69 @@ TerminiMapper::iterator TerminusManager::findTerminusPtr(
+ 
+ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+ {
+-    std::vector<pldm_tid_t> addedTids;
+     bool terminusInitFailed = false;
+     while (!queuedMctpInfos.empty())
+     {
++        auto queuedMctpInfo = std::move(queuedMctpInfos.front());
++        queuedMctpInfos.pop();
++        const auto& mctpInfos = queuedMctpInfo.mctpInfos;
++
+         if (manager)
+         {
+             co_await manager->beforeDiscoverTerminus();
+         }
+ 
+-        const MctpInfos& mctpInfos = queuedMctpInfos.front();
+         MctpInfos retryMctpInfos;
++        std::vector<pldm_tid_t> addedTids;
++
++        std::set<mctp_eid_t> timeoutEids;
++        for (const auto& mctpInfo : mctpInfos)
++        {
++            timeoutEids.emplace(std::get<0>(mctpInfo));
++        }
++
++        std::unique_ptr<sdbusplus::Timer> discoveryTimeoutGuard;
++        if (!timeoutEids.empty())
++        {
++            auto timeoutEidsString = eidsToString(mctpInfos);
++            discoveryTimeoutGuard = std::make_unique<
++                sdbusplus::Timer>(event.get(), [this, timeoutEids,
++                                                timeoutEidsString]() {
++                lg2::warning(
++                    "Terminus discovery timeout for EIDs {EIDS}; cancelling requester operations",
++                    "EIDS", timeoutEidsString);
++                for (auto eid : timeoutEids)
++                {
++                    handler.cancelEndpointRequests(eid);
++                }
++            });
++
++            try
++            {
++                discoveryTimeoutGuard->start(
++                    std::chrono::duration_cast<std::chrono::microseconds>(
++                        terminusDiscoveryTaskTimeout));
++            }
++            catch (const std::runtime_error& e)
++            {
++                lg2::error(
++                    "Failed to start terminus discovery timeout guard, error - {ERROR}",
++                    "ERROR", e);
++                discoveryTimeoutGuard.reset();
++            }
++        }
+ 
+         for (const auto& mctpInfo : mctpInfos)
+         {
++            if (!isQueuedMctpInfoCurrent(queuedMctpInfo, mctpInfo))
++            {
++                lg2::info(
++                    "Skipping stale discovery entry for EID {EID}, networkId {NETWORK}",
++                    "EID", std::get<0>(mctpInfo), "NETWORK",
++                    std::get<3>(mctpInfo));
++                continue;
++            }
++
+             auto it = findTerminusPtr(mctpInfo);
+ 
+             if (it != termini.end())
+@@ -236,9 +446,12 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+                     if (manager)
+                     {
+                         manager->stopSensorPolling(tid);
++                        manager->updateAvailableState(tid, false);
+                     }
+ 
+-                    // Remove the old Terminus
++                    auto oldMctpInfo = toMctpInfo(tid).value_or(mctpInfo);
++
++                    // Remove the old Terminus before deferred re-init.
+                     this->unmapTid(tid);
+                     auto termIt = termini.find(tid);
+                     if (termIt != termini.end())
+@@ -249,9 +462,9 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+                     // Remove from availability table if exists,
+                     // since the terminus is going to be re-initialized with new
+                     // path
+-                    if (mctpInfoAvailTable.contains(mctpInfo))
++                    if (mctpInfoAvailTable.contains(oldMctpInfo))
+                     {
+-                        mctpInfoAvailTable.erase(mctpInfo);
++                        mctpInfoAvailTable.erase(oldMctpInfo);
+                     }
+ 
+                     // The new MctpInfo with the associated path will be added
+@@ -265,6 +478,12 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+             {
+                 mctpInfoAvailTable[mctpInfo] = true;
+                 auto rc = co_await initMctpTerminus(mctpInfo);
++                if (!isQueuedMctpInfoCurrent(queuedMctpInfo, mctpInfo))
++                {
++                    removeStaleDiscoveredTerminus(mctpInfo);
++                    continue;
++                }
++
+                 if (rc != PLDM_SUCCESS)
+                 {
+                     lg2::error(
+@@ -278,6 +497,12 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+                 }
+             }
+ 
++            if (!isQueuedMctpInfoCurrent(queuedMctpInfo, mctpInfo))
++            {
++                removeStaleDiscoveredTerminus(mctpInfo);
++                continue;
++            }
++
+             /* Get TID of initialized terminus */
+             auto tid = toTid(mctpInfo);
+             if (!tid)
+@@ -294,12 +519,22 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+             addedTids.push_back(tid.value());
+         }
+ 
+-        if (manager)
++        std::sort(addedTids.begin(), addedTids.end());
++        addedTids.erase(std::unique(addedTids.begin(), addedTids.end()),
++                        addedTids.end());
++
++        if (manager && !addedTids.empty())
+         {
+-            co_await manager->afterDiscoverTerminus();
++            co_await manager->afterDiscoverTerminus(addedTids);
+ 
+             for (const auto& mctpInfo : mctpInfos)
+             {
++                if (!isQueuedMctpInfoCurrent(queuedMctpInfo, mctpInfo))
++                {
++                    removeStaleDiscoveredTerminus(mctpInfo);
++                    continue;
++                }
++
+                 if (std::find(retryMctpInfos.begin(), retryMctpInfos.end(),
+                               mctpInfo) != retryMctpInfos.end())
+                 {
+@@ -320,11 +555,20 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+             }
+         }
+ 
+-        queuedMctpInfos.pop();
++        if (discoveryTimeoutGuard)
++        {
++            auto rc = discoveryTimeoutGuard->stop();
++            if (rc)
++            {
++                lg2::warning(
++                    "Failed to stop terminus discovery timeout guard, response code {RC}",
++                    "RC", rc);
++            }
++        }
+ 
+         if (!retryMctpInfos.empty())
+         {
+-            queuedMctpInfos.emplace(std::move(retryMctpInfos));
++            queuedMctpInfos.emplace(makeQueuedMctpInfos(retryMctpInfos, false));
+         }
+     }
+ 
+@@ -355,6 +599,15 @@ void TerminusManager::updateDiscoveryRetryState(const MctpInfo& mctpInfo,
+ 
+ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
+ {
++    for (const auto& mctpInfo : mctpInfos)
++    {
++        markMctpEndpointRemoved(mctpInfo);
++        mctpInfoAvailTable[mctpInfo] = false;
++        discoveryRetryMap.erase(mctpInfo);
++    }
++
++    cleanupQueuedMctpInfos(mctpInfos);
++
+     // remove terminus
+     for (const auto& mctpInfo : mctpInfos)
+     {
+@@ -364,16 +617,29 @@ void TerminusManager::removeMctpTerminus(const MctpInfos& mctpInfos)
+             continue;
+         }
+ 
++        auto mappedMctpInfo = toMctpInfo(it->first);
++        if (mappedMctpInfo)
++        {
++            mctpInfoAvailTable[mappedMctpInfo.value()] = false;
++        }
++
+         if (manager)
+         {
++            manager->updateAvailableState(it->second->getTid(), false);
+             manager->stopSensorPolling(it->second->getTid());
+         }
+ 
+         unmapTid(it->first);
+         termini.erase(it);
+         mctpInfoAvailTable.erase(mctpInfo);
++        if (mappedMctpInfo)
++        {
++            mctpInfoAvailTable.erase(mappedMctpInfo.value());
++        }
+         discoveryRetryMap.erase(mctpInfo);
+     }
++
++    cancelMctpEndpointRequests(mctpInfos);
+ }
+ 
+ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
+@@ -817,6 +1083,14 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
+         co_return PLDM_ERROR_NOT_READY;
+     }
+ 
++    auto endpointKey = getMctpEndpointKey(mctpInfo.value());
++    auto endpointPresent = mctpEndpointPresent.find(endpointKey);
++    if (endpointPresent != mctpEndpointPresent.end() &&
++        !endpointPresent->second)
++    {
++        co_return PLDM_ERROR_NOT_READY;
++    }
++
+     // There's a cost of maintaining another table to hold availability
+     // status as we can't ensure that it always synchronizes with the
+     // mctpInfoTable; std::map operator[] will insert a default of boolean
+diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
+index 35ca20c..003f0f7 100644
+--- a/platform-mc/terminus_manager.hpp
++++ b/platform-mc/terminus_manager.hpp
+@@ -6,6 +6,7 @@
+ #include <libpldm/platform.h>
+ #include <libpldm/pldm.h>
+ 
++#include <cstdint>
+ #include <limits>
+ #include <map>
+ #include <memory>
+@@ -192,6 +193,28 @@ class TerminusManager
+         const std::string& terminusName);
+ 
+   private:
++    struct MctpEndpointKey
++    {
++        mctp_eid_t eid;
++        NetworkId networkId;
++
++        bool operator<(const MctpEndpointKey& other) const
++        {
++            if (eid != other.eid)
++            {
++                return eid < other.eid;
++            }
++
++            return networkId < other.networkId;
++        }
++    };
++
++    struct QueuedMctpInfos
++    {
++        MctpInfos mctpInfos;
++        std::map<MctpEndpointKey, uint64_t> generations;
++    };
++
+     /** @brief Find the terminus object pointer in termini list.
+      *
+      *  @param[in] mctpInfos - list information of the MCTP endpoints
+@@ -222,6 +245,34 @@ class TerminusManager
+                                    MctpInfos& retryMctpInfos,
+                                    bool& terminusInitFailed);
+ 
++    /** @brief Build an endpoint key from an MCTP endpoint. */
++    MctpEndpointKey getMctpEndpointKey(const MctpInfo& mctpInfo) const;
++
++    /** @brief Mark endpoint discovery generation as present/current. */
++    uint64_t markMctpEndpointPresent(const MctpInfo& mctpInfo);
++
++    /** @brief Mark endpoint discovery generation as removed/stale. */
++    void markMctpEndpointRemoved(const MctpInfo& mctpInfo);
++
++    /** @brief Build a queued discovery batch and capture endpoint generations.
++     */
++    QueuedMctpInfos makeQueuedMctpInfos(const MctpInfos& mctpInfos,
++                                        bool refreshGenerations);
++
++    /** @brief Check if a queued endpoint still matches the current generation.
++     */
++    bool isQueuedMctpInfoCurrent(const QueuedMctpInfos& queuedMctpInfos,
++                                 const MctpInfo& mctpInfo) const;
++
++    /** @brief Remove stale endpoints from pending discovery queue entries. */
++    void cleanupQueuedMctpInfos(const MctpInfos& mctpInfos);
++
++    /** @brief Cancel all requester operations for the supplied endpoints. */
++    void cancelMctpEndpointRequests(const MctpInfos& mctpInfos);
++
++    /** @brief Remove a newly-created terminus if its queued entry is stale. */
++    void removeStaleDiscoveredTerminus(const MctpInfo& mctpInfo);
++
+     /** @brief Initialize terminus and then instantiate terminus object to keeps
+      *         the data fetched from terminus
+      *
+@@ -302,7 +353,7 @@ class TerminusManager
+     std::map<pldm_tid_t, MctpInfo> mctpInfoTable;
+ 
+     /** @brief A queue of MctpInfos to be discovered **/
+-    std::queue<MctpInfos> queuedMctpInfos{};
++    std::queue<QueuedMctpInfos> queuedMctpInfos{};
+ 
+     /** @brief coroutine handle of discoverTerminusTask */
+     std::optional<std::pair<exec::async_scope, std::optional<int>>>
+@@ -317,6 +368,12 @@ class TerminusManager
+     /** @brief MCTP Endpoint available status mapping */
+     std::map<MctpInfo, Availability> mctpInfoAvailTable;
+ 
++    /** @brief Endpoint generations used to stale queued discovery work. */
++    std::map<MctpEndpointKey, uint64_t> mctpEndpointGenerations;
++
++    /** @brief Current endpoint presence by EID/network. */
++    std::map<MctpEndpointKey, bool> mctpEndpointPresent;
++
+     /** @brief reference of main event loop of pldmd, primarily used to schedule
+      *  work
+      */
+-- 
+2.47.3
+

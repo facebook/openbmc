@@ -36,6 +36,8 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0028-oem-meta-bound-the-OEM-event-record-before-formattin.patch \
     file://0029-fw-update-Fix-redundant-inventory-entries-for-single.patch \
     file://0030-fw_update-stop-sensor-polling-during-update-when-con.patch \
+    file://0031-requester-complete-queued-requests-on-endpoint-cance.patch \
+    file://0032-platform-mc-drop-stale-discovery-work-on-endpoint-re.patch \
 "
 
 # Must apply after common/lfopenbmc pldm patches.

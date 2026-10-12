@@ -5,7 +5,7 @@
 
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <firmware_update_template_parameter>
-      firmware_update_template_parameter: This should have the pattern <device type>:<hyphen separated unique device addresses>:<uuid>"
+      firmware_update_template_parameter: This should have the pattern <device type>:<device_position|device_uda>_<device_num|NA>:<component|NA>:<uuid>"
     exit 1
 fi
 

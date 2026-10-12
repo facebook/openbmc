@@ -1,27 +1,48 @@
 #!/bin/bash
 
 # ARGUMENTS:
-# 1: device type
-# 2: device location in <position>_<device_number> format
-#    On RMCv1, position = unique device address and device_number = "NA"
-#    On RMCv2, position = shelf (starts with 100) and device_number = spot in shelf
-# 3: Optional override config
+# 1: firmware-upgrade service template parameter, <device_type>:<device_location>:<component>:<uuid>
+#    device_location is in <position>_<device_number> format
+#      On RMCv1, position = unique device address and device_number = "NA"
+#      On RMCv2, position = shelf (starts with 100) and device_number = spot in shelf
+#    component is the component within the device, or NA if the device has a single firmware
+# The firmware image is expected at /tmp/firmware-<device_type>-<device_location>-<component>
 
-if [ $# -lt 2 ]; then
-    echo "Usage: $0 <device_type> <device_location> [override_config]
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <device_type>:<device_location>:<component>:<uuid>
       device_type: device type we will be upgrading
       device_location: The location of the modbus device to upgrade in <position>_<device_number> format
-      override_config: Optional configuration file to override default settings"
+      component: The sub-component in this device. Or NA if not applicable (Single firmware for device)
+      uuid: Unique identifier for this upgrade request
+    The firmware image is expected at /tmp/firmware-<device_type>-<device_location>-<component>"
     exit 1
 fi
 
-OVERRIDE_CONFIG_FILE=${3:-/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json}
-
 set -u
 
-DEVICE_TYPE="$1"
+IFS=: read -r DEVICE_TYPE DEVICE_LOCATION COMPONENT _ <<< "$1"
 
-DEVICE_LOCATION="$2"
+if [[ ! "$DEVICE_TYPE" =~ ^[a-zA-Z0-9_]+$ ]]; then
+    echo "Invalid device type: $DEVICE_TYPE" >&2
+    exit 1
+fi
+
+if [[ ! "$DEVICE_LOCATION" =~ ^[0-9]+_([0-9]+|NA)$ ]]; then
+    echo "Invalid device location: $DEVICE_LOCATION" >&2
+    exit 1
+fi
+
+if [[ ! "$COMPONENT" =~ ^[a-zA-Z0-9_]+$ ]]; then
+    echo "Invalid component: $COMPONENT" >&2
+    exit 1
+fi
+
+if [[ "$COMPONENT" != "NA" ]]; then
+    echo "Component upgrades are not supported yet" >&2
+    exit 1
+fi
+
+OVERRIDE_CONFIG_FILE=/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json
 
 position="${DEVICE_LOCATION%%_*}"
 device_number="${DEVICE_LOCATION#*_}"
@@ -45,7 +66,7 @@ FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
 
 ERRORS=""
 SUCCESSES=""
-FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${DEVICE_LOCATION}"
+FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${DEVICE_LOCATION}-${COMPONENT}"
 trap "rm ${FIRMWARE_FILE}" EXIT
 UPDATE_COMMANDS=()
 manufacturer=$("$script_dir/get-manufacturer" "$DEVICE_TYPE" "$UDA" "$CONFIG_FILE")

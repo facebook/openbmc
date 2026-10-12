@@ -37,107 +37,37 @@ if [[ ! "$COMPONENT" =~ ^[a-zA-Z0-9_]+$ ]]; then
     exit 1
 fi
 
-if [[ "$COMPONENT" != "NA" ]]; then
-    echo "Component upgrades are not supported yet" >&2
-    exit 1
-fi
-
-OVERRIDE_CONFIG_FILE=/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json
-
 position="${DEVICE_LOCATION%%_*}"
 device_number="${DEVICE_LOCATION#*_}"
-if [[ "$device_number" == "NA" ]]; then
-    UDA="$position"
+if [[ "$device_number" == "NA" ]] && (( 10#$position > 255 )); then
+    # Rackmon unique device addresses are port << 8 | addr
+    DEVICE_ARGS=(--address "$position")
 else
-    echo "This upgrade is not supported yet"
+    # Inventory names are upper case, e.g. BBU_1_1
+    name_type="${DEVICE_TYPE^^}"
+    # modbus-update.py resolves AALCv2 (RPU2) devices through the RPU name
+    if [[ "$name_type" == "RPU2" ]]; then
+        name_type="RPU"
+    fi
+    if [[ "$device_number" == "NA" ]]; then
+        DEVICE_ARGS=(--name "${name_type}_${position}")
+    else
+        DEVICE_ARGS=(--name "${name_type}_${position}_${device_number}")
+    fi
+fi
+
+COMPONENT_ARGS=()
+if [[ "$COMPONENT" != "NA" ]]; then
+    COMPONENT_ARGS=(--component "$COMPONENT")
+fi
+
+FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${DEVICE_LOCATION}-${COMPONENT}"
+trap 'rm -f "$FIRMWARE_FILE"' EXIT
+
+# modbus-update.py takes the modbus lock itself
+if /usr/local/bin/modbus-update.py "${DEVICE_ARGS[@]}" "${COMPONENT_ARGS[@]}" "$FIRMWARE_FILE"; then
+    echo "Successfully upgraded ${DEVICE_TYPE} ${DEVICE_LOCATION} ${COMPONENT} using ${DEVICE_ARGS[*]}"
+else
+    echo "Failed to upgrade ${DEVICE_TYPE} ${DEVICE_LOCATION} ${COMPONENT} using ${DEVICE_ARGS[*]}" >&2
     exit 1
 fi
-
-CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
-
-if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
-    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
-fi
-
-echo "Using $CONFIG_FILE config file"
-script_dir=$( dirname "${BASH_SOURCE[0]}" )
-
-FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
-
-ERRORS=""
-SUCCESSES=""
-FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${DEVICE_LOCATION}-${COMPONENT}"
-trap "rm ${FIRMWARE_FILE}" EXIT
-UPDATE_COMMANDS=()
-manufacturer=$("$script_dir/get-manufacturer" "$DEVICE_TYPE" "$UDA" "$CONFIG_FILE")
-
-case "$manufacturer" in
-        "artesyn")
-            case "$DEVICE_TYPE" in
-                "psu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-aei.py --addr $UDA $FIRMWARE_FILE")
-                    ;;
-                *)
-                    ERRORS+="${DEVICE_TYPE} at address ${UDA} has ${manufacturer} without known firmware upgrade process\n"
-                    ;;
-            esac
-            ;;
-        "coolermaster")
-            case "$DEVICE_TYPE" in
-                "rpu2")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-coolermaster.py --addr $UDA $FIRMWARE_FILE")
-                    ;;
-                *)
-                    ERRORS+="${DEVICE_TYPE} at address ${UDA} has ${manufacturer} without known firmware upgrade process\n"
-                    ;;
-            esac
-            ;;
-        "delta")
-            case "$DEVICE_TYPE" in
-                "bbu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor delta --addr $UDA $FIRMWARE_FILE")
-                    ;;
-                "psu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-delta-orv3.py --addr $UDA $FIRMWARE_FILE")
-                    ;;
-                "rpu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-delta-plc.py --addr $UDA --oem-block $FIRMWARE_FILE")
-                    ;;
-                *)
-                    ERRORS+="${DEVICE_TYPE} at address ${UDA} has ${manufacturer} without known firmware upgrade process\n"
-                    ;;
-            esac
-            ;;
-        "panasonic")
-            case "$DEVICE_TYPE" in
-                "bbu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor panasonic --addr $UDA $FIRMWARE_FILE")
-                    ;;
-                *)
-                    ERRORS+="${DEVICE_TYPE} at address ${UDA} has ${manufacturer} without known firmware upgrade process\n"
-                    ;;
-            esac
-            ;;
-        *)
-            ERRORS+="Could not identify manufacturer for ${DEVICE_TYPE} at address ${UDA}\n"
-            ;;
-esac
-
-for cmd in "${UPDATE_COMMANDS[@]}"; do
-    if eval "$cmd"; then
-        SUCCESSES+="Successfully upgraded ${DEVICE_TYPE} with command: ${cmd}\n"
-    else
-        ERRORS+="Failed to upgrade ${DEVICE_TYPE} with command: ${cmd}\n"
-    fi
-done
-
-if [ -z "$ERRORS" ]; then
-    echo "No errors"
-    echo -e "${SUCCESSES}"
-    exit 0
-fi
-
-echo -e "${SUCCESSES}"
-echo "FAILED TO UPGRADE DEVICE. LOOK ABOVE FOR LOGS"
-echo -e "${ERRORS}"
-exit 1

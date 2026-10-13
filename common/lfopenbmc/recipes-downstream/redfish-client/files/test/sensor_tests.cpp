@@ -259,7 +259,7 @@ TEST_F(SensorTest, HardShutdownAlarmTracksPolledValue)
         auto sensorServer = createSensor(kSensorNamespace, kSensorId,
                                          kAssociationPath, 119.0, "Cel",
                                          std::nullopt, std::nullopt, 120.0);
-        ASSERT_NE(nullptr, sensorServer);
+        EXPECT_NE(nullptr, sensorServer);
         auto hardShutdownClient = getHardShutdownClient();
 
         EXPECT_EQ(120.0, co_await hardShutdownClient.hard_shutdown_high());

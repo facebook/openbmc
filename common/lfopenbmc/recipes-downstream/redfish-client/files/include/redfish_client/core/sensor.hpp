@@ -6,6 +6,7 @@
 
 #include <sdbusplus/async.hpp>
 #include <xyz/openbmc_project/Association/Definitions/aserver.hpp>
+#include <xyz/openbmc_project/Sensor/Threshold/HardShutdown/aserver.hpp>
 #include <xyz/openbmc_project/Sensor/Value/aserver.hpp>
 #include <xyz/openbmc_project/Sensor/Value/common.hpp>
 
@@ -27,6 +28,7 @@ class Sensor;
 using SensorInterfaces = sdbusplus::async::server_t<
     Sensor,
     sdbusplus::aserver::xyz::openbmc_project::association::Definitions,
+    sdbusplus::aserver::xyz::openbmc_project::sensor::threshold::HardShutdown,
     sdbusplus::aserver::xyz::openbmc_project::sensor::Value>;
 
 // The live D-Bus object for one Redfish sensor. Created lazily, only once a
@@ -62,6 +64,7 @@ class Sensor : public SensorInterfaces
     static std::unique_ptr<Sensor> create(
         sdbusplus::async::context& ctx, const std::string& ns,
         const std::string& id, const std::string& associationPath,
+        const std::optional<double>& hardShutdownHigh,
         redfish_binding::Sensor::Sensor& parsed);
 
     // Stays silent when the value barely moved, so continuous polling does not
@@ -80,8 +83,10 @@ class Sensor : public SensorInterfaces
   private:
     Sensor(sdbusplus::async::context& ctx, const std::string& objectPath,
            const std::string& associationPath, double reading,
-           const Metadata& metadata);
+           const Metadata& metadata,
+           const std::optional<double>& hardShutdownHigh);
 
+    void updateHardShutdownAlarm(double current);
     auto shouldSkipSignal(double current) -> bool;
 
     std::mutex lock;

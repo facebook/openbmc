@@ -14,8 +14,10 @@ struct SensorMapper
     std::string fromUrl;
     std::string toNamespace;
     std::string toId;
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(SensorMapper, fromUrl, toNamespace, toId)
+    std::optional<double> hardShutdownHigh;
 };
+
+void from_json(const nlohmann::json& json, SensorMapper& mapper);
 
 struct SensorConfig
 {

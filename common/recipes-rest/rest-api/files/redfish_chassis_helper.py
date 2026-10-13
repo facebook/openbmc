@@ -7,7 +7,6 @@ from shutil import which
 
 import aggregate_sensor as libag
 import pal
-import rest_sensors
 import sdr
 from common_utils import async_exec
 
@@ -135,6 +134,7 @@ def get_older_fboss_sensor_details_filtered(
 
 def get_older_fboss_sensor_details(fru_name: str) -> t.List[SensorDetails]:
     sensor_details_list = []
+    import rest_sensors
     import sensors
 
     sensors.init()

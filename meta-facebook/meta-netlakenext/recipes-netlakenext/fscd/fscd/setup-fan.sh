@@ -28,7 +28,7 @@
 ### END INIT INFO
 
 FAN_RPM_CFG="/mnt/data/kv_store/fan_rpm_cfg"
-DEFAULT_FAN_SPEED=80
+DEFAULT_FAN_SPEED=50
 
 # check file exist and read fan speed value, remove all whitespace characters
 if [ -s "$FAN_RPM_CFG" ]; then

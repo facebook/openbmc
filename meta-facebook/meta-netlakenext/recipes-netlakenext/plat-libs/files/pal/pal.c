@@ -135,7 +135,7 @@ struct pal_key_cfg {
   {"timestamp_sled", "0", NULL},
   /* Add more Keys here */
   {"server_power_limit_status", "enable (invalid)", NULL},
-  {"fan_rpm_cfg", "80", NULL},
+  {"fan_rpm_cfg", "50", NULL},
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
 

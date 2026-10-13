@@ -1,6 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include "Rackmon.h"
 #include <nlohmann/json.hpp>
+#include <algorithm>
 #include <fstream>
 #include <optional>
 #include "DeviceLocationFilter.h"
@@ -79,20 +80,79 @@ void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
   }
 }
 
+std::shared_ptr<Modbus> Rackmon::findInterface(const std::string& name) const {
+  auto it = std::find_if(
+      interfaces_.begin(), interfaces_.end(), [&name](const auto& interface) {
+        return interface->name() == name;
+      });
+  return it == interfaces_.end() ? nullptr : *it;
+}
+
+bool Rackmon::hasScanner(const std::string& name) const {
+  return std::any_of(
+      scanners_.begin(), scanners_.end(), [&name](const auto& scanner) {
+        return scanner->interfaceName() == name;
+      });
+}
+
+void Rackmon::addScanner(const std::shared_ptr<Modbus>& interface) {
+  if (!hasScanner(interface->name())) {
+    scanners_.push_back(
+        std::make_unique<InterfaceScanner>(
+            interface, *deviceInventory_, registerMapDB_, interval_));
+  }
+}
+
+void Rackmon::removeScanner(const std::string& name) {
+  auto scanner = std::find_if(
+      scanners_.begin(), scanners_.end(), [&name](const auto& scanner) {
+        return scanner->interfaceName() == name;
+      });
+  if (scanner != scanners_.end()) {
+    // Cut short a scan in flight, then join this interface's threads.
+    (*scanner)->endForceScan();
+    scanners_.erase(scanner);
+  }
+}
+
 void Rackmon::start(PollThreadTime interval) {
   std::unique_lock lk(threadMutex_);
   logInfo << "Start was requested" << std::endl;
-  assertNotStarted("Already running");
+  if (scanners_.size() == interfaces_.size() && !interfaces_.empty()) {
+    throw std::runtime_error("Already running");
+  }
+  interval_ = interval;
 
   deviceInventory_->setExclusiveModeForAll(false);
-  std::transform(
-      interfaces_.begin(),
-      interfaces_.end(),
-      std::back_inserter(scanners_),
-      [this, interval](const auto& interface) {
-        return std::make_unique<InterfaceScanner>(
-            interface, *this->deviceInventory_, this->registerMapDB_, interval);
-      });
+  // Interfaces which were not paused on their own still have a scanner,
+  // addScanner() leaves those be.
+  for (const auto& interface : interfaces_) {
+    addScanner(interface);
+  }
+}
+
+bool Rackmon::pauseInterface(const std::string& name) {
+  std::unique_lock lk(threadMutex_);
+  auto interface = findInterface(name);
+  if (!interface) {
+    return false;
+  }
+  logInfo << "Pause was requested on " << name << std::endl;
+  deviceInventory_->setExclusiveModeForInterface(*interface, true);
+  removeScanner(name);
+  return true;
+}
+
+bool Rackmon::resumeInterface(const std::string& name) {
+  std::unique_lock lk(threadMutex_);
+  auto interface = findInterface(name);
+  if (!interface) {
+    return false;
+  }
+  logInfo << "Resume was requested on " << name << std::endl;
+  deviceInventory_->setExclusiveModeForInterface(*interface, false);
+  addScanner(interface);
+  return true;
 }
 
 void Rackmon::stop(bool forceStop) {
@@ -141,12 +201,23 @@ void Rackmon::rawCmd(
   resp.len += 2;
 }
 
-std::string Rackmon::getInterfaceName(
-    uint8_t deviceAddress,
-    std::optional<uint8_t> port) const {
-  return deviceInventory_->getModbusDevice(deviceAddress, port)
-      ->getInterface()
-      .name();
+std::map<std::string, InterfaceStatus> Rackmon::getInterfaceStatus() {
+  auto allDevices = deviceInventory_->getAllModbusDevices();
+  std::shared_lock lk(threadMutex_);
+  std::map<std::string, InterfaceStatus> status;
+  for (const auto& interface : interfaces_) {
+    const std::string& name = interface->name();
+    InterfaceStatus& iface = status[name];
+    iface.monitoring = hasScanner(name);
+    for (const auto& device : allDevices) {
+      if (&device->getInterface() == interface.get()) {
+        iface.devices.push_back(
+            DeviceLocationFilter::combine(
+                interface->getPort(), device->getDeviceAddress()));
+      }
+    }
+  }
+  return status;
 }
 
 void Rackmon::readHoldingRegisters(
@@ -246,6 +317,11 @@ void Rackmon::reload(
       dev.forceReloadRegisters(regFilter);
     }
   }
+}
+
+void to_json(json& j, const InterfaceStatus& m) {
+  j["status"] = m.monitoring;
+  j["devices"] = m.devices;
 }
 
 } // namespace rackmon

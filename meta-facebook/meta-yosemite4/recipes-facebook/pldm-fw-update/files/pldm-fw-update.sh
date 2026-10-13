@@ -102,7 +102,7 @@ readonly WF_VR_INF_CD_CXL2="04" # WF VR PVDDQ_CD 2
 # phosphor-dbus-interfaces define
 readonly TargetDetermined="xyz.openbmc_project.Software.Update.TargetDetermined"
 readonly UpdateSuccessful="xyz.openbmc_project.Software.Update.UpdateSuccessful"
-readonly ApplyFailed="xyz.openbmc_project.Software.Update.ApplyFailed"
+readonly ActivateFailed="xyz.openbmc_project.Software.Update.ActivateFailed"
 
 exec 200>"$lockfile"
 retry_remain_count=$RETRY_UPDATE_COUNT
@@ -1380,11 +1380,15 @@ add_init_sel() {
 add_result_sel() {
 	RESULT="$1"
 
+	# NEW_BIC_NAME is only resolved after the image is identified, so an update
+	# blocked by pldm_fw_identify() can still have it empty (VR targets).
+	local target_name="${NEW_BIC_NAME:-$bic_name}"
+
 	if [ "$is_rcvy" != true ]; then
 	    if [ "${RESULT}" == "${FAILURE_MSG}" ]; then
-		    log-create ${ApplyFailed} --json "{\"IMAGE_IDENTIFIER\":\"${pldm_image}\", \"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\"}"
+		    log-create ${ActivateFailed} --json "{\"IMAGE_IDENTIFIER\":\"${pldm_image}\", \"TARGET_NAME\":\"${target_name} slot${slot_id}\"}"
 	    elif [ "${RESULT}" == "${SUCCESS_MSG}" ]; then
-		    log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
+		    log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${target_name} slot${slot_id}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
 	    fi
 	fi
 }

@@ -1,0 +1,101 @@
+From c9e6922c4ea4b227f8911c87807ae00f6c65cfa4 Mon Sep 17 00:00:00 2001
+From: Marcin Rajwa <marcin.rajwa@arista.com>
+Date: Wed, 13 May 2026 13:07:29 -0700
+Subject: [PATCH] fix to cpld_ioctl for ast2700
+Upstream-Status: Pending
+Change-Id: Ie29c67620ca0f2e6c3c6e3e2ebc6519ac71bc0cd
+---
+ .../files/lib/ioctl/cpldupdate_dll_ioctl.c    | 39 ++++++++++++-----
+ 1 file changed, 32 insertions(+), 7 deletions(-)
+
+diff --git a/cpldupdate_dll_ioctl.c b/cpldupdate_dll_ioctl.c
+index 249a1a4d13..94adeab9b8 100644
+--- a/cpldupdate_dll_ioctl.c
++++ b/cpldupdate_dll_ioctl.c
+@@ -19,6 +19,7 @@
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <stdio.h>
++#include <stdint.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
+@@ -31,13 +32,6 @@
+  * The following structures and ioctl macros are copied from kernel header
+  * "include/uapi/linux/jtag.h".
+  */
+-
+-struct tck_bitbang {
+-   unsigned char  tms;
+-   unsigned char  tdi;
+-   unsigned char  tdo;
+-} __attribute__((__packed__));
+-
+ struct run_cycle_param {
+     unsigned char     tdi;        // TDI bit value to write
+     unsigned char     tms;        // TMS bit value to write
+@@ -45,6 +39,34 @@ struct run_cycle_param {
+     unsigned char     tdo;        // TDO bit value to read
+ };
+ 
++/**
++ * struct bitbang_packet - jtag bitbang array packet:
++ *
++ * @data:   JTAG Bitbang struct array pointer(input/output)
++ * @length: array size (input)
++ *
++ * Structure provide interface to JTAG device for JTAG bitbang bundle execution
++ */
++struct bitbang_packet {
++        struct tck_bitbang *data;
++        uint32_t   length;
++} __attribute__((__packed__));
++
++/**
++ * struct jtag_bitbang - jtag bitbang:
++ *
++ * @tms: JTAG TMS
++ * @tdi: JTAG TDI (input)
++ * @tdo: JTAG TDO (output)
++ *
++ * Structure provide interface to JTAG device for JTAG bitbang execution.
++ */
++struct tck_bitbang {
++        uint8_t    tms;
++        uint8_t    tdi;
++        uint8_t    tdo;
++} __attribute__((__packed__));
++
+ /* ioctl interface */
+ #define __JTAG_IOCTL_MAGIC  0xb2
+ #define JTAG_IOCBITBANG _IOW(__JTAG_IOCTL_MAGIC, 6, unsigned int)
+@@ -120,20 +142,22 @@ static int do_bitbang(struct jtag_ctx *jctx,
+                       cpldupdate_pin_value_en tdi,
+                       cpldupdate_pin_value_en *tdo)
+ {
+-    struct tck_bitbang bitbang;
+-
++    struct tck_bitbang bitbang = {0};
++    struct bitbang_packet packet = {0};
+     bitbang.tms = tms == CPLDUPDATE_PIN_VALUE_HIGH ? 1 : 0;
+     bitbang.tdi = tdi == CPLDUPDATE_PIN_VALUE_HIGH ? 1 : 0;
+     bitbang.tdo = 0;
+-    int rc = ioctl(jctx->fd, JTAG_IOCBITBANG, &bitbang);
++
++    packet.data = &bitbang;
++    packet.length = 1;
++
++    int rc = ioctl(jctx->fd, JTAG_IOCBITBANG, &packet);
+     if (rc < 0) {
+         return errno;
+     }
+-
+     if (tdo) {
+         *tdo = bitbang.tdo ? CPLDUPDATE_PIN_VALUE_HIGH : CPLDUPDATE_PIN_VALUE_LOW;
+     }
+-
+     return 0;
+ }
+ 
+-- 
+2.50.1 (Apple Git-155)

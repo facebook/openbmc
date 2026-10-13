@@ -16,4 +16,5 @@ SRC_URI:append:clemente = " \
     file://0501-Update-nvidia_hmc.json.patch \
     file://0502-configurations-ocp-cx7_ocp-Use-MCTPI2CTarget-instead.patch \
     file://0503-configurations-nvidia-Use-external-senosr-for-gb300-.patch \
+    file://0504-configurations-samsung-Rename-PM9D3a-sensors-for-Cle.patch \
 "

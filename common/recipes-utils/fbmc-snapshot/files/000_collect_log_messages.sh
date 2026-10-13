@@ -35,4 +35,8 @@ fi
 echo -e  "\n################################"
 echo "########## journal log ###########"
 echo "##################################"
-journalctl -a
+if ! command -v journalctl >/dev/null 2>&1; then
+	echo "journalctl doesn't exist!"
+else
+	journalctl -a
+fi

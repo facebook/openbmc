@@ -1,6 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include "ModbusDevice.h"
 #include <thread>
+#include "ModbusDeviceInventory.h"
 #include "TestUtils.h"
 
 using namespace std;
@@ -189,6 +190,18 @@ TEST_F(ModbusDeviceTest, TimeoutInExclusiveMode) {
   EXPECT_THROW(dev.command(req, resp), TimeoutException);
   ModbusDeviceInfo status = dev.getInfo();
   EXPECT_EQ(status.timeouts, 1);
+}
+
+// Setting exclusive mode on one interface reports whether any device
+// on that interface was found.
+TEST_F(ModbusDeviceTest, InventoryExclusiveModeForInterface) {
+  Mock2Modbus other(std::nullopt);
+  ModbusDeviceInventory inventory;
+  inventory.addDevice({0x32, get_modbus()}, get_regmap());
+  EXPECT_TRUE(inventory.setExclusiveModeForInterface(get_modbus(), true));
+  EXPECT_TRUE(inventory.setExclusiveModeForInterface(get_modbus(), false));
+  EXPECT_FALSE(inventory.setExclusiveModeForInterface(other, true));
+  EXPECT_FALSE(inventory.setExclusiveModeForInterface(other, false));
 }
 
 TEST_F(ModbusDeviceTest, MakeDormant) {

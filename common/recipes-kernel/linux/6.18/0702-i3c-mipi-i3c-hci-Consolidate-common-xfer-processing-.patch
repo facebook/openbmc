@@ -1,0 +1,186 @@
+From 4b68f1351fe817991d1d0e591766602d6ab87e4d Mon Sep 17 00:00:00 2001
+From: Adrian Hunter <adrian.hunter@intel.com>
+Date: Fri, 6 Mar 2026 09:24:48 +0200
+Subject: [PATCH] i3c: mipi-i3c-hci: Consolidate common xfer processing logic
+
+commit 7ac45bc68f089887ab3a70358057edb7e6b6084e upstream.
+
+Several parts of the MIPI I3C HCI driver duplicate the same sequence for
+queuing a transfer, waiting for completion, and handling timeouts. This
+logic appears in five separate locations and will be affected by an
+upcoming fix.
+
+Refactor the repeated code into a new helper, i3c_hci_process_xfer(), and
+store the timeout value in the hci_xfer structure so that callers do not
+need to pass it as a separate parameter.
+
+Fixes: 9ad9a52cce282 ("i3c/master: introduce the mipi-i3c-hci driver")
+Cc: stable@vger.kernel.org
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Reviewed-by: Frank Li <Frank.Li@nxp.com>
+Link: https://patch.msgid.link/20260306072451.11131-12-adrian.hunter@intel.com
+Signed-off-by: Alexandre Belloni <alexandre.belloni@bootlin.com>
+[backport: adjust hci.h context, i3c_hci_sync_irq_inactive() is not in v6.18]
+---
+ drivers/i3c/master/mipi-i3c-hci/cmd_v1.c |  8 ++---
+ drivers/i3c/master/mipi-i3c-hci/cmd_v2.c |  8 ++---
+ drivers/i3c/master/mipi-i3c-hci/core.c   | 43 ++++++++++++++----------
+ drivers/i3c/master/mipi-i3c-hci/hci.h    |  2 ++
+ 4 files changed, 33 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
+index efb7a1f92641..8751f8e3950e 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
++++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
+@@ -333,12 +333,10 @@ static int hci_cmd_v1_daa(struct i3c_hci *hci)
+ 			CMD_A0_ROC | CMD_A0_TOC;
+ 		xfer->cmd_desc[1] = 0;
+ 		xfer->completion = &done;
+-		hci->io->queue_xfer(hci, xfer, 1);
+-		if (!wait_for_completion_timeout(&done, HZ) &&
+-		    hci->io->dequeue_xfer(hci, xfer, 1)) {
+-			ret = -ETIMEDOUT;
++		xfer->timeout = HZ;
++		ret = i3c_hci_process_xfer(hci, xfer, 1);
++		if (ret)
+ 			break;
+-		}
+ 		if ((RESP_STATUS(xfer->response) == RESP_ERR_ADDR_HEADER ||
+ 		     RESP_STATUS(xfer->response) == RESP_ERR_NACK) &&
+ 		    RESP_DATA_LENGTH(xfer->response) == 1) {
+diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
+index 5fc2e4c55ebb..d2bc1775cbaf 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
++++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
+@@ -255,6 +255,7 @@ static int hci_cmd_v2_daa(struct i3c_hci *hci)
+ 	xfer[0].rnw = true;
+ 	xfer[0].cmd_desc[1] = CMD_A1_DATA_LENGTH(8);
+ 	xfer[1].completion = &done;
++	xfer[1].timeout = HZ;
+ 
+ 	for (;;) {
+ 		ret = i3c_master_get_free_addr(&hci->master, next_addr);
+@@ -274,12 +275,9 @@ static int hci_cmd_v2_daa(struct i3c_hci *hci)
+ 			CMD_A0_ASSIGN_ADDRESS(next_addr) |
+ 			CMD_A0_ROC |
+ 			CMD_A0_TOC;
+-		hci->io->queue_xfer(hci, xfer, 2);
+-		if (!wait_for_completion_timeout(&done, HZ) &&
+-		    hci->io->dequeue_xfer(hci, xfer, 2)) {
+-			ret = -ETIMEDOUT;
++		ret = i3c_hci_process_xfer(hci, xfer, 2);
++		if (ret)
+ 			break;
+-		}
+ 		if (RESP_STATUS(xfer[0].response) != RESP_SUCCESS) {
+ 			ret = 0;  /* no more devices to be assigned */
+ 			break;
+diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
+index d81b3ff9ce5d..668eeb155d5a 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/core.c
++++ b/drivers/i3c/master/mipi-i3c-hci/core.c
+@@ -185,6 +185,25 @@ void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
+ 	reg_write(DCT_SECTION, FIELD_PREP(DCT_TABLE_INDEX, 0));
+ }
+ 
++int i3c_hci_process_xfer(struct i3c_hci *hci, struct hci_xfer *xfer, int n)
++{
++	struct completion *done = xfer[n - 1].completion;
++	unsigned long timeout = xfer[n - 1].timeout;
++	int ret;
++
++	ret = hci->io->queue_xfer(hci, xfer, n);
++	if (ret)
++		return ret;
++
++	if (!wait_for_completion_timeout(done, timeout) &&
++	    hci->io->dequeue_xfer(hci, xfer, n)) {
++		dev_err(&hci->master.dev, "%s: timeout error\n", __func__);
++		return -ETIMEDOUT;
++	}
++
++	return 0;
++}
++
+ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
+ 				struct i3c_ccc_cmd *ccc)
+ {
+@@ -225,18 +244,14 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
+ 	last = i - 1;
+ 	xfer[last].cmd_desc[0] |= CMD_0_TOC;
+ 	xfer[last].completion = &done;
++	xfer[last].timeout = HZ;
+ 
+ 	if (prefixed)
+ 		xfer--;
+ 
+-	ret = hci->io->queue_xfer(hci, xfer, nxfers);
++	ret = i3c_hci_process_xfer(hci, xfer, nxfers);
+ 	if (ret)
+ 		goto out;
+-	if (!wait_for_completion_timeout(&done, HZ) &&
+-	    hci->io->dequeue_xfer(hci, xfer, nxfers)) {
+-		ret = -ETIMEDOUT;
+-		goto out;
+-	}
+ 	for (i = prefixed; i < nxfers; i++) {
+ 		if (ccc->rnw)
+ 			ccc->dests[i - prefixed].payload.len =
+@@ -307,15 +322,11 @@ static int i3c_hci_priv_xfers(struct i3c_dev_desc *dev,
+ 	last = i - 1;
+ 	xfer[last].cmd_desc[0] |= CMD_0_TOC;
+ 	xfer[last].completion = &done;
++	xfer[last].timeout = HZ;
+ 
+-	ret = hci->io->queue_xfer(hci, xfer, nxfers);
++	ret = i3c_hci_process_xfer(hci, xfer, nxfers);
+ 	if (ret)
+ 		goto out;
+-	if (!wait_for_completion_timeout(&done, HZ) &&
+-	    hci->io->dequeue_xfer(hci, xfer, nxfers)) {
+-		ret = -ETIMEDOUT;
+-		goto out;
+-	}
+ 	for (i = 0; i < nxfers; i++) {
+ 		if (i3c_xfers[i].rnw)
+ 			i3c_xfers[i].len = RESP_DATA_LENGTH(xfer[i].response);
+@@ -355,15 +366,11 @@ static int i3c_hci_i2c_xfers(struct i2c_dev_desc *dev,
+ 	last = i - 1;
+ 	xfer[last].cmd_desc[0] |= CMD_0_TOC;
+ 	xfer[last].completion = &done;
++	xfer[last].timeout = m->i2c.timeout;
+ 
+-	ret = hci->io->queue_xfer(hci, xfer, nxfers);
++	ret = i3c_hci_process_xfer(hci, xfer, nxfers);
+ 	if (ret)
+ 		goto out;
+-	if (!wait_for_completion_timeout(&done, m->i2c.timeout) &&
+-	    hci->io->dequeue_xfer(hci, xfer, nxfers)) {
+-		ret = -ETIMEDOUT;
+-		goto out;
+-	}
+ 	for (i = 0; i < nxfers; i++) {
+ 		if (RESP_STATUS(xfer[i].response) != RESP_SUCCESS) {
+ 			ret = -EIO;
+diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
+index 5502ab0a3535..40b925e4da04 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/hci.h
++++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
+@@ -83,6 +83,7 @@ struct hci_xfer {
+ 	unsigned int data_len;
+ 	unsigned int cmd_tid;
+ 	struct completion *completion;
++	unsigned long timeout;
+ 	union {
+ 		struct {
+ 			/* PIO specific */
+@@ -150,5 +151,6 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci);
+ void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci);
+ void amd_set_od_pp_timing(struct i3c_hci *hci);
+ void amd_set_resp_buf_thld(struct i3c_hci *hci);
++int i3c_hci_process_xfer(struct i3c_hci *hci, struct hci_xfer *xfer, int n);
+ 
+ #endif
+-- 
+2.53.0
+

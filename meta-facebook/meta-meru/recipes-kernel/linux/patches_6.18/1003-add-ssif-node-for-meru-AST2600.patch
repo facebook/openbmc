@@ -1,0 +1,32 @@
+From ad4c8e93726edb0a716482acb12b6ac1ef6f6752 Mon Sep 17 00:00:00 2001
+From: dzarista <daniel.zhu@arista.com>
+Date: Wed, 12 Aug 2026 21:49:31 +0000
+Subject: [PATCH] ARM: dts: aspeed: Add SSIF node for Meru AST2600
+
+Enable I2C3 and add the SSIF BMC endpoint used by the Meru host.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
+index 37d6d817d..fe05453b1 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
+@@ -94,6 +94,15 @@
+ 	};
+ };
+ 
++&i2c3 {
++    status = "okay";
++
++    ssif-bmc@20 {
++        compatible = "ssif-bmc";
++        reg = <0x20>;
++    };
++};
++
+ &i2c11 {
+ 	status = "okay";
+ };
+-- 
+2.51.0

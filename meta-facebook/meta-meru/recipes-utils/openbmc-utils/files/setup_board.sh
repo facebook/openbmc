@@ -22,12 +22,21 @@
 
 NETWORK_CONF_FILE="/etc/systemd/network/10-eth0.network"
 
+cpu_id=$(wedge_cpu_id)
+
+if [[ "$cpu_id" == "$BOARD_ID_RUGGLES" || \
+      "$cpu_id" == "$BOARD_ID_ICECUBE" ]]; then
+    # On ICECUBE systems, alias smb to 9-0050.
+    sed -i '/"name" : "smb"/ {N; s/9-0052/9-0050/}' /etc/weutil/eeprom.json
+fi
+
 if [ -f "/sys/bus/i2c/drivers/at24/9-0053/eeprom" ]; then
     echo "Found chassis EEPROM at 0x53, adjusting eeprom.json"
     sed -i '/"name" : "chassis_eeprom"/ {N; s/9-0052/9-0053/}' /etc/weutil/eeprom.json
 fi
 
-if [ ! -e "$SMB_EEPROM_SYSFS" ]; then
+smb_eeprom_sysfs=$(smb_eeprom_sysfs_path)
+if [ ! -e "$smb_eeprom_sysfs" ]; then
     echo "No SMB eeprom found"
     exit 0
 fi

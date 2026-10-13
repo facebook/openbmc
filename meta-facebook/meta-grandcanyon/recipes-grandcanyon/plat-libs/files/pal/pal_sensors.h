@@ -416,6 +416,8 @@ enum {
   PTB_U34_ADC_MONITOR_V = 0xE9,
   PTB_U35_ADC_MONITOR_V = 0xEA,
   PTB_P48V_AUX_TEMP = 0xEB,
+  PTB_TSENSE_48V_TEMP_C = 0xEC,
+  PTB_TSENSE_GND_TEMP_C = 0xED,
   FAN_0_FRONT = 0xF0,
   FAN_0_REAR = 0xF1,
   FAN_1_FRONT = 0xF2,
@@ -723,5 +725,8 @@ int get_current_dir(const char *device, char *dir_name);
 int pal_sensor_monitor_initial(void);
 bool is_e1s_iocm_i2c_enabled(uint8_t id);
 int pal_exp_sensor_threshold_init(uint8_t fru);
+#ifdef CONFIG_GRANDCANYON2
+const char *pal_get_server_sensor_name(uint8_t sensor_num);
+#endif
 
 #endif

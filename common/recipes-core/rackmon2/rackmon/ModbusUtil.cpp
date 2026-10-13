@@ -3,10 +3,12 @@
 #include <sys/file.h>
 #include <systemd/sd-bus.h>
 #include <unistd.h>
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <optional>
 #include <regex>
 #include <thread>
 #include "InterfaceScanner.h"
@@ -32,13 +34,12 @@ struct ServiceExclusionBase {
     sd_bus_unref(bus);
   }
 
-  void init() {
+  bool init() {
     if (!isServiceRunning()) {
-      return;
+      return false;
     }
-    if (serviceAction(false)) {
-      stopped_ = true;
-    }
+    stopped_ = serviceAction(false);
+    return stopped_;
   }
   void deinit() {
     if (stopped_) {
@@ -105,20 +106,36 @@ struct ServiceExclusionBase {
 };
 
 struct RackmonExclusion : public ServiceExclusionBase {
-  RackmonExclusion() : ServiceExclusionBase("rackmond") {}
+  std::string tty;
+
+  explicit RackmonExclusion(const std::string& ttyPath)
+      : ServiceExclusionBase("rackmond"), tty(ttyPath) {}
+
+  // Pause/resume just the port we are about to drive, leaving rackmond
+  // polling the rest. The reply says whether rackmond manages this port:
+  // if it does not, nothing was paused and there is nothing to wait for
+  // or to resume afterwards.
   bool serviceAction(bool start) override {
     json req;
     req["type"] = start ? "resume" : "pause";
-    rackmonsvc::RackmonClient cli;
-    std::string resp = cli.request(req.dump());
-    json resp_j = json::parse(resp);
-    std::string status;
-    resp_j.at("status").get_to(status);
-    if (status != "SUCCESS") {
-      std::cerr << "ACTION: " << req["type"] << " failed" << std::endl;
+    req["device_path"] = tty;
+    try {
+      rackmonsvc::RackmonClient cli;
+      json resp = json::parse(cli.request(req.dump()));
+      std::string status;
+      bool paused;
+      resp.at("status").get_to(status);
+      resp.at("data").get_to(paused);
+      if (status != "SUCCESS") {
+        std::cerr << "ACTION: " << req["type"] << " failed" << std::endl;
+        return false;
+      }
+      return paused;
+    } catch (const std::exception& e) {
+      std::cerr << "Failed to " << req["type"].get<std::string>()
+                << " rackmond on " << tty << ": " << e.what() << std::endl;
       return false;
     }
-    return true;
   }
 };
 
@@ -176,6 +193,17 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
       if (std::filesystem::path(path).filename() != ttyName) {
         continue;
       }
+      // Someone else already disabled the port. Leave it alone so we do
+      // not re-enable it behind their back when we are done.
+      bool enabled = false;
+      if (!readProperty(path, enabled)) {
+        startMonitoring();
+        return false;
+      }
+      if (!enabled) {
+        std::cerr << "Port " << path << " already disabled" << std::endl;
+        continue;
+      }
       // Record the port before writing it: a write which is accepted
       // but does not settle in time may still land, so it has to be
       // undone either way.
@@ -185,7 +213,7 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
         return false;
       }
     }
-    return true;
+    return !changedPaths.empty();
   }
 
   bool startMonitoring() {
@@ -296,14 +324,16 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
 struct ServiceExclusion {
   std::unique_ptr<RackmonExclusion> rackmonLock;
   std::unique_ptr<PhosphorModbusExclusion> modbusLock;
-  ServiceExclusion(const std::string& tty)
-      : rackmonLock(std::make_unique<RackmonExclusion>()),
+  explicit ServiceExclusion(const std::string& tty)
+      : rackmonLock(std::make_unique<RackmonExclusion>(tty)),
         modbusLock(std::make_unique<PhosphorModbusExclusion>(tty)) {
-    rackmonLock->init();
+    bool rackmonPaused = rackmonLock->init();
     modbusLock->init();
 
-    // Wait for the service to settle down after we've paused it.
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    if (rackmonPaused) {
+      // Wait for the service to settle down after we've paused it.
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
   }
 
   ~ServiceExclusion() {
@@ -539,40 +569,40 @@ int main(int argc, char* argv[]) {
   write->add_option("values", wValues, "Value(s) to write")->required();
 
   CLI11_PARSE(app, argc, argv);
-  ServiceExclusion serviceExclusion(tty);
 
-  json intf;
-  intf["device_path"] = tty;
-  if (*raw) {
-    intf["baudrate"] = baudrate;
-    intf["min_delay"] = minDelay;
-    rackmon::Parity parity = parityMap.at(parityStr);
-    rawCommand(intf, cmd, respLen, parity, timeout);
-    return 0;
-  }
-  if (*data) {
-    intf["baudrate"] = 19200;
-    intf["min_delay"] = 3;
-    dataCommand(intf, regMapPath, true);
-    return 0;
-  }
-  if (*discover) {
-    intf["baudrate"] = 19200;
-    intf["min_delay"] = 3;
-    dataCommand(intf, discoverRegMapPath, false);
-    return 0;
-  }
-  if (*read) {
-    intf["baudrate"] = rBaud;
-    intf["min_delay"] = minDelay;
-    readCommand(intf, rAddr, rReg, rCount, parityMap.at(rParity), rTimeout);
-    return 0;
-  }
-  if (*write) {
-    intf["baudrate"] = wBaud;
-    intf["min_delay"] = minDelay;
-    writeCommand(intf, wAddr, wReg, wValues, parityMap.at(wParity), wTimeout);
-    return 0;
+  try {
+    // Scoped to the try so that any failure destroys it, resuming
+    // monitoring, before we report the error and exit.
+    ServiceExclusion serviceExclusion(tty);
+    json intf;
+    intf["device_path"] = tty;
+    if (*raw) {
+      intf["baudrate"] = baudrate;
+      intf["min_delay"] = minDelay;
+      rackmon::Parity parity = parityMap.at(parityStr);
+      rawCommand(intf, cmd, respLen, parity, timeout);
+    } else if (*data) {
+      intf["baudrate"] = 19200;
+      intf["min_delay"] = 3;
+      dataCommand(intf, regMapPath, true);
+    } else if (*discover) {
+      intf["baudrate"] = 19200;
+      intf["min_delay"] = 3;
+      dataCommand(intf, discoverRegMapPath, false);
+    } else if (*read) {
+      intf["baudrate"] = rBaud;
+      intf["min_delay"] = minDelay;
+      readCommand(intf, rAddr, rReg, rCount, parityMap.at(rParity), rTimeout);
+    } else if (*write) {
+      intf["baudrate"] = wBaud;
+      intf["min_delay"] = minDelay;
+      writeCommand(intf, wAddr, wReg, wValues, parityMap.at(wParity), wTimeout);
+    }
+  } catch (const std::exception& e) {
+    // Do not let this escape main: std::terminate would skip the
+    // exclusion's destructor and leave monitoring paused.
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 1;
   }
 
   return 0;

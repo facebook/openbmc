@@ -1,0 +1,60 @@
+From 78bda9a71bdd3f66e2dcf27e5be4a16eab2b4eba Mon Sep 17 00:00:00 2001
+From: Unive Tien <unive.tien.wiwynn@gmail.com>
+Date: Thu, 27 Aug 2026 16:47:00 +0800
+Subject: [PATCH] yosemite4: pldm: remove firmware update entry
+
+Description:
+Remove the firmware update entry from the inventory manager before the
+feature implementation is complete.
+
+Motivation:
+Related to JIRA ticket YV4T1M-2210, BMC mfg-tool displays excessive and
+unclear system firmware information, which is the new firmware update
+entry preserved for enhanced firmware update features but not yet fully
+implemented. To avoid confusion, we decided to remove this entry for now
+and reintroduce it later when the feature is ready.
+
+Tested:
+Tested on the Yosemite4 platform to ensure that the firmware update entry
+is no longer exposed on D-Bus, and verified that other inventory
+functionalities remain unaffected.
+---
+ fw-update/inventory_manager.cpp | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
+index 663ce45..2e16155 100644
+--- a/fw-update/inventory_manager.cpp
++++ b/fw-update/inventory_manager.cpp
+@@ -832,14 +832,6 @@ void InventoryManager::getFirmwareParameters(
+             auto componentName =
+                 std::format("{}_Component_{}", firmwareDeviceNameMap.at(eid),
+                             compIdentifier);
+-
+-            firmwareInventoryManager.createFirmwareEntry(
+-                SoftwareIdentifier(eid, compIdentifier), componentName,
+-                currentCompVerStr, descriptorMap.at(eid), componentInfo,
+-                [this, eid]() {
+-                    this->sendQueryDeviceIdentifiersRequest(eid);
+-                    this->sendQueryDownstreamDevicesRequest(eid);
+-                });
+         }
+         else
+         {
+@@ -863,13 +855,6 @@ void InventoryManager::getFirmwareParameters(
+             descIt != descriptorMap.end())
+         {
+             const SoftwareIdentifier totalIdentifier{eid, std::nullopt};
+-
+-            firmwareInventoryManager.createFirmwareEntry(
+-                totalIdentifier, devNameIt->second, imageSetVersion,
+-                descIt->second, componentInfo, [this, eid]() {
+-                    this->sendQueryDeviceIdentifiersRequest(eid);
+-                    this->sendQueryDownstreamDevicesRequest(eid);
+-                });
+         }
+     }
+ 
+-- 
+2.53.0-Meta
+

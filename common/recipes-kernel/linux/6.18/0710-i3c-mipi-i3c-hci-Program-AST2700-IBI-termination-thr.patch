@@ -1,0 +1,114 @@
+From 0965ffae7c63942ef4c6989484912ebf9d425f94 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Tue, 1 Sep 2026 19:35:33 +0800
+Subject: [PATCH] i3c: mipi-i3c-hci: Program AST2700 IBI termination threshold
+
+For an IBI with payload, it's normally the device that decides when to
+stop sending payload bytes. A misbehaving device that never terminates
+can leave the controller stuck waiting on the transfer. AST2700 has an
+in-house IBI payload length threshold that, once enabled, forces
+termination once the received payload reaches it.
+
+When payload IBIs are requested, grow the AST2700 termination
+threshold to at least the requested payload length and enable
+termination on that value. The register is controller-wide while IBI
+requests for different devices can run in parallel, so the
+read-modify-write is serialized under the controller lock. Controllers
+without the vendor capability block keep the existing behavior.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Assisted-by: Claude:claude-fable-5
+Link: https://lore.kernel.org/r/20260901-b4-i3c-hci-ast2700-v1-6-19909e7cbd7e@aspeedtech.com
+---
+ drivers/i3c/master/mipi-i3c-hci/core.c        | 14 +++++++++----
+ .../i3c/master/mipi-i3c-hci/vendor_aspeed.c   | 20 +++++++++++++++++++
+ .../i3c/master/mipi-i3c-hci/vendor_aspeed.h   |  5 +++++
+ 3 files changed, 35 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
+index c10a0bcc22ad..f18aed3d5ebc 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/core.c
++++ b/drivers/i3c/master/mipi-i3c-hci/core.c
+@@ -534,15 +534,21 @@ static void i3c_hci_detach_i2c_dev(struct i2c_dev_desc *dev)
+ static int i3c_hci_request_ibi(struct i3c_dev_desc *dev,
+ 			       const struct i3c_ibi_setup *req)
+ {
+-	struct i3c_master_controller *m = i3c_dev_get_master(dev);
+-	struct i3c_hci *hci = to_i3c_hci(m);
+ 	struct i3c_hci_dev_data *dev_data = i3c_dev_get_master_data(dev);
++	struct i3c_master_controller *m = i3c_dev_get_master(dev);
++	unsigned int ibi_max_len = req->max_payload_len;
+ 	unsigned int dat_idx = dev_data->dat_idx;
++	struct i3c_hci *hci = to_i3c_hci(m);
+ 
+-	if (req->max_payload_len != 0)
++	if (req->max_payload_len != 0) {
+ 		mipi_i3c_hci_dat_v1.set_flags(hci, dat_idx, DAT_0_IBI_PAYLOAD, 0);
+-	else
++
++		if (is_aspeed(hci))
++			aspeed_i3c_ibi_grow_threshold(hci, ibi_max_len);
++	} else {
+ 		mipi_i3c_hci_dat_v1.clear_flags(hci, dat_idx, DAT_0_IBI_PAYLOAD, 0);
++	}
++
+ 	return hci->io->request_ibi(hci, dev, req);
+ }
+ 
+diff --git a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
+index b521fce4c084..e32dea0d5fc3 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
++++ b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
+@@ -25,6 +25,26 @@ void aspeed_i3c_write(struct i3c_hci *hci, u32 reg, u32 val)
+ 	writel(val, to_aspeed_vendor_data(hci)->inhouse_regs + reg);
+ }
+ 
++void aspeed_i3c_ibi_grow_threshold(struct i3c_hci *hci, unsigned int ibi_max_len)
++{
++	u32 mrl, cur_len;
++
++	/*
++	 * The termination threshold is controller-wide while IBI requests
++	 * for different devices can run in parallel, so serialize the
++	 * read-modify-write.
++	 */
++	guard(spinlock_irqsave)(&hci->lock);
++
++	mrl = aspeed_i3c_read(hci, ASPEED_I3C_MST_MRL);
++	cur_len = FIELD_GET(ASPEED_I3C_IBI_TERMINATE_LEN, mrl);
++
++	ibi_max_len = max(ibi_max_len, cur_len);
++	aspeed_i3c_write(hci, ASPEED_I3C_MST_MRL,
++			 ASPEED_I3C_IBI_TERMINATE_EN |
++			 FIELD_PREP(ASPEED_I3C_IBI_TERMINATE_LEN, ibi_max_len));
++}
++
+ static void aspeed_i3c_phy_write(struct i3c_hci *hci, u32 reg, u32 val)
+ {
+ 	writel(val, to_aspeed_vendor_data(hci)->phy_regs + reg);
+diff --git a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
+index 8760384d1c6f..84afb2bec956 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
++++ b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
+@@ -51,6 +51,7 @@ static inline struct aspeed_i3c_vendor_data *to_aspeed_vendor_data(struct i3c_hc
+ u32 aspeed_i3c_read(struct i3c_hci *hci, u32 reg);
+ void aspeed_i3c_write(struct i3c_hci *hci, u32 reg, u32 val);
+ int aspeed_i3c_phy_init(struct i3c_hci *hci);
++void aspeed_i3c_ibi_grow_threshold(struct i3c_hci *hci, unsigned int ibi_max_len);
+ 
+ #define ASPEED_I3C_CTRL				0x00
+ #define ASPEED_I3C_CTRL_CLOCK_STALL_EN		BIT(14)
+@@ -58,6 +59,10 @@ int aspeed_i3c_phy_init(struct i3c_hci *hci);
+ #define ASPEED_I3C_CTRL_INIT_MODE		GENMASK(1, 0)
+ #define   ASPEED_I3C_INIT_MST_MODE		0
+ 
++#define ASPEED_I3C_MST_MRL			0x08
++#define ASPEED_I3C_IBI_TERMINATE_EN		BIT(16)
++#define ASPEED_I3C_IBI_TERMINATE_LEN		GENMASK(15, 0)
++
+ #define ASPEED_I3C_DAA_INDEX0			0x10
+ #define ASPEED_I3C_DAA_INDEX1			0x14
+ #define ASPEED_I3C_DAA_INDEX2			0x18
+-- 
+2.53.0
+

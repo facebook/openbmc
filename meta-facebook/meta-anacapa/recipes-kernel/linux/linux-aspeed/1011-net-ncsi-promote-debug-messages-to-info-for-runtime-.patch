@@ -1,4 +1,4 @@
-From 2af31482d6e74d5518b482d42b96e9cf50d85d32 Mon Sep 17 00:00:00 2001
+From 35acb35c07ac61749e04d315d2adce07ecb3f3fb Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Mon, 20 Apr 2026 10:19:14 +0800
 Subject: [PATCH] net: ncsi: promote debug messages to info for runtime
@@ -63,7 +63,7 @@ index 040a31557201..f8db0a94344c 100644
  		   ncm->data[3] & 0x1 ? "" : "not ", nc->id);
  
 diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
-index 2d760b712ba6..05d653d9dbcf 100644
+index a744988d964f..764a8543178e 100644
 --- a/net/ncsi/ncsi-manage.c
 +++ b/net/ncsi/ncsi-manage.c
 @@ -25,6 +25,9 @@
@@ -188,7 +188,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  			list_del_rcu(&vlan->list);
  			found = true;
  			kfree(vlan);
-@@ -1890,7 +1901,7 @@ void ncsi_stop_dev(struct ncsi_dev *nd)
+@@ -1891,7 +1902,7 @@ void ncsi_stop_dev(struct ncsi_dev *nd)
  		}
  	}
  

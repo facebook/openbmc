@@ -22,7 +22,6 @@ IMAGE_INSTALL += " \
     ipmb-util \
     jbi \
     libcpldupdate-dll-ast-jtag \
-    show-tech \
     fbmc-snapshot \
     host-recovery \
     postcode-mond \

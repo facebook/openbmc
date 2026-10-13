@@ -1,4 +1,4 @@
-From 1a62c7b8e31667031c67ad986bf34c3416824f98 Mon Sep 17 00:00:00 2001
+From 07c745f926e9ef8ea33187ff66bce841b27b322c Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:13:32 +0800
 Subject: [PATCH] oem-meta: Add file IO responder for crashdump from BIC
@@ -28,7 +28,7 @@ Signed-off-by: Sora Su <baxiche@gmail.com>
  create mode 100644 oem/meta/libpldmresponder/file_io_type_crash_dump.hpp
 
 diff --git a/oem/meta/libpldmresponder/file_io.cpp b/oem/meta/libpldmresponder/file_io.cpp
-index 02d85ef..737de8b 100644
+index 8c400c8..30705f4 100644
 --- a/oem/meta/libpldmresponder/file_io.cpp
 +++ b/oem/meta/libpldmresponder/file_io.cpp
 @@ -1,6 +1,7 @@

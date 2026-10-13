@@ -1,20 +1,46 @@
 # Ad-hoc Sensor Service
 
-A streamlined OpenBMC service that provides numeric sensors (0-100%) from file contents using sdbusplus.
+A streamlined OpenBMC service that provides numeric sensors from file contents using sdbusplus.
 
 ## Overview
 
 This service creates D-Bus sensors that track numeric values by reading file contents.
 Files are monitored via inotify for instant updates when values change.
 
-The service **automatically monitors** one directory:
-- `/run/openbmc/sensors/utilization/` - Numeric values (file contents)
+The service **automatically monitors** two directories:
+- `/run/openbmc/sensors/utilization/` - Numeric values (file contents), as sensors
+  of any supported unit (the directory name predates units)
+- `/run/openbmc/metrics/` - Numeric values, as OEM metrics (see below)
 
 ## Behavior
 
-- When a file is created, a sensor is automatically created
-- The sensor value is read from the file contents (expects numeric value 0-100)
-- Values are clamped between 0 and 100
+- Each file is a number on line 1 and an optional unit on line 2
+- The unit picks the sensor type, its D-Bus namespace and its name suffix:
+
+  | Line 2 | Namespace | Unit | Sensor name |
+  |---|---|---|---|
+  | *(none)* or `percent` | `utilization` | Percent | `<file>_UTIL_PCT` |
+  | `celsius` | `temperature` | DegreesC | `<file>_TEMP_C` |
+  | `watts` | `power` | Watts | `<file>_PWR_W` |
+  | `amperes` | `current` | Amperes | `<file>_CURR_A` |
+  | `volts` | `voltage` | Volts | `<file>_VOLT_V` |
+  | `rpm` | `fan_tach` | RPMS | `<file>_SPEED_RPM` |
+  | `cfm` | `airflow` | CFM | `<file>_AIRFLOW_CFM` |
+  | `joules` | `energy` | Joules | `<file>_ENERGY_J` |
+  | `pascals` | `pressure` | Pascals | `<file>_PRESSURE_PA` |
+
+- The suffixes follow Meta's sensor naming convention; Central Proxy drops
+  sensors whose names don't end in one.
+- The suffix isn't added twice if the file name already ends with it.
+- A real sensor always wins its path: if another service already owns the
+  sensor path, the file is ignored, and if one publishes it later, the adhoc
+  sensor is withdrawn. Both are logged. With two owners of one path, bmcweb
+  fails requests for both. Delete the file and pick another name.
+- Only percent values are clamped to 0-100 (with MinValue/MaxValue 0/100)
+- An unknown unit is logged and the file ignored; changing the unit
+  republishes the sensor under its new path
+- File names must be `[A-Za-z0-9_]+`; use upper case to match the naming
+  convention
 - Invalid or unparseable values result in NaN (Not a Number)
 - When the file is removed, the sensor is removed from D-Bus
 - File changes are detected instantly via inotify (no polling delay)
@@ -22,55 +48,82 @@ The service **automatically monitors** one directory:
 ## Example
 
 ```bash
-# Create adhoc sensor
-echo "87" > /run/openbmc/sensors/utilization/cpu_utilization
-# Creates sensor: cpu_utilization_PCT with value 87.0
+# Percent (default)
+echo "87" > /run/openbmc/sensors/utilization/CPU
+# Creates /xyz/openbmc_project/sensors/utilization/CPU_UTIL_PCT = 87.0
 
-# Update value
-echo "42" > /run/openbmc/sensors/utilization/cpu_utilization
-# Updates sensor: cpu_utilization_PCT to value 42.0 (instantly via inotify)
+# Other units
+printf '45.5\ncelsius\n' > /run/openbmc/sensors/utilization/NIC0
+# Creates /xyz/openbmc_project/sensors/temperature/NIC0_TEMP_C = 45.5
+printf '12.1\nvolts\n' > /run/openbmc/sensors/utilization/P12V
+# Creates /xyz/openbmc_project/sensors/voltage/P12V_VOLT_V = 12.1
 
-# Values above 100 are clamped
-echo "250" > /run/openbmc/sensors/utilization/utilization
-# Creates sensor: utilization_PCT with value 100.0 (clamped)
+# Percent values above 100 are clamped
+echo "250" > /run/openbmc/sensors/utilization/CPU
+# CPU_UTIL_PCT = 100.0
 
 # Invalid values become NaN
-echo "invalid" > /run/openbmc/sensors/utilization/test
-# Creates sensor: test_PCT with value NaN
+echo "invalid" > /run/openbmc/sensors/utilization/TEST
+# TEST_UTIL_PCT = NaN
 
 # Remove sensor
-rm /run/openbmc/sensors/utilization/cpu_utilization
-# Removes sensor from D-Bus entirely
+rm /run/openbmc/sensors/utilization/CPU
 ```
 
-## Use Cases
+## OEM metrics (not sensors)
 
-- Percentage-based metrics (utilization, capacity, throttling)
-- Normalized counters (0-100 scale)
-- Custom application metrics
-- Hardware monitoring data
+The service also watches a second directory:
 
-## Architecture
+- `/run/openbmc/metrics/<name>` - a number on line 1, optional unit on line 2
 
-All sensors are implemented as **utilization/percentage sensors**:
-- **Values:** 0.0 to 100.0 (clamped), or NaN for errors
-- **Unit:** Percent
-- **Interface:** `xyz.openbmc_project.Sensor.Value`
+Each file becomes an `xyz.openbmc_project.Metric.Value` object (the interface
+phosphor-health-monitor uses) at `/xyz/openbmc_project/metric/bmc/oem/<name>`.
+Unlike sensors there is no unit suffix, no 0-100 clamp and no chassis
+association. The value is a double (the only type Metric.Value carries), so
+flags and states are numbers. The unit (`bytes`, `count`, `frequency`,
+`percent`, `seconds`; default `count`) becomes the Metric.Value `Unit`
+property; it is const on D-Bus, so changing it republishes the object. `<name>` must be `[A-Za-z0-9_]+`, since it becomes a D-Bus path
+element; other names are ignored and logged.
 
-### Naming Convention
+bmcweb reports every metric under that namespace in
+`/redfish/v1/Managers/bmc/ManagerDiagnosticData`:
 
-All sensors follow Meta standards with `_PCT` suffix:
-- File: `cpu_util` → Sensor: `cpu_util_PCT`
-- File: `fan_speed` → Sensor: `fan_speed_PCT`
+```json
+"Oem": {
+  "Meta": {
+    "@odata.type": "#MetaManagerDiagnosticData.v1_0_0.ManagerDiagnosticData",
+    "Metrics": {
+      "persist_rofs": { "Value": 1.0, "Unit": "Count" },
+      "free_kb": { "Value": 20080.0, "Unit": "Bytes" }
+    }
+  }
+}
+```
 
-### Chassis Association
+Use the `bmc-oem-metric` helper rather than writing the files directly; it
+validates the name and value and renames the file into place atomically:
 
-Each sensor is automatically associated with the platform's configured chassis via the `xyz.openbmc_project.Association.Definitions` interface.
+```bash
+bmc-oem-metric set persist_rofs 1
+bmc-oem-metric set free_kb 20080 bytes
+bmc-oem-metric get persist_rofs
+bmc-oem-metric list
+bmc-oem-metric rm persist_rofs
+```
 
-This enables:
-- Automatic appearance in bmcweb/Redfish chassis sensor collections
-- Proper sensor-to-chassis relationship tracking
-- Standard OpenBMC sensor discovery
+## Chassis Association
+
+Each sensor is associated with one inventory chassis via
+`xyz.openbmc_project.Association.Definitions`, so bmcweb lists it under
+`/redfish/v1/Chassis/<id>/Sensors`. The chassis is discovered at runtime:
+
+- the `default-chassis` meson option (`CHASSIS_PATH` in a bbappend), if set
+  and present as an `Item.Chassis` or `Item.Board`
+- otherwise the `Item.Chassis` objects, or `Item.Board` if there are none,
+  minus any with a `contained_by` association, first by path
+
+Discovery reruns 2 seconds after inventory stops changing. Sensors created
+before entity-manager publishes inventory get the association then.
 
 ## Files
 
@@ -83,15 +136,14 @@ This enables:
 
 **Service Name:** `xyz.openbmc_project.AdhocSensor`
 
-**Object Paths:** `/xyz/openbmc_project/sensors/utilization/<sensor_name>_PCT`
+**Object Paths:** `/xyz/openbmc_project/sensors/<namespace>/<file><suffix>` (see Behavior)
 
-**Interface:** `xyz.openbmc_project.Sensor.Value`
+**Interfaces:** `xyz.openbmc_project.Sensor.Value`, `xyz.openbmc_project.Association.Definitions`
 
 **Properties:**
-- `Value` (double) - Sensor value (0.0 to 100.0, or NaN)
-- `Unit` (string) - "xyz.openbmc_project.Sensor.Value.Unit.Percent"
-- `MaxValue` (double) - 100.0
-- `MinValue` (double) - 0.0
+- `Value` (double) - Sensor value, or NaN
+- `Unit` - from line 2 (see Behavior)
+- `MaxValue`/`MinValue` (double) - 100.0/0.0 for percent, unbounded otherwise
 
 ## Usage Examples
 
@@ -104,7 +156,7 @@ echo "42" > /run/openbmc/sensors/utilization/memory_utilization
 
 # Check via D-Bus
 busctl get-property xyz.openbmc_project.AdhocSensor \
-    /xyz/openbmc_project/sensors/utilization/cpu_utilization_PCT \
+    /xyz/openbmc_project/sensors/utilization/cpu_utilization_UTIL_PCT \
     xyz.openbmc_project.Sensor.Value Value
 # Output: d 87
 
@@ -113,7 +165,7 @@ echo "95" > /run/openbmc/sensors/utilization/cpu_utilization
 
 # Check again
 busctl get-property xyz.openbmc_project.AdhocSensor \
-    /xyz/openbmc_project/sensors/utilization/cpu_utilization_PCT \
+    /xyz/openbmc_project/sensors/utilization/cpu_utilization_UTIL_PCT \
     xyz.openbmc_project.Sensor.Value Value
 # Output: d 95
 ```
@@ -129,7 +181,7 @@ curl -sk -u root:0penBmc \
 
 # Get specific sensor
 curl -sk -u root:0penBmc \
-  https://<BMC_IP>/redfish/v1/Chassis/<CHASSIS_NAME>/Sensors/cpu_utilization_PCT \
+  https://<BMC_IP>/redfish/v1/Chassis/<CHASSIS_NAME>/Sensors/cpu_utilization_UTIL_PCT \
   | jq '{Name, Reading, ReadingType}'
 ```
 
@@ -145,7 +197,7 @@ constexpr const char* ADHOC_DIR = "/run/openbmc/sensors/utilization";
 
 ### Changing Chassis Association
 
-The chassis path is configured via meson option. Edit your platform's bbappend:
+Only needed if discovery picks the wrong chassis. In your platform's bbappend:
 
 ```bitbake
 CHASSIS_PATH = "/xyz/openbmc_project/inventory/system/chassis/YourChassis"
@@ -169,15 +221,11 @@ bitbake <your-platform>-image
 #!/bin/bash
 # Update sensor from shell script
 
-# Read temperature from hardware
+# Read temperature from hardware (millidegrees)
 TEMP=$(cat /sys/class/hwmon/hwmon0/temp1_input)
 
-# Convert to percentage (0-100 scale)
-# Assuming max temp is 100C
-TEMP_PCT=$((TEMP / 1000))
-
-# Update sensor
-echo "$TEMP_PCT" > /run/openbmc/sensors/utilization/device_temp
+# Update sensor: DEVICE_TEMP_C
+printf '%s\ncelsius\n' "$((TEMP / 1000))" > /run/openbmc/sensors/utilization/DEVICE
 ```
 
 ### C/C++ Application Integration
@@ -248,7 +296,7 @@ busctl monitor xyz.openbmc_project.AdhocSensor
 
 ```bash
 busctl get-property xyz.openbmc_project.AdhocSensor \
-    /xyz/openbmc_project/sensors/utilization/cpu_utilization_PCT \
+    /xyz/openbmc_project/sensors/utilization/cpu_utilization_UTIL_PCT \
     xyz.openbmc_project.Association.Definitions Associations
 ```
 

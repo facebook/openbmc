@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# Copyright 2026-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+# Retrieve the human-readable BIOS version from the BVDT section of the CPU
+# boot flash.  
+
+set -euo pipefail
+
+readonly BIOS_IMAGE="/tmp/aristabmc-bios-version.$$"
+readonly BIOS_VERSION_PARTITION="bvdt"
+
+cleanup() {
+    rm -f "$BIOS_IMAGE"
+}
+trap cleanup EXIT INT TERM QUIT
+
+if ! /usr/local/bin/bios_util.sh read "$BIOS_IMAGE" \
+    --partition "$BIOS_VERSION_PARTITION" >/dev/null; then
+    echo "UNKNOWN"
+    exit 1
+fi
+
+version="$(strings "$BIOS_IMAGE" | awk '
+    /Aboot-/ { sub(/^.*Aboot-/, "Aboot-"); version=$0 }
+    END { print version }
+')"
+
+if [ -z "$version" ]; then
+    echo "UNKNOWN"
+    exit 1
+fi
+
+echo "$version"

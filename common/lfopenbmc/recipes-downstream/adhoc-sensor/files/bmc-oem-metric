@@ -1,0 +1,99 @@
+#!/bin/sh
+#
+# Set, read, remove and list Meta OEM metrics.
+#
+# A metric is a file in /run/openbmc/metrics: a number on the first line and,
+# optionally, a unit on the second (default count).
+# adhoc-sensor publishes each one as xyz.openbmc_project.Metric.Value at
+# /xyz/openbmc_project/metric/bmc/oem/<name>, and bmcweb reports it in
+# /redfish/v1/Managers/bmc/ManagerDiagnosticData as
+# Oem/Meta/Metrics/<name>: {"Value": <number>, "Unit": "<Unit>"}.
+# /run is tmpfs, so metrics do not survive a reboot.
+
+METRICS_DIR=/run/openbmc/metrics
+
+usage() {
+    cat >&2 <<EOF
+usage: $(basename "$0") set <name> <value> [unit]
+       $(basename "$0") get <name>
+       $(basename "$0") rm <name>
+       $(basename "$0") list
+
+<name> is [A-Za-z0-9_]+ (it becomes a D-Bus object path element).
+<value> is a number.
+[unit] is one of: bytes count frequency percent seconds (default count).
+EOF
+    exit 2
+}
+
+check_name() {
+    case "$1" in
+        "" | *[!A-Za-z0-9_]*)
+            echo "invalid metric name '$1': use [A-Za-z0-9_]" >&2
+            exit 2
+            ;;
+    esac
+}
+
+check_value() {
+    # Same acceptance as adhoc-sensor's std::stod with no trailing characters,
+    # for the plain decimal forms anyone should be writing here.
+    if ! echo "$1" | grep -Eq '^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$'; then
+        echo "invalid metric value '$1': must be a number" >&2
+        exit 2
+    fi
+}
+
+check_unit() {
+    case "$1" in
+        bytes | count | frequency | percent | seconds) ;;
+        *)
+            echo "invalid unit '$1': use bytes, count, frequency, percent or seconds" >&2
+            exit 2
+            ;;
+    esac
+}
+
+cmd="$1"
+[ -n "$cmd" ] || usage
+shift
+
+case "$cmd" in
+    set)
+        [ $# -eq 2 ] || [ $# -eq 3 ] || usage
+        check_name "$1"
+        check_value "$2"
+        unit="${3:-count}"
+        check_unit "$unit"
+        mkdir -p "$METRICS_DIR" || exit 1
+        # Write outside the watched directory and rename in, so adhoc-sensor
+        # never sees a partial or temporary file.
+        tmp=$(mktemp /run/openbmc/.bmc-oem-metric.XXXXXX) || exit 1
+        if ! { printf '%s\n%s\n' "$2" "$unit" > "$tmp" && mv -f "$tmp" "$METRICS_DIR/$1"; }; then
+            rm -f "$tmp"
+            exit 1
+        fi
+        ;;
+    get)
+        [ $# -eq 1 ] || usage
+        check_name "$1"
+        head -n 1 "$METRICS_DIR/$1"
+        ;;
+    rm)
+        [ $# -eq 1 ] || usage
+        check_name "$1"
+        rm -f "$METRICS_DIR/$1"
+        ;;
+    list)
+        [ $# -eq 0 ] || usage
+        for f in "$METRICS_DIR"/*; do
+            [ -f "$f" ] || continue
+            value=$(sed -n 1p "$f")
+            unit=$(sed -n 2p "$f")
+            printf '%s %s %s\n' "$(basename "$f")" "$value" "${unit:-count}"
+        done
+        ;;
+    *)
+        usage
+        ;;
+esac

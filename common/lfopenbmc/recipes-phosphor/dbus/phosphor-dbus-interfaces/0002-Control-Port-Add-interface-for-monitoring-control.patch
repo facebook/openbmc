@@ -1,4 +1,4 @@
-From fe156bb5deeb3555e87f12c360ce8b42ad95bcb3 Mon Sep 17 00:00:00 2001
+From 7c779d694c0fd1001e675ab3d4817669183e6f97 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Mon, 13 Jul 2026 14:14:45 -0700
 Subject: [PATCH] Control/Port: Add interface for monitoring control

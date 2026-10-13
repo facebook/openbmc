@@ -7,7 +7,7 @@ monitors that device are independent choices. A device polled by
 rackmond can still be driven over minimalmodbus, so pick a Monitor to
 match the daemon which owns the bus, not the backend:
 
-    dev = Modbus(addr, baud, parity, devpath, monitor=RackmonMonitor())
+    dev = Modbus(addr, baud, parity, devpath, monitor=RackmonMonitor(devpath))
 
 Every backend takes a monitor= argument and defaults to the one which
 normally goes with it.
@@ -26,6 +26,7 @@ __all__ = [
     "PmmMonitor",
     "RackmonMonitor",
     "PhosphorModbusMonitor",
+    "get_rackmon_interface",
 ]
 
 # Allow rackmon monitoring threads to exit
@@ -35,6 +36,11 @@ PMM_SETTLE_SECS = 1.0
 
 # Allow Phosphor Modbus to flush its async queue for the port.
 PHOSPHOR_MODBUS_SETTLE_SECS = 5.0
+
+# Allow a resumed daemon to poll the device again, so that what it
+# reports (e.g. the firmware version) is not stale from before the
+# update. Only the daemons wait for this: the PMM is not queried for it.
+MONITOR_REFRESH_SECS = 5.0
 
 # Request PMM to pause monitoring by writing 0x1 to PMM_PAUSE_REG
 PMM_PAUSE_MONITORING = 0x1
@@ -129,24 +135,69 @@ class PmmMonitor(Monitor):
 
 
 class RackmonMonitor(Monitor):
-    """rackmond, paused over its own interface."""
+    """
+    rackmond, paused over its own interface.
 
-    def __init__(self):
+    With a devpath only the interface on that port is paused, and the
+    rest of the bus stays monitored. Without one, all of rackmond is.
+    """
+
+    def __init__(self, devpath=None):
         # Imported here rather than at module scope so that a system
         # which only has the minimalmodbus backend does not need
         # rackmon installed to import this module.
         import pyrmd
 
         self.rmd = pyrmd.RackmonInterface
+        self.devpath = devpath
+        self.paused = False
 
     def pause(self):
-        print("Pausing rackmon monitoring...")
-        self.rmd.pause()
+        if self.devpath is None:
+            print("Pausing rackmon monitoring...")
+            self.rmd.pause()
+        else:
+            print(f"Pausing rackmon monitoring of {self.devpath}...")
+            # False if rackmond does not manage the port, in which case
+            # nothing of its is polling it and there is nothing to wait
+            # for or resume.
+            if not self.rmd.pause(self.devpath):
+                print(f"rackmon does not manage {self.devpath}")
+                return
+        self.paused = True
         time.sleep(RACKMON_SETTLE_SECS)
 
     def resume(self):
-        print("Resuming rackmon monitoring...")
-        self.rmd.resume()
+        if not self.paused:
+            return
+        self.paused = False
+        if self.devpath is None:
+            print("Resuming rackmon monitoring...")
+            self.rmd.resume()
+        else:
+            print(f"Resuming rackmon monitoring of {self.devpath}...")
+            self.rmd.resume(self.devpath)
+        time.sleep(MONITOR_REFRESH_SECS)
+
+
+def get_rackmon_interface(dev_addr):
+    """
+    The device path of the rackmond interface dev_addr is on, or None if
+    rackmond knows of no such device or of more than one.
+
+    dev_addr is matched the way rackmond matches addresses: a unique
+    address (port << 8 | addr) names one device, while a bare address
+    matches the device on any port.
+    """
+    import pyrmd
+
+    matches = [
+        devpath
+        for devpath, iface in pyrmd.RackmonInterface.get_interface().items()
+        for uaddr in iface["devices"]
+        if uaddr == dev_addr or (dev_addr <= 0xFF and uaddr & 0xFF == dev_addr)
+    ]
+    return matches[0] if len(matches) == 1 else None
 
 
 class PhosphorModbusMonitor(Monitor):
@@ -161,6 +212,7 @@ class PhosphorModbusMonitor(Monitor):
     def __init__(self, devpath):
         self.devpath = devpath
         self.exclusion = phosphor_modbus.PhosphorModbusExclusion(devpath)
+        self.paused = False
         if not self.port_is_managed():
             if phosphor_modbus.is_unit_running(phosphor_modbus.MODBUS_UNIT):
                 raise ValueError(
@@ -199,15 +251,22 @@ class PhosphorModbusMonitor(Monitor):
         # port a running service does not manage. Driving the bus while
         # something else polls it corrupts the transfer, so give up
         # rather than start an update we cannot have to ourselves.
-        if not self.exclusion.stop() and phosphor_modbus.is_unit_running(
-            phosphor_modbus.MODBUS_UNIT
-        ):
-            raise ModbusException(
-                "Could not stop %s polling %s, refusing to drive it"
-                % (phosphor_modbus.MODBUS_UNIT, self.devpath)
-            )
+        self.paused = self.exclusion.stop()
+        if not self.paused:
+            if phosphor_modbus.is_unit_running(phosphor_modbus.MODBUS_UNIT):
+                raise ModbusException(
+                    "Could not stop %s polling %s, refusing to drive it"
+                    % (phosphor_modbus.MODBUS_UNIT, self.devpath)
+                )
+            # Nothing was polling the port, so there is nothing to wait
+            # for or resume.
+            return
         time.sleep(PHOSPHOR_MODBUS_SETTLE_SECS)
 
     def resume(self):
+        if not self.paused:
+            return
+        self.paused = False
         print("Resuming phosphor-modbus monitoring...")
         self.exclusion.start()
+        time.sleep(MONITOR_REFRESH_SECS)

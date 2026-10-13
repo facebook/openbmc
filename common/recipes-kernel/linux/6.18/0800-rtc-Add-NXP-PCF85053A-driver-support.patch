@@ -1,4 +1,4 @@
-From 78efab5981926638065ffd25bf8f8c83cdcab96e Mon Sep 17 00:00:00 2001
+From 451b4935f28fc07778fb51fca16953290b96e5cd Mon Sep 17 00:00:00 2001
 From: Pankit Garg <pankit.garg@nxp.com>
 Date: Wed, 7 May 2025 12:56:18 +0530
 Subject: [PATCH] rtc: Add NXP PCF85053A driver support
@@ -26,10 +26,10 @@ Signed-off-by: Pankit Garg <pankit.garg@nxp.com>
  create mode 100644 drivers/rtc/rtc-pcf85053a.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index b1309115ca46..28a04a545b1b 100644
+index 76fb0c19de6c..27a4a1901608 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -18776,6 +18776,12 @@ S:	Maintained
+@@ -18778,6 +18778,12 @@ S:	Maintained
  F:	Documentation/devicetree/bindings/sound/nxp,tfa989x.yaml
  F:	sound/soc/codecs/tfa989x.c
  

@@ -13,5 +13,6 @@ var BMCLitePlatforms = []string{
 	"minipack3n",
 	"montblanc",
 	"morgan800cc",
+	"nexthopbmc",
 	"tahan",
 }

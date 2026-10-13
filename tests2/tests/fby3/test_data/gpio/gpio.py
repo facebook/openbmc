@@ -524,3 +524,70 @@ GPIOS = {
         "value": "1",
     },
 }
+
+# GPIOS above describes the class 1 four-slot chassis. The class 2 single-host
+# server exports a much smaller set -- no per-slot lines at all, since it has no
+# slots -- plus four shadows the chassis does not have. Captured 2026-10-01 from
+# /tmp/gpionames on rtptest162-oob.rva3 (class 2, 22 shadows); the class 1
+# reference is sled2403-oob.r0007.p0009.f0001.03.rva3 (75 shadows).
+GPIOS_CLASS2_ONLY = {
+    "FM_BMC_ISOLATED_EN_R": {
+        "active_low": "0",
+        "direction": "out",
+        "edge": "none",
+        "uevent": "",
+        "value": "1",
+    },
+    "FM_BMC_ISOLATED_UART_EN_R": {
+        "active_low": "0",
+        "direction": "out",
+        "edge": "none",
+        "uevent": "",
+        "value": "0",
+    },
+    "PWROK_STBY_BMC": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "none",
+        "uevent": "",
+        "value": "1",
+    },
+    "SMB_MUX_ALT_N": {
+        "active_low": "0",
+        "direction": "in",
+        "edge": "none",
+        "uevent": "",
+        "value": "1",
+    },
+}
+
+# The remaining class 2 shadows are a subset of GPIOS, so share those entries
+# rather than duplicating them and letting the two copies drift.
+GPIOS_CLASS2_SHARED = [
+    "BMC_READY_R",
+    "BOARD_BMC_ID0_R",
+    "BOARD_BMC_ID1_R",
+    "BOARD_BMC_ID2_R",
+    "BOARD_BMC_ID3_R",
+    "EMMC_PRESENT_N",
+    "EMMC_RST_N_R",
+    "FM_BMC_TPM_PRSNT_N",
+    "FM_NIC_WAKE_BMC_N",
+    "FM_PWRBRK_PRIMARY_R",
+    "NIC_POWER_BMC_EN_R",
+    "OCP_NIC_PRSNT_BMC_N",
+    "P12V_NIC_FAULT_N",
+    "P3V3_NIC_FAULT_N",
+    "PWRGD_NIC_BMC",
+    "RST_BMC_WDRST2_R",
+    "SMB_RST_PRIMARY_BMC_N_R",
+    "SMB_RST_SECONDARY_BMC_N_R",
+]
+
+GPIOS_CLASS2 = dict(GPIOS_CLASS2_ONLY)
+GPIOS_CLASS2.update({name: GPIOS[name] for name in GPIOS_CLASS2_SHARED})
+
+GPIOS_BY_CLASS = {
+    1: GPIOS,
+    2: GPIOS_CLASS2,
+}

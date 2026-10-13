@@ -1,6 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #pragma once
 #include <atomic>
+#include <map>
 #include <memory>
 #include <set>
 #include <shared_mutex>
@@ -21,6 +22,16 @@ struct ModbusDeviceFilter {
   bool contains(const ModbusDevice& dev) const;
 };
 
+struct InterfaceStatus {
+  // Whether rackmond is monitoring the interface (true) or it is paused
+  // (false).
+  bool monitoring = false;
+  // Unique addresses of the devices rackmond knows of on the interface.
+  std::vector<uint16_t> devices{};
+  bool operator==(const InterfaceStatus&) const = default;
+};
+void to_json(nlohmann::json& j, const InterfaceStatus& m);
+
 class Rackmon {
   std::shared_mutex threadMutex_{};
   std::vector<std::unique_ptr<InterfaceScanner>> scanners_;
@@ -28,11 +39,28 @@ class Rackmon {
   // to ensure users get destroyed before the interface.
   std::vector<std::shared_ptr<Modbus>> interfaces_{};
 
+  // Interval start() was last called with. New scanners poll at this rate,
+  // so an interface which starts scanning later keeps the cadence of the rest.
+  PollThreadTime interval_{std::chrono::minutes(3)};
+
   void assertNotStarted(const std::string& error) const {
     if (!scanners_.empty()) {
       throw std::runtime_error(error);
     }
   }
+
+  // Interface managed by rackmond with this name (its device path),
+  // or nullptr if there is none.
+  std::shared_ptr<Modbus> findInterface(const std::string& name) const;
+
+  // True if the named interface has a scanner running.
+  bool hasScanner(const std::string& name) const;
+
+  // Start scanning the interface, unless it already has a scanner.
+  void addScanner(const std::shared_ptr<Modbus>& interface);
+
+  // Stop and join the scanner of the named interface, if it has one.
+  void removeScanner(const std::string& name);
 
   // --------- Private Methods --------
  protected:
@@ -72,6 +100,13 @@ class Rackmon {
   void start(PollThreadTime interval = std::chrono::minutes(3));
   // Stop the monitoring/scanning loops
   void stop(bool forceStop = true);
+
+  // Stop the monitoring/scanning loops of a single interface, leaving the
+  // rest of the interfaces polling. Returns false if rackmond does not
+  // manage an interface with that name, in which case nothing was paused.
+  bool pauseInterface(const std::string& name);
+  // Undo pauseInterface(). Returns false if the interface is not managed.
+  bool resumeInterface(const std::string& name);
 
   // Force rackmond to do a full scan on the next scan loop.
   void forceScan();
@@ -114,10 +149,9 @@ class Rackmon {
       std::vector<FileRecord>& records,
       ModbusTime timeout = ModbusTime::zero());
 
-  // Get the name of the interface a device is reachable on
-  std::string getInterfaceName(
-      uint8_t deviceAddress,
-      std::optional<uint8_t> port) const;
+  // Get the status of each interface managed by rackmond, keyed by its
+  // device path.
+  std::map<std::string, InterfaceStatus> getInterfaceStatus();
 
   // Get status of devices
   std::vector<ModbusDeviceInfo> listDevices() const;

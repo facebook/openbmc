@@ -10,7 +10,7 @@
 
 typedef struct _post_desc {
   uint8_t code;
-  char    desc[32];
+  char    desc[48];
 } post_desc_t;
 
 typedef struct _post_phase_desc {

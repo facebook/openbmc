@@ -18,6 +18,9 @@ max_ptb_dc_module_temp = max([
 max_scc_temp = max([
   scc:scc_bottom_temp_c,
   scc:scc_top_temp_c]);
+max_ptb_tsense_temp = max([
+  dpb:ptb_tsense_48v_temp_c,
+  dpb:ptb_tsense_gnd_temp_c]);
 
 max([
   linear_soc_therm_margin(server:mb_soc_thermal_margin_c) + pid_soc_therm_margin(server:mb_soc_thermal_margin_c),
@@ -33,5 +36,6 @@ max([
   linear_dpb_inlet_temp(max_dpb_inlet_temp),
   linear_dpb_outlet_temp(dpb:dpb_outlet_temp_c),
   linear_ptb_dc_module_temp(max_ptb_dc_module_temp),
-  linear_scc_temp(max_scc_temp)
+  linear_scc_temp(max_scc_temp),
+  linear_ptb_tsense_temp(max_ptb_tsense_temp)
 ])

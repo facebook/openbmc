@@ -38,7 +38,7 @@ if wait_for_gpio "EN_MCIO3A_PWR_R1" "1" 15; then
     log "EN_MCIO3A_PWR_R1 is ready, proceeding to power on drives"
     # power on each present drive
     for ssd_num in "${presence_drives[@]}"; do
-        single_drive_power_control "$ssd_num" "on"
+        systemctl start "obmc-drive-poweron@ssd${ssd_num}.target"
     done
 else
     error "EN_MCIO3A_PWR_R1 is not ready after waiting, cannot power on drives"

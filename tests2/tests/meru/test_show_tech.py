@@ -26,8 +26,11 @@ from utils.test_utils import qemu_check
 
 
 def collect_show_tech():
-    show_tech_cmd = "/usr/local/bin/show_tech.py"
-    return run_shell_cmd(show_tech_cmd)
+    show_tech_cmd = "/usr/local/bin/showtech"
+    # showtech.sh lets rule stderr through; show_tech.py used to capture it.
+    # It also passes raw log bytes (e.g. mTerm console noise) through, which
+    # show_tech.py stripped as non-ASCII.
+    return run_shell_cmd(show_tech_cmd, ignore_err=True, errors="replace")
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")

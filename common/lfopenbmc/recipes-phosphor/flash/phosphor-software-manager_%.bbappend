@@ -8,3 +8,7 @@ SRC_URI:append = " \
     file://0005-i2c-vr-add-support-for-MPS-MP2940x-VR-firmware-updat.patch \
     file://0006-i2c-vr-add-support-for-TI-TPS544X27-VR-firmware-upda.patch \
 "
+
+SRC_URI:append:mf-fb-rainier = " \
+    file://0100-i2cvr-cache-VR-version-to-allow-read-access-when-hos.patch \
+"

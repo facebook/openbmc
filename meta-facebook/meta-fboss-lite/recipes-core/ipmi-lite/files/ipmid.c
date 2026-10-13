@@ -29,6 +29,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/reboot.h>
 #include <sys/socket.h>
@@ -265,7 +266,7 @@ static int length_check(
  */
 void* clear_bios_data_timer(void* ptr) {
   int timer = 0;
-  int slot_id = (int)ptr;
+  int slot_id = (int)(intptr_t)ptr;
   int oldstate;
   unsigned char boot[SIZE_BOOT_ORDER] = {0};
   unsigned char res_len;
@@ -2418,7 +2419,7 @@ static void oem_set_boot_order(
         &bios_timer_tid[req->payload_id - 1],
         NULL,
         clear_bios_data_timer,
-        (void*)slot_id);
+        (void*)(intptr_t)slot_id);
     if (ret < 0) {
       syslog(LOG_WARNING, "[%s] Create BIOS timer thread failed!\n", __func__);
 
@@ -2933,7 +2934,7 @@ static int set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
-  sprintf(value, "%lld", (uint64_t) ts.tv_sec);
+  sprintf(value, "%llu", (unsigned long long)ts.tv_sec);
 
   if (kv_set(key, value, 0, 0) < 0) {
     return -1;
@@ -3232,7 +3233,7 @@ static void oem_stor_add_string_sel(
     res->cc = CC_INVALID_LENGTH;
     syslog(
         LOG_ERR,
-        "%s(): max supported string length is %d, but got %d",
+        "%s(): max supported string length is %zu, but got %u",
         __func__,
         sizeof(string_log) - 1,
         string_log_len);

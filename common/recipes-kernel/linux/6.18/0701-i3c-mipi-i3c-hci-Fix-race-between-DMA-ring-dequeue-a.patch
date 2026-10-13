@@ -1,0 +1,143 @@
+From c0073354113568ec6a0fbb8bd3d5101a8795588a Mon Sep 17 00:00:00 2001
+From: Adrian Hunter <adrian.hunter@intel.com>
+Date: Fri, 6 Mar 2026 09:24:44 +0200
+Subject: [PATCH] i3c: mipi-i3c-hci: Fix race between DMA ring dequeue and
+ interrupt handler
+
+commit f0b5159637ca0b8feaaa95de0f5ea38f1ba26729 upstream.
+
+The DMA ring bookkeeping in the MIPI I3C HCI driver is updated from two
+contexts: the DMA ring dequeue path (hci_dma_dequeue_xfer()) and the
+interrupt handler (hci_dma_xfer_done()).  Both modify the ring's
+in-flight transfer state - specifically rh->src_xfers[] and
+xfer->ring_entry - but without any serialization.  This allows the two
+paths to race, potentially leading to inconsistent ring state.
+
+Serialize access to the shared ring state by extending the existing
+spinlock to cover the DMA dequeue path and the entire interrupt handler.
+Since the core IRQ handler now holds this lock, remove the per-function
+locking from the PIO and DMA sub-handlers.
+
+Additionally, clear the completed entry in rh->src_xfers[] in
+hci_dma_xfer_done() so it cannot be matched or completed again.
+
+Finally, place the ring restart sequence under the same lock in
+hci_dma_dequeue_xfer() to avoid concurrent enqueue or completion
+operations while the ring state is being modified.
+
+Fixes: 9ad9a52cce282 ("i3c/master: introduce the mipi-i3c-hci driver")
+Cc: stable@vger.kernel.org
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Reviewed-by: Frank Li <Frank.Li@nxp.com>
+Link: https://patch.msgid.link/20260306072451.11131-8-adrian.hunter@intel.com
+Signed-off-by: Alexandre Belloni <alexandre.belloni@bootlin.com>
+---
+ drivers/i3c/master/mipi-i3c-hci/core.c |  2 ++
+ drivers/i3c/master/mipi-i3c-hci/dma.c  | 11 +++++------
+ drivers/i3c/master/mipi-i3c-hci/pio.c  |  6 +-----
+ 3 files changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
+index 1eeab337e5e5..d81b3ff9ce5d 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/core.c
++++ b/drivers/i3c/master/mipi-i3c-hci/core.c
+@@ -539,6 +539,8 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
+ 	irqreturn_t result = IRQ_NONE;
+ 	u32 val;
+ 
++	guard(spinlock)(&hci->lock);
++
+ 	/*
+ 	 * The IRQ can be shared, so the handler may be called when the IRQ is
+ 	 * due to a different device. That could happen before the controller
+diff --git a/drivers/i3c/master/mipi-i3c-hci/dma.c b/drivers/i3c/master/mipi-i3c-hci/dma.c
+index 775c62fe85ee..2e9379876d6a 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/dma.c
++++ b/drivers/i3c/master/mipi-i3c-hci/dma.c
+@@ -504,6 +504,8 @@ static bool hci_dma_dequeue_xfer(struct i3c_hci *hci,
+ 		}
+ 	}
+ 
++	spin_lock_irq(&hci->lock);
++
+ 	for (i = 0; i < n; i++) {
+ 		struct hci_xfer *xfer = xfer_list + i;
+ 		int idx = xfer->ring_entry;
+@@ -539,6 +541,8 @@ static bool hci_dma_dequeue_xfer(struct i3c_hci *hci,
+ 	rh_reg_write(RING_CONTROL, RING_CTRL_ENABLE);
+ 	rh_reg_write(RING_CONTROL, RING_CTRL_ENABLE | RING_CTRL_RUN_STOP);
+ 
++	spin_unlock_irq(&hci->lock);
++
+ 	return did_unqueue;
+ }
+ 
+@@ -564,6 +568,7 @@ static void hci_dma_xfer_done(struct i3c_hci *hci, struct hci_rh_data *rh)
+ 			dev_dbg(&hci->master.dev, "orphaned ring entry");
+ 		} else {
+ 			hci_dma_unmap_xfer(hci, xfer, 1);
++			rh->src_xfers[done_ptr] = NULL;
+ 			xfer->ring_entry = -1;
+ 			xfer->response = resp;
+ 			if (tid != xfer->cmd_tid) {
+@@ -581,14 +586,11 @@ static void hci_dma_xfer_done(struct i3c_hci *hci, struct hci_rh_data *rh)
+ 		done_cnt += 1;
+ 	}
+ 
+-	/* take care to update the software dequeue pointer atomically */
+-	spin_lock(&hci->lock);
+ 	rh->xfer_space += done_cnt;
+ 	op1_val = rh_reg_read(RING_OPERATION1);
+ 	op1_val &= ~RING_OP1_CR_SW_DEQ_PTR;
+ 	op1_val |= FIELD_PREP(RING_OP1_CR_SW_DEQ_PTR, done_ptr);
+ 	rh_reg_write(RING_OPERATION1, op1_val);
+-	spin_unlock(&hci->lock);
+ }
+ 
+ static int hci_dma_request_ibi(struct i3c_hci *hci, struct i3c_dev_desc *dev,
+@@ -771,13 +773,10 @@ static void hci_dma_process_ibi(struct i3c_hci *hci, struct hci_rh_data *rh)
+ 	i3c_master_queue_ibi(dev, slot);
+ 
+ done:
+-	/* take care to update the ibi dequeue pointer atomically */
+-	spin_lock(&hci->lock);
+ 	op1_val = rh_reg_read(RING_OPERATION1);
+ 	op1_val &= ~RING_OP1_IBI_DEQ_PTR;
+ 	op1_val |= FIELD_PREP(RING_OP1_IBI_DEQ_PTR, deq_ptr);
+ 	rh_reg_write(RING_OPERATION1, op1_val);
+-	spin_unlock(&hci->lock);
+ 
+ 	/* update the chunk pointer */
+ 	rh->ibi_chunk_ptr += ibi_chunks;
+diff --git a/drivers/i3c/master/mipi-i3c-hci/pio.c b/drivers/i3c/master/mipi-i3c-hci/pio.c
+index 35e6acc958a8..cb3232c9cf33 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/pio.c
++++ b/drivers/i3c/master/mipi-i3c-hci/pio.c
+@@ -990,15 +990,12 @@ static bool hci_pio_irq_handler(struct i3c_hci *hci)
+ 	struct hci_pio_data *pio = hci->io_data;
+ 	u32 status;
+ 
+-	spin_lock(&hci->lock);
+ 	status = pio_reg_read(INTR_STATUS);
+ 	dev_dbg(&hci->master.dev, "PIO_INTR_STATUS %#x/%#x",
+ 		status, pio->enabled_irqs);
+ 	status &= pio->enabled_irqs | STAT_LATENCY_WARNINGS;
+-	if (!status) {
+-		spin_unlock(&hci->lock);
++	if (!status)
+ 		return false;
+-	}
+ 
+ 	if (status & STAT_IBI_STATUS_THLD)
+ 		hci_pio_process_ibi(hci, pio);
+@@ -1032,7 +1029,6 @@ static bool hci_pio_irq_handler(struct i3c_hci *hci)
+ 	pio_reg_write(INTR_SIGNAL_ENABLE, pio->enabled_irqs);
+ 	dev_dbg(&hci->master.dev, "PIO_INTR_STATUS %#x/%#x",
+ 		pio_reg_read(INTR_STATUS), pio_reg_read(INTR_SIGNAL_ENABLE));
+-	spin_unlock(&hci->lock);
+ 	return true;
+ }
+ 
+-- 
+2.53.0
+

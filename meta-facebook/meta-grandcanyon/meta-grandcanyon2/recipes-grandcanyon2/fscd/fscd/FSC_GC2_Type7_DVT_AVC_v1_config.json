@@ -16,6 +16,20 @@
       "host_action": ["shutdown", 2]
   },
   "sensor_valid_check": {
+    "PTB_TSENSE_48V_TEMP": {
+      "attribute": {
+        "type" : "sensor_existing",
+        "fru_id" : "0x4",
+        "sensor_num" : "0xEC"
+      }
+    },
+    "PTB_TSENSE_GND_TEMP": {
+      "attribute": {
+        "type" : "sensor_existing",
+        "fru_id" : "0x4",
+        "sensor_num" : "0xED"
+      }
+    },
     "SCC_IOC_TEMP": {
       "attribute": {
         "type" : "host_power_status",
@@ -322,6 +336,17 @@
       ]
     },
      "linear_ptb_dc_module_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_ptb_tsense_temp": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },

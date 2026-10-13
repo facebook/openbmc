@@ -1,0 +1,381 @@
+From cfb3d22d9cb5562d544eaf9ac7c9fd10babfc111 Mon Sep 17 00:00:00 2001
+From: Henry Wu <Henry_Wu@quantatw.com>
+Date: Tue, 6 Oct 2026 17:49:58 +0800
+Subject: [PATCH] requester: complete queued requests on endpoint cancellation
+
+Endpoint request queues can be left with waiters when an
+endpoint is removed while requests are active or pending.
+Add endpoint-wide cancellation that stops active requests,
+frees instance IDs, drains queued requests, and completes
+waiters with an empty response so coroutines follow the
+existing timeout/error path.
+
+Also complete a dequeued request when starting the transport
+request or its expiry timer fails. This lets the endpoint
+queue continue polling instead of leaving the coroutine
+suspended forever.
+
+Add coverage for the dequeued send-failure path.
+
+The link of upstream:
+https://gerrit.openbmc.org/c/openbmc/pldm/+/95349
+
+Change-Id: I3f6e4d38b623b402871b83064ec057e524088add
+Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
+---
+ requester/handler.hpp           | 155 +++++++++++++++++++++++++++-----
+ requester/test/handler_test.cpp | 100 +++++++++++++++++++++
+ 2 files changed, 232 insertions(+), 23 deletions(-)
+
+diff --git a/requester/handler.hpp b/requester/handler.hpp
+index 1a007ed..d44ec22 100644
+--- a/requester/handler.hpp
++++ b/requester/handler.hpp
+@@ -21,6 +21,7 @@
+ #include <memory>
+ #include <tuple>
+ #include <unordered_map>
++#include <vector>
+ 
+ PHOSPHOR_LOG2_USING;
+ 
+@@ -119,6 +120,12 @@ template <class RequestInterface>
+ class Handler
+ {
+   public:
++    enum class FailureHandling
++    {
++        ReturnError,
++        CompleteRequest,
++    };
++
+     Handler() = delete;
+     Handler(const Handler&) = delete;
+     Handler(Handler&&) = delete;
+@@ -192,35 +199,42 @@ class Handler
+      *
+      *  @param[in] eid - endpoint ID of the remote MCTP endpoint
+      */
+-    int pollEndpointQueue(mctp_eid_t eid)
++    int pollEndpointQueue(mctp_eid_t eid, FailureHandling failureHandling =
++                                              FailureHandling::CompleteRequest)
+     {
+-        if (endpointMessageQueues[eid]->activeRequest ||
+-            endpointMessageQueues[eid]->requestQueue.empty())
++        auto& endpointQueue = endpointMessageQueues[eid];
++        if (endpointQueue->activeRequest || endpointQueue->requestQueue.empty())
+         {
+             return PLDM_SUCCESS;
+         }
+ 
+-        endpointMessageQueues[eid]->activeRequest = true;
+-        auto requestMsg = endpointMessageQueues[eid]->requestQueue.front();
+-        endpointMessageQueues[eid]->requestQueue.pop_front();
++        endpointQueue->activeRequest = true;
++        auto requestMsg = endpointQueue->requestQueue.front();
++        const auto key = requestMsg->key;
++        endpointQueue->requestQueue.pop_front();
+ 
+         auto request = std::make_unique<RequestInterface>(
+-            pldmTransport, requestMsg->key.eid, event,
+-            std::move(requestMsg->reqMsg), numRetries, responseTimeOut,
+-            verbose);
++            pldmTransport, key.eid, event, std::move(requestMsg->reqMsg),
++            numRetries, responseTimeOut, verbose);
+         auto timer = std::make_unique<sdbusplus::Timer>(
+-            event.get(), std::bind(&Handler::instanceIdExpiryCallBack, this,
+-                                   requestMsg->key));
++            event.get(),
++            std::bind(&Handler::instanceIdExpiryCallBack, this, key));
+ 
+         auto rc = request->start();
+         if (rc)
+         {
+-            instanceIdDb.free(requestMsg->key.eid, requestMsg->key.instanceId);
++            instanceIdDb.free(key.eid, key.instanceId);
+             error(
+-                "Failure to send the PLDM request message for polling endpoint queue, response code '{RC}'",
+-                "RC", rc);
+-            endpointMessageQueues[eid]->activeRequest = false;
+-            return rc;
++                "Requester queue send failed after dequeue: EID {EID}, InstanceID {INSTANCEID}, type {TYPE}, command {COMMAND}, response code {RC}, pending size {PENDINGSIZE}, active handlers {ACTIVEHANDLERS}",
++                "EID", static_cast<unsigned>(key.eid), "INSTANCEID",
++                static_cast<unsigned>(key.instanceId), "TYPE",
++                static_cast<unsigned>(key.type), "COMMAND",
++                static_cast<unsigned>(key.command), "RC", rc, "PENDINGSIZE",
++                endpointQueue->requestQueue.size(), "ACTIVEHANDLERS",
++                handlers.size());
++            endpointQueue->activeRequest = false;
++            return handleDequeuedRequestFailure(eid, key, std::move(requestMsg),
++                                                failureHandling, rc);
+         }
+ 
+         try
+@@ -230,15 +244,20 @@ class Handler
+         }
+         catch (const std::runtime_error& e)
+         {
+-            instanceIdDb.free(requestMsg->key.eid, requestMsg->key.instanceId);
++            instanceIdDb.free(key.eid, key.instanceId);
++            request->stop();
+             error(
+-                "Failed to start the instance ID expiry timer, error - {ERROR}",
+-                "ERROR", e);
+-            endpointMessageQueues[eid]->activeRequest = false;
+-            return PLDM_ERROR;
++                "Requester queue timer start failed after dequeue: EID {EID}, InstanceID {INSTANCEID}, type {TYPE}, command {COMMAND}, error - {ERROR}",
++                "EID", static_cast<unsigned>(key.eid), "INSTANCEID",
++                static_cast<unsigned>(key.instanceId), "TYPE",
++                static_cast<unsigned>(key.type), "COMMAND",
++                static_cast<unsigned>(key.command), "ERROR", e);
++            endpointQueue->activeRequest = false;
++            return handleDequeuedRequestFailure(eid, key, std::move(requestMsg),
++                                                failureHandling, PLDM_ERROR);
+         }
+ 
+-        handlers.emplace(requestMsg->key,
++        handlers.emplace(key,
+                          std::make_tuple(std::move(request),
+                                          std::move(requestMsg->responseHandler),
+                                          std::move(timer)));
+@@ -285,7 +304,7 @@ class Handler
+         }
+ 
+         /* try to send new request if the endpoint is free */
+-        auto rc = pollEndpointQueue(eid);
++        auto rc = pollEndpointQueue(eid, FailureHandling::ReturnError);
+         if (rc != PLDM_SUCCESS)
+         {
+             error(
+@@ -363,6 +382,70 @@ class Handler
+         return PLDM_ERROR;
+     }
+ 
++    /** @brief Cancel all active and pending requests for one endpoint.
++     *
++     *  Any coroutine waiting for a request to this endpoint is resumed with an
++     *  empty response, matching the existing timeout behavior.
++     *
++     *  @param[in] eid - endpoint ID of the remote MCTP endpoint
++     */
++    void cancelEndpointRequests(mctp_eid_t eid)
++    {
++        std::vector<ResponseHandler> responseHandlers;
++
++        for (auto it = handlers.begin(); it != handlers.end();)
++        {
++            if (it->first.eid != eid)
++            {
++                ++it;
++                continue;
++            }
++
++            auto key = it->first;
++            auto& [request, responseHandler, timerInstance] = it->second;
++            request->stop();
++            auto rc = timerInstance->stop();
++            if (rc)
++            {
++                error(
++                    "Failed to stop the instance ID expiry timer, response code '{RC}'",
++                    "RC", static_cast<int>(rc));
++            }
++
++            instanceIdDb.free(key.eid, key.instanceId);
++            if (!removeRequestContainer.contains(key))
++            {
++                responseHandlers.emplace_back(std::move(responseHandler));
++            }
++            removeRequestContainer.erase(key);
++            it = handlers.erase(it);
++        }
++
++        auto queueIt = endpointMessageQueues.find(eid);
++        if (queueIt != endpointMessageQueues.end())
++        {
++            auto& endpointQueue = queueIt->second;
++            while (!endpointQueue->requestQueue.empty())
++            {
++                auto requestMsg = endpointQueue->requestQueue.front();
++                endpointQueue->requestQueue.pop_front();
++                instanceIdDb.free(requestMsg->key.eid,
++                                  requestMsg->key.instanceId);
++                responseHandlers.emplace_back(
++                    std::move(requestMsg->responseHandler));
++            }
++            endpointMessageQueues.erase(queueIt);
++        }
++
++        for (auto& responseHandler : responseHandlers)
++        {
++            if (responseHandler)
++            {
++                responseHandler(eid, nullptr, 0);
++            }
++        }
++    }
++
+     /** @brief Handle PLDM response message
+      *
+      *  @param[in] eid - endpoint ID of the remote MCTP endpoint
+@@ -440,6 +523,32 @@ class Handler
+                        RequestKeyHasher>
+         removeRequestContainer;
+ 
++    int handleDequeuedRequestFailure(
++        mctp_eid_t eid, const RequestKey& key,
++        std::shared_ptr<RegisteredRequest>&& requestMsg,
++        FailureHandling failureHandling, int rc)
++    {
++        if (failureHandling == FailureHandling::ReturnError)
++        {
++            return rc;
++        }
++
++        // The request has already left the pending queue but has not reached
++        // handlers. Complete it here so waiters cannot hang forever.
++        auto responseHandler = std::move(requestMsg->responseHandler);
++        if (responseHandler)
++        {
++            responseHandler(key.eid, nullptr, 0);
++        }
++
++        if (endpointMessageQueues.contains(eid))
++        {
++            pollEndpointQueue(eid);
++        }
++
++        return PLDM_SUCCESS;
++    }
++
+     /** @brief Remove request entry for which the instance ID expired
+      *
+      *  @param[in] key - key for the Request
+diff --git a/requester/test/handler_test.cpp b/requester/test/handler_test.cpp
+index 588c265..768bc5e 100644
+--- a/requester/test/handler_test.cpp
++++ b/requester/test/handler_test.cpp
+@@ -11,6 +11,7 @@
+ 
+ #include <sdbusplus/async.hpp>
+ 
++#include <deque>
+ #include <memory>
+ 
+ #include <gmock/gmock.h>
+@@ -76,6 +77,43 @@ class HandlerTest : public testing::Test
+     }
+ };
+ 
++class ControlledRequest
++{
++  public:
++    ControlledRequest(PldmTransport* /*pldmTransport*/, mctp_eid_t /*eid*/,
++                      sdeventplus::Event& /*event*/,
++                      pldm::Request&& /*requestMsg*/, uint8_t /*numRetries*/,
++                      std::chrono::milliseconds /*responseTimeOut*/,
++                      bool /*verbose*/)
++    {}
++
++    int start()
++    {
++        if (startResults.empty())
++        {
++            return PLDM_SUCCESS;
++        }
++
++        auto rc = startResults.front();
++        startResults.pop_front();
++        return rc;
++    }
++
++    void stop()
++    {
++        stopCount++;
++    }
++
++    static void reset()
++    {
++        startResults.clear();
++        stopCount = 0;
++    }
++
++    static inline std::deque<int> startResults{};
++    static inline int stopCount = 0;
++};
++
+ TEST_F(HandlerTest, singleRequestResponseScenario)
+ {
+     Handler<NiceMock<MockRequest>> reqHandler(
+@@ -221,6 +259,68 @@ TEST_F(HandlerTest, singleRequestResponseScenarioUsingCoroutine)
+     stdexec::sync_wait(scope.on_empty());
+ }
+ 
++TEST_F(HandlerTest, pendingRequestSendFailureCompletesCoroutine)
++{
++    ControlledRequest::reset();
++    ControlledRequest::startResults = {PLDM_SUCCESS, PLDM_ERROR};
++
++    exec::async_scope scope;
++    Handler<ControlledRequest> reqHandler(
++        pldmTransport, event, instanceIdDb, false, seconds(1), 2,
++        milliseconds(100));
++
++    auto instanceIdResult = instanceIdDb.next(eid);
++    ASSERT_TRUE(instanceIdResult);
++    auto instanceId = instanceIdResult.value();
++    EXPECT_EQ(instanceId, 0);
++
++    auto instanceIdNxtResult = instanceIdDb.next(eid);
++    ASSERT_TRUE(instanceIdNxtResult);
++    auto instanceIdNxt = instanceIdNxtResult.value();
++    EXPECT_EQ(instanceIdNxt, 1);
++
++    int rc = PLDM_ERROR;
++    int rcNxt = PLDM_SUCCESS;
++    size_t responseLen = 0;
++    size_t responseLenNxt = 1;
++    bool requestDone = false;
++    bool requestNxtDone = false;
++
++    auto sendRequest =
++        [&](uint8_t requestInstanceId, int& requestRc,
++            size_t& requestResponseLen, bool& done) -> exec::task<void> {
++        pldm::Request request(sizeof(pldm_msg_hdr) + sizeof(uint8_t), 0);
++        auto requestPtr = std::start_lifetime_as<pldm_msg>(request.data());
++        requestPtr->hdr.instance_id = requestInstanceId;
++
++        const pldm_msg* responseMsg = nullptr;
++        std::tie(requestRc, responseMsg, requestResponseLen) =
++            co_await reqHandler.sendRecvMsg(eid, std::move(request));
++        done = true;
++    };
++
++    scope.spawn(sendRequest(instanceId, rc, responseLen, requestDone),
++                exec::default_task_context<void>(stdexec::inline_scheduler{}));
++    scope.spawn(sendRequest(instanceIdNxt, rcNxt, responseLenNxt,
++                            requestNxtDone),
++                exec::default_task_context<void>(stdexec::inline_scheduler{}));
++
++    pldm::Response mockResponse(sizeof(pldm_msg_hdr) + sizeof(uint8_t), 0);
++    auto mockResponsePtr =
++        reinterpret_cast<const pldm_msg*>(mockResponse.data());
++    reqHandler.handleResponse(eid, instanceId, 0, 0, mockResponsePtr,
++                              mockResponse.size());
++
++    EXPECT_TRUE(requestDone);
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    EXPECT_NE(responseLen, 0);
++    EXPECT_TRUE(requestNxtDone);
++    EXPECT_EQ(rcNxt, PLDM_ERROR_NOT_READY);
++    EXPECT_EQ(responseLenNxt, 0);
++
++    stdexec::sync_wait(scope.on_empty());
++}
++
+ TEST_F(HandlerTest, singleRequestCancellationScenarioUsingCoroutine)
+ {
+     exec::async_scope scope;
+-- 
+2.47.3
+

@@ -1,0 +1,189 @@
+From 4f07f74103f5391ea6fa8831fbe67fce5636313a Mon Sep 17 00:00:00 2001
+From: Jheng Shuo Lin <jheng-shuo_lin@aspeedtech.com>
+Date: Wed, 13 May 2026 16:44:00 +0800
+Subject: [PATCH] ast_loader: manifest loader ignore zero size image loading
+ error
+
+- skip zero size error
+
+Signed-off-by: Jheng Shuo Lin <jheng-shuo_lin@aspeedtech.com>
+Change-Id: I06f7a38aaf9d3a9a2d6d5e2b3b47a300c9f75588
+---
+ apps/mcu-runtime/src/ast_loader.c         | 28 +++++++++++++-------
+ apps/mcu-runtime/src/include/ast_loader.h |  2 +-
+ apps/mcu-runtime/src/manifest.c           | 10 +++++--
+ apps/mcu-runtime/src/manifest_image.c     | 32 +++++++++++++----------
+ 4 files changed, 45 insertions(+), 27 deletions(-)
+
+diff --git a/apps/mcu-runtime/src/ast_loader.c b/apps/mcu-runtime/src/ast_loader.c
+index de51144..44c5688 100644
+--- a/apps/mcu-runtime/src/ast_loader.c
++++ b/apps/mcu-runtime/src/ast_loader.c
+@@ -95,12 +95,12 @@ int ast_loader_read(uint32_t *dst, uint32_t src, uint32_t len)
+ 	return err;
+ }
+ 
+-static int _ast_loader_load_image(uint32_t type, uint32_t *dst, uint32_t *buf, bool verify)
++static int _ast_loader_load_image(uint32_t type, uint32_t *dst, uint32_t *buf, bool verify, uint32_t *img_read_size)
+ {
+ 	struct ast_loader *loader = &g_loader;
+ 	uint32_t sz = 0;
+ 	int err = 0;
+-	LOG_INF("%s: type=%d, dst=0x%x, buf=0x%x, verify=%d\n",
++	LOG_INF("%s: type=%d, dst=0x%x, buf=0x%x, verify=%d",
+ 		__func__, type, (uint32_t)dst, (uint32_t)buf, verify);
+ 
+ 	if (loader->load) {
+@@ -111,22 +111,30 @@ static int _ast_loader_load_image(uint32_t type, uint32_t *dst, uint32_t *buf, b
+ 
+ 	if (verify) {
+ 		if (!loader->verify) {
+-			LOG_ERR("Verifier does not be registered.\n");
++			LOG_ERR("Verifier does not be registered.");
+ 			return -1;
+ 		}
+ 
+-		if (!buf || sz == 0) {
+-			LOG_ERR("Hash buffer is NULL or size is zero.\n");
++		if (!buf) {
++			LOG_ERR("Hash buffer is NULL");
+ 			return -1;
+ 		}
+ 
++		if (sz == 0) {
++			LOG_WRN("Img size == 0");
++			if (img_read_size)
++				*img_read_size = 0;
++			return 0;
++		}
++
+ 		err = loader->verify(type, buf, sz);
+ 		if (err) {
+-			printf("%s: type %d verify failed, err=%d\n", __func__, type, err);
++			LOG_ERR("%s: type %d verify failed, err=%d", __func__, type, err);
+ 			return err;
+ 		}
+ 	}
+-
++	if (img_read_size)
++		*img_read_size = sz;
+ 	memcpy32(dst, buf, sz);
+ 
+ 	return err;
+@@ -134,12 +142,12 @@ static int _ast_loader_load_image(uint32_t type, uint32_t *dst, uint32_t *buf, b
+ 
+ int ast_loader_load_image(uint32_t type, uint32_t *dst, bool verify)
+ {
+-	return _ast_loader_load_image(type, dst, (uint32_t *)AST_HASH_BUFFER, 1);
++	return _ast_loader_load_image(type, dst, (uint32_t *)AST_HASH_BUFFER, 1, NULL);
+ }
+ 
+-int ast_loader_load_manifest_image(uint32_t type, uint32_t *dst, bool verify)
++int ast_loader_load_manifest_image(uint32_t type, uint32_t *dst, bool verify, uint32_t *img_read_size)
+ {
+-	return _ast_loader_load_image(type, dst, (uint32_t *)CONFIG_SYS_LOAD_ADDR, 1);
++	return _ast_loader_load_image(type, dst, (uint32_t *)CONFIG_SYS_LOAD_ADDR, 1, img_read_size);
+ }
+ 
+ static int ast_loader_probe(struct ast_chip *chip, struct ast_loader *loader)
+diff --git a/apps/mcu-runtime/src/include/ast_loader.h b/apps/mcu-runtime/src/include/ast_loader.h
+index e05c4bf..0746192 100644
+--- a/apps/mcu-runtime/src/include/ast_loader.h
++++ b/apps/mcu-runtime/src/include/ast_loader.h
+@@ -56,7 +56,7 @@ struct stor_ops {
+ /* external use */
+ int ast_loader_read(uint32_t *dst, uint32_t src, uint32_t len);
+ int ast_loader_load_image(uint32_t type, uint32_t *dst, bool verify);
+-int ast_loader_load_manifest_image(uint32_t type, uint32_t *dst, bool verify);
++int ast_loader_load_manifest_image(uint32_t type, uint32_t *dst, bool verify, uint32_t *img_read_size);
+ void *memcpy32(uint32_t *dst, uint32_t *src, uint32_t len);
+ 
+ /* internal use */
+diff --git a/apps/mcu-runtime/src/manifest.c b/apps/mcu-runtime/src/manifest.c
+index 621c31c..a66dbdb 100644
+--- a/apps/mcu-runtime/src/manifest.c
++++ b/apps/mcu-runtime/src/manifest.c
+@@ -270,6 +270,7 @@ int cptra_load_abb_image(void)
+ 	uint32_t image_count = 0;
+ 	uint32_t fw_id;
+ 	uint32_t identifier;
++	uint32_t img_read_size = 0;
+ 
+ 	struct cptra_image_info default_image_info[] = {
+ 		{CPTRA_ATF_HDR_ID, 0x0, 0x0},
+@@ -308,8 +309,13 @@ int cptra_load_abb_image(void)
+ 		if (!load_addr)
+ 			continue;
+ 
+-		ret = ast_loader_load_manifest_image(fw_id, load_addr, true);
+-		LOG_INF("Load %s image... %s (0x%x)", cptra_ime_get_image_name(fw_id),
++		ret = ast_loader_load_manifest_image(fw_id, load_addr, true, &img_read_size);
++		if (ret == 0 && img_read_size == 0) {
++			LOG_WRN("%s image size is 0, skip loading\n", cptra_ime_get_image_name(fw_id));
++			continue;
++		}
++
++		LOG_INF("Load %s image... %s (0x%x)\n", cptra_ime_get_image_name(fw_id),
+ 			ret ? "fail" : "pass", ret);
+ 
+ 		if (!ret)
+diff --git a/apps/mcu-runtime/src/manifest_image.c b/apps/mcu-runtime/src/manifest_image.c
+index 718f3d1..c792be5 100644
+--- a/apps/mcu-runtime/src/manifest_image.c
++++ b/apps/mcu-runtime/src/manifest_image.c
+@@ -35,21 +35,21 @@ struct cptra_load_image {
+ };
+ 
+ static struct cptra_load_image image_list[] = {
+-	{ "manifest", CPTRA_SOC_MANIFEST_HDR_ID, CPTRA_MANIFEST_FW_ID, CPTRA_NO_LOAD_ADDR},
+-	{ "mcu_fmc", CPTRA_FMC_HDR_ID, CPTRA_FMC_FW_ID, CPTRA_FMC_LOAD_ADDR},
+-	{ "ddr4_imem", CPTRA_DDR4_IMEM_HDR_ID, CPTRA_DDR4_IMEM_FW_ID, CPTRA_NO_LOAD_ADDR},
+-	{ "ddr4_dmem", CPTRA_DDR4_DMEM_HDR_ID, CPTRA_DDR4_DMEM_FW_ID, CPTRA_NO_LOAD_ADDR},
++	{ "manifest",     CPTRA_SOC_MANIFEST_HDR_ID, CPTRA_MANIFEST_FW_ID,     CPTRA_NO_LOAD_ADDR},
++	{ "mcu_fmc",      CPTRA_FMC_HDR_ID,          CPTRA_FMC_FW_ID,          CPTRA_FMC_LOAD_ADDR},
++	{ "ddr4_imem",    CPTRA_DDR4_IMEM_HDR_ID,    CPTRA_DDR4_IMEM_FW_ID,    CPTRA_NO_LOAD_ADDR},
++	{ "ddr4_dmem",    CPTRA_DDR4_DMEM_HDR_ID,    CPTRA_DDR4_DMEM_FW_ID,    CPTRA_NO_LOAD_ADDR},
+ 	{ "ddr4_2d_imem", CPTRA_DDR4_2D_IMEM_HDR_ID, CPTRA_DDR4_2D_IMEM_FW_ID, CPTRA_NO_LOAD_ADDR},
+ 	{ "ddr4_2d_dmem", CPTRA_DDR4_2D_DMEM_HDR_ID, CPTRA_DDR4_2D_DMEM_FW_ID, CPTRA_NO_LOAD_ADDR},
+-	{ "ddr5_imem", CPTRA_DDR5_IMEM_HDR_ID, CPTRA_DDR5_IMEM_FW_ID, CPTRA_NO_LOAD_ADDR},
+-	{ "ddr5_dmem", CPTRA_DDR5_DMEM_HDR_ID, CPTRA_DDR5_DMEM_FW_ID, CPTRA_NO_LOAD_ADDR},
+-	{ "dp_fw", CPTRA_DP_FW_HDR_ID, CPTRA_DP_FW_FW_ID, CPTRA_NO_LOAD_ADDR},
+-	{ "uefi", CPTRA_UEFI_HDR_ID, CPTRA_UEFI_FW_ID, CPTRA_NO_LOAD_ADDR},
+-	{ "atf", CPTRA_ATF_HDR_ID, CPTRA_ATF_FW_ID, CPTRA_ATF_LOAD_ADDR},
+-	{ "optee", CPTRA_OPTEE_HDR_ID, CPTRA_OPTEE_FW_ID, CPTRA_OPTEE_LOAD_ADDR},
+-	{ "uboot", CPTRA_UBOOT_HDR_ID, CPTRA_UBOOT_FW_ID, CPTRA_UBOOT_LOAD_ADDR},
+-	{ "ssp", CPTRA_SSP_HDR_ID, CPTRA_SSP_FW_ID, CPTRA_SSP_LOAD_ADDR},
+-	{ "tsp", CPTRA_TSP_HDR_ID, CPTRA_TSP_FW_ID, CPTRA_TSP_LOAD_ADDR},
++	{ "ddr5_imem",    CPTRA_DDR5_IMEM_HDR_ID,    CPTRA_DDR5_IMEM_FW_ID,    CPTRA_NO_LOAD_ADDR},
++	{ "ddr5_dmem",    CPTRA_DDR5_DMEM_HDR_ID,    CPTRA_DDR5_DMEM_FW_ID,    CPTRA_NO_LOAD_ADDR},
++	{ "dp_fw",        CPTRA_DP_FW_HDR_ID,        CPTRA_DP_FW_FW_ID,        CPTRA_NO_LOAD_ADDR},
++	{ "uefi",         CPTRA_UEFI_HDR_ID,         CPTRA_UEFI_FW_ID,         CPTRA_NO_LOAD_ADDR},
++	{ "atf",          CPTRA_ATF_HDR_ID,          CPTRA_ATF_FW_ID,          CPTRA_ATF_LOAD_ADDR},
++	{ "optee",        CPTRA_OPTEE_HDR_ID,        CPTRA_OPTEE_FW_ID,        CPTRA_OPTEE_LOAD_ADDR},
++	{ "uboot",        CPTRA_UBOOT_HDR_ID,        CPTRA_UBOOT_FW_ID,        CPTRA_UBOOT_LOAD_ADDR},
++	{ "ssp",          CPTRA_SSP_HDR_ID,          CPTRA_SSP_FW_ID,          CPTRA_SSP_LOAD_ADDR},
++	{ "tsp",          CPTRA_TSP_HDR_ID,          CPTRA_TSP_FW_ID,          CPTRA_TSP_LOAD_ADDR},
+ };
+ 
+ static struct cptra_image_info *cptra_find_image_info(struct cptra_image_context *ctx,
+@@ -230,12 +230,16 @@ struct cptra_manifest_ime *cptra_get_ime_by_fw_id(struct cptra_soc_manifest *man
+ 	struct cptra_load_image *img = NULL;
+ 	uint32_t image_count = 0;
+ 	struct cptra_manifest_ime *imc_stored = cptra_get_imc_stored();
++	static uint32_t invalid_count = 0;
+ 
+ 	if (!is_ast2700_a2() && !man)
+ 		return NULL;
+ 
+ 	if (is_ast2700_a2() && !cptra_imc_stored_valid()) {
+-		LOG_WRN("IMC stored invalid, skip ime lookup.");
++		invalid_count++;
++		if (invalid_count == 1) {
++			LOG_WRN("IMC stored invalid (SoC manifest may be invalid), skip ime lookup.");
++		}
+ 		return NULL;
+ 	}
+ 
+-- 
+2.43.0
+

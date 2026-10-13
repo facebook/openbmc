@@ -37,6 +37,10 @@ auto Sensor::toMaybeMetadata(const std::string& unitsStr)
         {"V", {Unit::Volts, 0.0, 255.0}},
         {"W", {Unit::Watts, 0.0, 3000.0}},
         {"A", {Unit::Amperes, 0.0, 255.0}},
+        {"DegreesC", {Unit::DegreesC, -128.0, 127.0}},
+        {"Volts", {Unit::Volts, 0.0, 255.0}},
+        {"Watts", {Unit::Watts, 0.0, 3000.0}},
+        {"Amperes", {Unit::Amperes, 0.0, 255.0}},
     };
 
     if (auto it = table.find(unitsStr); it != table.end())
@@ -57,6 +61,7 @@ std::optional<SensorValueIntf::Unit> Sensor::toMaybeUnit(
 std::unique_ptr<Sensor> Sensor::create(
     sdbusplus::async::context& ctx, const std::string& ns,
     const std::string& id, const std::string& associationPath,
+    const std::optional<double>& hardShutdownHigh,
     redfish_binding::Sensor::Sensor& parsed)
 {
     // Without a unit there is nothing meaningful to put on the bus.
@@ -88,12 +93,13 @@ std::unique_ptr<Sensor> Sensor::create(
         ctx, objectPath, associationPath,
         toMaybeDouble(parsed.getReading())
             .value_or(std::numeric_limits<double>::quiet_NaN()),
-        metadata));
+        metadata, hardShutdownHigh));
 }
 
 Sensor::Sensor(sdbusplus::async::context& ctx, const std::string& objectPath,
                const std::string& associationPath, double reading,
-               const Metadata& metadata) :
+               const Metadata& metadata,
+               const std::optional<double>& hardShutdownHigh) :
     SensorInterfaces(ctx, objectPath.c_str())
 {
     // Populate everything before announcing: emit_added() publishes the object
@@ -118,7 +124,16 @@ Sensor::Sensor(sdbusplus::async::context& ctx, const std::string& objectPath,
         lastNotifiedValue = reading;
     }
 
+    bool asserted = false;
+    if (hardShutdownHigh.has_value())
+    {
+        hard_shutdown_high<false>(*hardShutdownHigh);
+        asserted = !std::isnan(reading) && reading >= *hardShutdownHigh;
+        hard_shutdown_alarm_high<false>(asserted);
+    }
+
     Definitions::emit_added();
+    HardShutdown::emit_added();
     Value::emit_added();
 }
 
@@ -135,7 +150,32 @@ auto Sensor::updateValue(double current) -> sdbusplus::async::task<>
         lastNotifiedValue = current;
         this->value<true>(current);
     }
+    updateHardShutdownAlarm(current);
     co_return;
+}
+
+void Sensor::updateHardShutdownAlarm(double current)
+{
+    const double threshold = hard_shutdown_high();
+    if (std::isnan(threshold))
+    {
+        return;
+    }
+
+    const bool asserted = !std::isnan(current) && current >= threshold;
+    const bool wasAsserted = hard_shutdown_alarm_high();
+    if (asserted != wasAsserted)
+    {
+        hard_shutdown_alarm_high(asserted);
+        if (asserted)
+        {
+            hardShutdownHighAlarmAsserted(current);
+        }
+        else
+        {
+            hardShutdownHighAlarmDeasserted(current);
+        }
+    }
 }
 
 auto Sensor::shouldSkipSignal(double current) -> bool

@@ -65,6 +65,9 @@
 #define PRODUCT_ID_XDPE19283 0x95
 #endif
 
+#define ME_RETRY_DELAY_SEC      1
+#define ME_STATE_INITIAL_DELAY  10
+
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
   uint8_t ver;
@@ -208,37 +211,48 @@ bic_me_recovery(uint8_t command) {
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+  const char *cmd_name = "Unknown";
+  const int log_level = fbgc_common_is_grandcanyon2() ? LOG_WARNING : LOG_CRIT;
 
-  while (retry <= MAX_RETRY) {
-    tbuf[0] = 0xB8;
-    tbuf[1] = 0xDF;
-    tbuf[2] = 0x57;
-    tbuf[3] = 0x01;
-    tbuf[4] = 0x00;
-    tbuf[5] = command;
-    tlen = 6;
+  if (command == RECOVERY_MODE) {
+    cmd_name = "Restart using Recovery Firmware";
+  } else if (command == RESTORE_FACTORY_DEFAULT) {
+    cmd_name = "Restore Factory Default";
+  }
+
+  tbuf[0] = 0xB8;
+  tbuf[1] = 0xDF;
+  tbuf[2] = 0x57;
+  tbuf[3] = 0x01;
+  tbuf[4] = 0x00;
+  tbuf[5] = command;
+  tlen = 6;
+
+  for (retry = 0; retry <= MAX_RETRY; retry++) {
+    memset(rbuf, 0, sizeof(rbuf));
+    rlen = 0;
 
     ret = bic_me_xmit(tbuf, tlen, rbuf, &rlen);
-    if (ret != 0) {
-      retry++;
-      sleep(1);
-      continue;
-    }
-    else {
+    if (ret == 0) {
       break;
     }
+
+    if (retry < MAX_RETRY) {
+      sleep(ME_RETRY_DELAY_SEC);
+    }
   }
-  if (retry == MAX_RETRY + 1) { //if the third retry still failed, return -1
+
+  if (ret != 0) {
+#ifndef CONFIG_GRANDCANYON2
     syslog(LOG_CRIT, "%s: Restart using Recovery Firmware failed..., retried: %d", __func__,  retry);
+#endif
     return -1;
   }
 
-  sleep(10);
-  retry = 0;
-  memset(&tbuf, 0, sizeof(tbuf));
-  memset(&rbuf, 0, sizeof(rbuf));
+  sleep(ME_STATE_INITIAL_DELAY);
+
   /*
-      0x6 0x4: Get Self-Test Results
+    0x6 0x4: Get Self-Test Results
     Byte 1 - Completion Code
     Byte 2
       = 55h - No error. All Self-Tests Passed.
@@ -248,33 +262,45 @@ bic_me_recovery(uint8_t command) {
       =02h - recovery mode entered by IPMI command "Force ME Recovery"
   */
   //Using ME self-test result to check if the ME Recovery Command Success or not
-  while (retry <= MAX_RETRY) {
-    tbuf[0] = 0x18;
-    tbuf[1] = 0x04;
-    tlen = 2;
+  memset(tbuf, 0, sizeof(tbuf));
+  tbuf[0] = 0x18;
+  tbuf[1] = 0x04;
+  tlen = 2;
+
+  for (retry = 0; retry <= MAX_RETRY; retry++) {
+    memset(rbuf, 0, sizeof(rbuf));
+    rlen = 0;
+
     ret = bic_me_xmit(tbuf, tlen, rbuf, &rlen);
-    if (ret != 0) {
-      retry++;
-      sleep(1);
-      continue;
+
+    if ((ret == 0) && (rlen >= 3)) {
+      if ((command == RECOVERY_MODE) &&
+          (rbuf[1] == 0x81) &&
+          (rbuf[2] == 0x02)) {
+        return 0;
+      }
+
+      if ((command == RESTORE_FACTORY_DEFAULT) &&
+          (rbuf[1] == 0x55) &&
+          (rbuf[2] == 0x00)) {
+        return 0;
+      }
+
+      break;
     }
 
-    //if Get Self-Test Results is 0x55 0x00, means No error. All Self-Tests Passed.
-    //if Get Self-Test Results is 0x81 0x02, means Firmware entered Recovery bootloader mode
-    if ((command == RECOVERY_MODE) && (rbuf[1] == 0x81) && (rbuf[2] == 0x02)) {
-      return 0;
-    } else if ((command == RESTORE_FACTORY_DEFAULT) && (rbuf[1] == 0x55) && (rbuf[2] == 0x00)) {
-      return 0;
-    } else {
-      return -1;
+    if (retry < MAX_RETRY) {
+      sleep(ME_RETRY_DELAY_SEC);
     }
   }
-  if (retry == MAX_RETRY + 1) { //if the third retry still failed, return -1
-    syslog(LOG_CRIT, "%s: Restore Factory Default failed..., retried: %d", __func__,  retry);
-    return -1;
+
+  if ((ret == 0) && (rlen < 3)) {
+    syslog(log_level, "Failed to verify ME state for \"%s\": incomplete self-test response, rlen=%u", cmd_name, rlen);
+  } else {
+    syslog(log_level, "Failed to verify ME state for \"%s\", ret=%d, self-test=0x%02x 0x%02x", cmd_name, ret, rbuf[1], rbuf[2]);
   }
 
-  return 0;
+  return -1;
 }
 
 // Custom Command for getting vr version/device id

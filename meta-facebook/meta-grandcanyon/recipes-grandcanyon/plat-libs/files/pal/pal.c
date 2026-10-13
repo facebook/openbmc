@@ -41,6 +41,7 @@
 #include <facebook/fbgc_gpio.h>
 #include <sys/un.h>
 #include "pal.h"
+#include "pal_sensors.h"
 
 #define NUM_SERVER_FRU       1
 #define NUM_NIC_FRU          1
@@ -162,6 +163,9 @@ struct pal_key_cfg {
   {"server_sensor_health", "1", NULL},
   {"uic_sensor_health", "1", NULL},
   {"dpb_sensor_health", "1", NULL},
+#ifdef CONFIG_GRANDCANYON2
+  {"dpb_sel_error", "1", NULL},
+#endif
   {"scc_sensor_health", "1", NULL},
   {"scc_sel_error", "1", NULL},
   {"nic_sensor_health", "1", NULL},
@@ -2735,52 +2739,68 @@ int pal_get_error_code(uint8_t *exp_codes, uint16_t *exp_cnt,
   int ret;
   int exp_total = 0;
   int bmc_total = 0;
+  int status = 0;
 
-  if (!exp_codes || !exp_cnt || !bmc_codes || !bmc_cnt) {
+  if ((exp_codes == NULL) != (exp_cnt == NULL)) {
+    syslog(LOG_WARNING, "%s: failed to get error code: invalid Expander output parameter", __func__);
     return -1;
   }
 
-  memset(exp_codes, 0, MAX_NUM_ERR_CODES);
-  memset(bmc_codes, 0, MAX_NUM_ERR_CODES);
-  *exp_cnt = 0;
-  *bmc_cnt = 0;
-
-  // 1) Expander error code bitmap
-  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE,
-                              tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): failed to get exp error code", __func__);
-    memset(exp_bm, 0, sizeof(exp_bm));
-  } else {
-    memcpy(exp_bm, rbuf, MIN((size_t)rlen, sizeof(exp_bm)));
-
-    // code 0 = "No error" -> ignore
-    exp_bm[0] = CLEARBIT(exp_bm[0], 0);
+  if ((bmc_codes == NULL) != (bmc_cnt == NULL)) {
+    syslog(LOG_WARNING, "%s: failed to get error code: invalid BMC output parameter", __func__);
+    return -1;
   }
 
-  // 2) BMC bitmap
-  ret = pal_read_error_code_file(bmc_bm, ERR_CODE_BYTES);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): failed to get bmc error code", __func__);
-    memset(bmc_bm, 0, sizeof(bmc_bm));
+  if (!exp_codes && !bmc_codes) {
+    syslog(LOG_WARNING, "%s: failed to get error code: no output parameter provided", __func__);
+    return -1;
   }
 
-  // 3) Convert bitmap -> code list (in pal_get_error_code)
-  exp_total = bitmap_to_codelist(exp_bm, ERR_CODE_BYTES, exp_codes, MAX_NUM_ERR_CODES);
-  bmc_total = bitmap_to_codelist(bmc_bm, ERR_CODE_BYTES, bmc_codes, MAX_NUM_ERR_CODES);
+  if (exp_codes) {
+    memset(exp_codes, 0, MAX_NUM_ERR_CODES);
+    *exp_cnt = 0;
 
-  int w = 0;
-  for (int i = 0; i < bmc_total && i < MAX_NUM_ERR_CODES; i++) {
-    if (bmc_codes[i] >= BMC_ERR_CODE_START_NUM) {
-      bmc_codes[w++] = bmc_codes[i];
+    ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE,
+                                tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get exp error code", __func__);
+      memset(exp_bm, 0, sizeof(exp_bm));
+      status |= PAL_ERR_CODE_EXP_UNREACHABLE;
+    } else {
+      memcpy(exp_bm, rbuf, MIN((size_t)rlen, sizeof(exp_bm)));
+
+      // Code 0 = "No error" -> ignore.
+      exp_bm[0] = CLEARBIT(exp_bm[0], 0);
     }
+
+    exp_total = bitmap_to_codelist(exp_bm, ERR_CODE_BYTES, exp_codes, MAX_NUM_ERR_CODES);
+    *exp_cnt = (exp_total > MAX_NUM_ERR_CODES) ? MAX_NUM_ERR_CODES : exp_total;
   }
-  bmc_total = w;
 
-  *exp_cnt = (exp_total > MAX_NUM_ERR_CODES) ? MAX_NUM_ERR_CODES : exp_total;
-  *bmc_cnt = (bmc_total > MAX_NUM_ERR_CODES) ? MAX_NUM_ERR_CODES : bmc_total;
+  if (bmc_codes) {
+    memset(bmc_codes, 0, MAX_NUM_ERR_CODES);
+    *bmc_cnt = 0;
 
-  return 0;
+    ret = pal_read_error_code_file(bmc_bm, ERR_CODE_BYTES);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get bmc error code", __func__);
+      memset(bmc_bm, 0, sizeof(bmc_bm));
+      status |= PAL_ERR_CODE_BMC_FILE_FAIL;
+    }
+
+    bmc_total = bitmap_to_codelist(bmc_bm, ERR_CODE_BYTES, bmc_codes, MAX_NUM_ERR_CODES);
+
+    int valid_cnt = 0;
+    for (int i = 0; i < bmc_total && i < MAX_NUM_ERR_CODES; i++) {
+      if (bmc_codes[i] >= BMC_ERR_CODE_START_NUM) {
+        bmc_codes[valid_cnt++] = bmc_codes[i];
+      }
+    }
+
+    *bmc_cnt = valid_cnt;
+  }
+
+  return status;
 }
 #else //!CONFIG_GRANDCANYON2
 int
@@ -2792,6 +2812,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   uint8_t exp_error_array[MAX_NUM_EXP_ERR_CODES_ARRAY] = {0};
   int ret = 0, i = 0, j = 0;
   int tmp_err_count = 0;
+  int status = 0;
 
   if (error_count == NULL) {
     printf("%s: fail to get error code because NULL parameter: *error_count", __func__);
@@ -2815,6 +2836,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
     printf("NetFn: 0x%2X Code: 0x%02X was error\n", NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE);
     // when Epander fail, fill all data to 0
     memset(exp_error_array, 0, sizeof(exp_error_array));
+    status |= PAL_ERR_CODE_EXP_UNREACHABLE;
   } else {
     memcpy(exp_error_array, rbuf, MIN(rlen, sizeof(exp_error_array)));
   }
@@ -2827,6 +2849,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   if (ret < 0) {
     printf("enclosure-util: failed to get bmc error code\n");
     memset(total_error_array, 0, sizeof(total_error_array));
+    status |= PAL_ERR_CODE_BMC_FILE_FAIL;
   }
 
   // Expander Error Code 0~99; BMC Error Code 0x64(100)~0xFF(255)
@@ -2849,7 +2872,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   }
   *error_count = tmp_err_count;
 
-  return 0;
+  return status;
 }
 
 #endif
@@ -2936,6 +2959,10 @@ pal_i2c_crash_deassert_handle(int i2c_bus_num) {
   }
 }
 
+#ifdef CONFIG_GRANDCANYON2
+#define UIC_FPGA_STAGE_MP_GC2  0x04
+#endif
+
 static int
 set_exp_uart_bridging(uint8_t bridging_status) {
   uint8_t bmc_rev_id = 0;
@@ -2975,6 +3002,13 @@ set_exp_uart_bridging(uint8_t bridging_status) {
       || (strcmp(uic_fpga_stage, "0A") == 0)) {
       is_ctrl_via_fpga = true;
     }
+#ifdef CONFIG_GRANDCANYON2
+    // GC2 stage encoding: 1:HACK 2:DVT 3:PVT 4:MP. Routing in UIC FPGA is supported on MP (any
+    // version number). Legacy PVT images use the GC1 encoding (stage "0A"), handled above.
+    if (strtoul(uic_fpga_stage, NULL, 16) == UIC_FPGA_STAGE_MP_GC2) {
+      is_ctrl_via_fpga = true;
+    }
+#endif
   } else {
     syslog(LOG_WARNING, "%s: failed to route UART because failed to get UIC FPGA firmware version", __func__);
     return CC_UNSPECIFIED_ERROR;
@@ -3045,8 +3079,52 @@ pal_teardown_exp_uart_bridging(void) {
 }
 
 #ifdef CONFIG_GRANDCANYON2
+/* Read a block of consecutive NVMe-MI registers from a data drive over I2C. */
+static int
+pal_nvme_read_data_block(const char *i2c_bus_dev, uint8_t offset, uint8_t *buf, uint8_t size)
+{
+    int dev   = -1;
+    int ret   = 0;
+    int retry = 0;
+
+    if (i2c_bus_dev == NULL || buf == NULL || size == 0) {
+        syslog(LOG_WARNING, "%s(): invalid parameter", __func__);
+        return -1;
+    }
+
+    dev = open(i2c_bus_dev, O_RDWR);
+    if (dev < 0) {
+        syslog(LOG_WARNING, "%s(): open(%s) failed", __func__, i2c_bus_dev);
+        return -1;
+    }
+
+    if (ioctl(dev, I2C_SLAVE, I2C_NVME_INTF_ADDR) < 0) {
+        syslog(LOG_WARNING, "%s(): ioctl I2C_SLAVE failed", __func__);
+        close(dev);
+        return -1;
+    }
+
+    // Equivalent to: i2ctransfer -y X w1@0x6A 0x<offset> r<size>
+    ret = i2c_smbus_read_i2c_block_data(dev, offset, size, buf);
+    while (retry < 5 && (ret < 0 || (uint8_t)ret < size)) {
+        msleep(100);
+        ret = i2c_smbus_read_i2c_block_data(dev, offset, size, buf);
+        retry++;
+    }
+    close(dev);
+
+    if (ret < 0 || (uint8_t)ret < size) {
+        syslog(LOG_WARNING, "%s(): block read failed (offset=0x%02X, ret=%d, expected=%d)",
+               __func__, offset, ret, size);
+        return -1;
+    }
+
+    return 0;
+}
+
 int
 pal_get_drive_health(const char* i2c_bus_dev, uint8_t drive_id) {
+  uint8_t block0[NVME_BLOCK0_LEN] = {0};
   uint8_t status_flags = 0;
   uint8_t warning_value = 0;
   int ret = 0;
@@ -3056,17 +3134,14 @@ pal_get_drive_health(const char* i2c_bus_dev, uint8_t drive_id) {
     return -1;
   }
 
-  if (nvme_smart_warning_read(i2c_bus_dev, &warning_value) < 0) {
-    syslog(LOG_CRIT, "FRU: %d E1.S %d: fail to read SMART Warning from %s",
+  /* BLOCK0 (offset 0x00, 8 bytes): Status Flags / SMART Warning */
+  if (pal_nvme_read_data_block(i2c_bus_dev, NVME_BLOCK0_OFFSET, block0, NVME_BLOCK0_LEN) < 0) {
+    syslog(LOG_CRIT, "FRU: %d E1.S %d: fail to read SMART Warning/Status Flags from %s",
            FRU_E1S_IOCM, drive_id, i2c_bus_dev);
     return -1;
   }
-
-  if (nvme_sflgs_read(i2c_bus_dev, &status_flags) < 0) {
-    syslog(LOG_CRIT, "FRU: %d E1.S %d: fail to read Status Flags from %s",
-           FRU_E1S_IOCM, drive_id, i2c_bus_dev);
-    return -1;
-  }
+  status_flags  = block0[NVME_SFLGS_REG   - NVME_BLOCK0_OFFSET];
+  warning_value = block0[NVME_WARNING_REG - NVME_BLOCK0_OFFSET];
 
   if ((warning_value & NVME_SMART_WARNING_MASK) != NVME_SMART_WARNING_MASK) {
     ret = -1;
@@ -3100,6 +3175,257 @@ pal_get_drive_health(const char* i2c_bus_dev, uint8_t drive_id) {
   return ret;
 }
 
+/* GC2 data drive status: two packed block reads. */
+int
+pal_get_drive_status(const char* i2c_bus_dev) {
+  ssd_data ssd;
+  uint8_t block0[NVME_BLOCK0_LEN] = {0};
+  uint8_t block1[NVME_BLOCK1_LEN] = {0};
+  int     block0_ret = -1;
+  int     block1_ret = -1;
+  t_key_value_pair vendor_decode_result;
+  t_key_value_pair sn_decode_result;
+  t_key_value_pair temp_decode_result;
+  t_key_value_pair pdlu_decode_result;
+  t_status_flags status_flag_decode_result;
+  t_smart_warning smart_warning_decode_result;
+
+  if (i2c_bus_dev == NULL) {
+    syslog(LOG_WARNING, "fail to get drive status because NULL parameter: *i2c_bus_dev\n");
+    return -1;
+  }
+
+  memset(&ssd, 0, sizeof(ssd));
+  memset(&vendor_decode_result, 0, sizeof(vendor_decode_result));
+  memset(&sn_decode_result, 0, sizeof(sn_decode_result));
+  memset(&temp_decode_result, 0, sizeof(temp_decode_result));
+  memset(&pdlu_decode_result, 0, sizeof(pdlu_decode_result));
+  memset(&status_flag_decode_result, 0, sizeof(status_flag_decode_result));
+  memset(&smart_warning_decode_result, 0, sizeof(smart_warning_decode_result));
+
+  /* BLOCK1 (offset 0x08, 24 bytes): Vendor ID + Serial Number */
+  block1_ret = pal_nvme_read_data_block(i2c_bus_dev, NVME_BLOCK1_OFFSET, block1, NVME_BLOCK1_LEN);
+  if (block1_ret < 0) {
+    printf("Vendor: Fail to read Vendor\n");
+    printf("Serial Number: Fail to read Serial Number\n");
+  } else {
+    ssd.vendor = (block1[NVME_VENDOR_REG - NVME_BLOCK1_OFFSET] << 8) |
+                  block1[NVME_VENDOR_REG - NVME_BLOCK1_OFFSET + 1];
+    nvme_vendor_decode(ssd.vendor, &vendor_decode_result);
+    printf("%s: %s\n", vendor_decode_result.key, vendor_decode_result.value);
+
+    memcpy(ssd.serial_num, &block1[NVME_SERIAL_NUM_REG - NVME_BLOCK1_OFFSET], MAX_SERIAL_NUM_SIZE);
+    nvme_serial_num_decode(ssd.serial_num, &sn_decode_result);
+    printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
+  }
+
+  /* BLOCK0 (offset 0x00, 8 bytes): Status Flags / SMART Warning / Temperature / PDLU */
+  block0_ret = pal_nvme_read_data_block(i2c_bus_dev, NVME_BLOCK0_OFFSET, block0, NVME_BLOCK0_LEN);
+  if (block0_ret < 0) {
+    printf("Composite Temperature: Fail to read Composite Temperature\n");
+    printf("Percentage Drive Life Used: Fail to read Percentage Drive Life Used\n");
+    printf("Status Flags: Fail to read Status Flags\n");
+    printf("SMART Critical Warning: Fail to read SMART Critical Warning\n");
+  } else {
+    ssd.temp    = block0[NVME_TEMP_REG    - NVME_BLOCK0_OFFSET];
+    ssd.pdlu    = block0[NVME_PDLU_REG    - NVME_BLOCK0_OFFSET];
+    ssd.sflgs   = block0[NVME_SFLGS_REG   - NVME_BLOCK0_OFFSET];
+    ssd.warning = block0[NVME_WARNING_REG - NVME_BLOCK0_OFFSET];
+
+    nvme_temp_decode(ssd.temp, &temp_decode_result);
+    printf("%s: %s\n", temp_decode_result.key, temp_decode_result.value);
+
+    nvme_pdlu_decode(ssd.pdlu, &pdlu_decode_result);
+    printf("%s: %s\n", pdlu_decode_result.key, pdlu_decode_result.value);
+
+    nvme_sflgs_decode(ssd.sflgs, &status_flag_decode_result);
+    printf("%s: %s\n", status_flag_decode_result.self.key, status_flag_decode_result.self.value);
+    printf("    %s: %s\n", status_flag_decode_result.read_complete.key, status_flag_decode_result.read_complete.value);
+    printf("    %s: %s\n", status_flag_decode_result.ready.key, status_flag_decode_result.ready.value);
+    printf("    %s: %s\n", status_flag_decode_result.functional.key, status_flag_decode_result.functional.value);
+    printf("    %s: %s\n", status_flag_decode_result.reset_required.key, status_flag_decode_result.reset_required.value);
+    printf("    %s: %s\n", status_flag_decode_result.port0_link.key, status_flag_decode_result.port0_link.value);
+    printf("    %s: %s\n", status_flag_decode_result.port1_link.key, status_flag_decode_result.port1_link.value);
+
+    nvme_smart_warning_decode(ssd.warning, &smart_warning_decode_result);
+    printf("%s: %s\n", smart_warning_decode_result.self.key, smart_warning_decode_result.self.value);
+    printf("    %s: %s\n", smart_warning_decode_result.spare_space.key, smart_warning_decode_result.spare_space.value);
+    printf("    %s: %s\n", smart_warning_decode_result.temp_warning.key, smart_warning_decode_result.temp_warning.value);
+    printf("    %s: %s\n", smart_warning_decode_result.reliability.key, smart_warning_decode_result.reliability.value);
+    printf("    %s: %s\n", smart_warning_decode_result.media_status.key, smart_warning_decode_result.media_status.value);
+    printf("    %s: %s\n", smart_warning_decode_result.backup_device.key, smart_warning_decode_result.backup_device.value);
+  }
+
+  printf("\n");
+  return 0;
+}
+
+/* Read a block of consecutive NVMe-MI registers from MB E1.S via BIC. */
+static int
+bic_read_nvme_data_block(uint8_t offset, uint8_t *buf, uint8_t len)
+{
+    uint8_t tbuf[4]  = {0};
+    uint8_t rbuf[32] = {0};
+    uint8_t rlen     = 0;
+    int     ret      = 0;
+    int     retry    = 0;
+
+    if (buf == NULL || len == 0 || len > sizeof(rbuf)) {
+        syslog(LOG_WARNING, "%s(): invalid parameter", __func__);
+        return -1;
+    }
+
+    tbuf[0] = MB_E1S_BIC_BUS_IDX;  // bus = 0x02
+    tbuf[1] = NVME_MI_ADDR_8BIT;   // addr = 0xD4
+    tbuf[2] = len;                 // read_count
+    tbuf[3] = offset;              // starting register
+
+    while (retry < 5) {
+        ret = bic_ipmb_wrapper(NETFN_APP_REQ,
+                               CMD_APP_MASTER_WRITE_READ,
+                               tbuf, 4,
+                               rbuf, &rlen);
+        if (ret == 0 && rlen >= len) {
+            break;
+        }
+        retry++;
+        msleep(100);
+    }
+
+    if (ret < 0 || rlen < len) {
+        syslog(LOG_WARNING, "%s(): failed to read block offset=0x%02X len=%u", __func__, offset, len);
+        return -1;
+    }
+
+    memcpy(buf, rbuf, len);
+    return 0;
+}
+
+int
+pal_get_mb_e1s_health(void)
+{
+  uint8_t block0[NVME_BLOCK0_LEN] = {0};
+  uint8_t warning = 0;
+  uint8_t sflgs   = 0;
+  int     ret     = 0;
+
+  if (bic_read_nvme_data_block(NVME_BLOCK0_OFFSET, block0, NVME_BLOCK0_LEN) < 0) {
+    syslog(LOG_CRIT, "FRU: %d E1.S Boot: fail to read SMART Warning/Status Flags via BIC",
+           FRU_SERVER);
+    return -1;
+  }
+  sflgs   = block0[NVME_SFLGS_REG   - NVME_BLOCK0_OFFSET];
+  warning = block0[NVME_WARNING_REG - NVME_BLOCK0_OFFSET];
+
+  if ((warning & NVME_SMART_WARNING_MASK) != NVME_SMART_WARNING_MASK) {
+    ret = -1;
+    if (!(warning & (1 << 0)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Spare Space below threshold", FRU_SERVER);
+    if (!(warning & (1 << 1)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Temperature above/under threshold", FRU_SERVER);
+    if (!(warning & (1 << 2)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: NVM Subsystem Reliability degraded", FRU_SERVER);
+    if (!(warning & (1 << 3)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Media placed in Read Only mode", FRU_SERVER);
+    if (!(warning & (1 << 4)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Volatile Memory Backup Device failed", FRU_SERVER);
+  }
+
+  if ((sflgs & NVME_STATUS_MASK) != NVME_STATUS_NORMAL) {
+    ret = -1;
+    if (!(sflgs & (1 << 5)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S Status Flags: Drive Functional check failed", FRU_SERVER);
+    if (!(sflgs & (1 << 3)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S Status Flags: Port 0 PCIe Link is down", FRU_SERVER);
+  }
+
+  return ret;
+}
+
+int
+pal_get_mb_e1s_status(void)
+{
+    ssd_data ssd;
+    uint8_t block0[NVME_BLOCK0_LEN] = {0};
+    uint8_t block1[NVME_BLOCK1_LEN] = {0};
+    int     block0_ret = -1;
+    int     block1_ret = -1;
+    t_key_value_pair  vendor_decode_result;
+    t_key_value_pair  sn_decode_result;
+    t_key_value_pair  temp_decode_result;
+    t_key_value_pair  pdlu_decode_result;
+    t_status_flags    status_flag_decode_result;
+    t_smart_warning   smart_warning_decode_result;
+
+    memset(&ssd,                         0, sizeof(ssd));
+    memset(&vendor_decode_result,        0, sizeof(vendor_decode_result));
+    memset(&sn_decode_result,            0, sizeof(sn_decode_result));
+    memset(&temp_decode_result,          0, sizeof(temp_decode_result));
+    memset(&pdlu_decode_result,          0, sizeof(pdlu_decode_result));
+    memset(&status_flag_decode_result,   0, sizeof(status_flag_decode_result));
+    memset(&smart_warning_decode_result, 0, sizeof(smart_warning_decode_result));
+
+    /* BLOCK1 (offset 0x08, 24 bytes): Vendor ID + Serial Number */
+    block1_ret = bic_read_nvme_data_block(NVME_BLOCK1_OFFSET, block1, NVME_BLOCK1_LEN);
+    if (block1_ret < 0) {
+        printf("Vendor: Fail to read Vendor\n");
+        printf("Serial Number: Fail to read Serial Number\n");
+    } else {
+        ssd.vendor = (block1[NVME_VENDOR_REG - NVME_BLOCK1_OFFSET] << 8) |
+                      block1[NVME_VENDOR_REG - NVME_BLOCK1_OFFSET + 1];
+        nvme_vendor_decode(ssd.vendor, &vendor_decode_result);
+        printf("%s: %s\n", vendor_decode_result.key, vendor_decode_result.value);
+
+        memcpy(ssd.serial_num, &block1[NVME_SERIAL_NUM_REG - NVME_BLOCK1_OFFSET], MAX_SERIAL_NUM_SIZE);
+        nvme_serial_num_decode(ssd.serial_num, &sn_decode_result);
+        printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
+    }
+
+    /* BLOCK0 (offset 0x00, 8 bytes): Status Flags / SMART Warning / Temperature / PDLU */
+    block0_ret = bic_read_nvme_data_block(NVME_BLOCK0_OFFSET, block0, NVME_BLOCK0_LEN);
+    if (block0_ret < 0) {
+        printf("Composite Temperature: Fail to read Composite Temperature\n");
+        printf("Percentage Drive Life Used: Fail to read Percentage Drive Life Used\n");
+        printf("Status Flags: Fail to read Status Flags\n");
+        printf("SMART Critical Warning: Fail to read SMART Critical Warning\n");
+    } else {
+        ssd.temp    = block0[NVME_TEMP_REG    - NVME_BLOCK0_OFFSET];
+        ssd.pdlu    = block0[NVME_PDLU_REG    - NVME_BLOCK0_OFFSET];
+        ssd.sflgs   = block0[NVME_SFLGS_REG   - NVME_BLOCK0_OFFSET];
+        ssd.warning = block0[NVME_WARNING_REG - NVME_BLOCK0_OFFSET];
+
+        /* Composite Temperature (reg 0x03) */
+        nvme_temp_decode(ssd.temp, &temp_decode_result);
+        printf("%s: %s\n", temp_decode_result.key, temp_decode_result.value);
+
+        /* Percentage Drive Life Used (reg 0x04) */
+        nvme_pdlu_decode(ssd.pdlu, &pdlu_decode_result);
+        printf("%s: %s\n", pdlu_decode_result.key, pdlu_decode_result.value);
+
+        /* Status Flags (reg 0x01) */
+        nvme_sflgs_decode(ssd.sflgs, &status_flag_decode_result);
+        printf("%s: %s\n",    status_flag_decode_result.self.key,          status_flag_decode_result.self.value);
+        printf("    %s: %s\n", status_flag_decode_result.read_complete.key, status_flag_decode_result.read_complete.value);
+        printf("    %s: %s\n", status_flag_decode_result.ready.key,         status_flag_decode_result.ready.value);
+        printf("    %s: %s\n", status_flag_decode_result.functional.key,    status_flag_decode_result.functional.value);
+        printf("    %s: %s\n", status_flag_decode_result.reset_required.key,status_flag_decode_result.reset_required.value);
+        printf("    %s: %s\n", status_flag_decode_result.port0_link.key,    status_flag_decode_result.port0_link.value);
+        printf("    %s: %s\n", status_flag_decode_result.port1_link.key,    status_flag_decode_result.port1_link.value);
+
+        /* SMART Critical Warning (reg 0x02) */
+        nvme_smart_warning_decode(ssd.warning, &smart_warning_decode_result);
+        printf("%s: %s\n",    smart_warning_decode_result.self.key,          smart_warning_decode_result.self.value);
+        printf("    %s: %s\n", smart_warning_decode_result.spare_space.key,   smart_warning_decode_result.spare_space.value);
+        printf("    %s: %s\n", smart_warning_decode_result.temp_warning.key,  smart_warning_decode_result.temp_warning.value);
+        printf("    %s: %s\n", smart_warning_decode_result.reliability.key,   smart_warning_decode_result.reliability.value);
+        printf("    %s: %s\n", smart_warning_decode_result.media_status.key,  smart_warning_decode_result.media_status.value);
+        printf("    %s: %s\n", smart_warning_decode_result.backup_device.key, smart_warning_decode_result.backup_device.value);
+    }
+
+    printf("\n");
+    return 0;
+}
+
 #else
 int
 pal_get_drive_health(const char* i2c_bus_dev) {
@@ -3130,46 +3456,6 @@ pal_get_drive_health(const char* i2c_bus_dev) {
   }
   return 0;
 }
-#endif
-
-#ifdef CONFIG_GRANDCANYON2
-static int
-pal_nvme_read_serial_block(const char *i2c_bus_dev, uint8_t *buf, uint8_t size)
-{
-    int dev = -1;
-    int ret = 0;
-
-    if (i2c_bus_dev == NULL || buf == NULL || size == 0) {
-        syslog(LOG_WARNING, "%s(): invalid parameter", __func__);
-        return -1;
-    }
-
-    dev = open(i2c_bus_dev, O_RDWR);
-    if (dev < 0) {
-        syslog(LOG_WARNING, "%s(): open(%s) failed", __func__, i2c_bus_dev);
-        return -1;
-    }
-
-    if (ioctl(dev, I2C_SLAVE, I2C_NVME_INTF_ADDR) < 0) {
-        syslog(LOG_WARNING, "%s(): ioctl I2C_SLAVE failed", __func__);
-        close(dev);
-        return -1;
-    }
-
-    // Use block read instead of byte-by-byte to support Micron SSD.
-    // Equivalent to: i2ctransfer -y X w1@0x6A 0x0B r<size>
-    ret = i2c_smbus_read_i2c_block_data(dev, NVME_SERIAL_NUM_REG, size, buf);
-    close(dev);
-
-    if (ret < 0 || (uint8_t)ret < size) {
-        syslog(LOG_WARNING, "%s(): block read failed (ret=%d, expected=%d)",
-               __func__, ret, size);
-        return -1;
-    }
-
-    return 0;
-}
-#endif
 
 int
 pal_get_drive_status(const char* i2c_bus_dev) {
@@ -3200,21 +3486,11 @@ pal_get_drive_status(const char* i2c_bus_dev) {
     printf("%s: %s\n", vendor_decode_result.key, vendor_decode_result.value);
   }
 
-#ifdef CONFIG_GRANDCANYON2
-  snprintf(sn_decode_result.key, PART_KEY_SIZE, "Serial Number");
-  if (pal_nvme_read_serial_block(i2c_bus_dev, ssd.serial_num, MAX_SERIAL_NUM_SIZE) < 0) {
-    printf("%s: Fail to read Serial Number\n", sn_decode_result.key);
-  } else {
-    nvme_serial_num_decode(ssd.serial_num, &sn_decode_result);
-    printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
-  }
-#else
   if (nvme_serial_num_read_decode(i2c_bus_dev, ssd.serial_num, MAX_SERIAL_NUM_SIZE, &sn_decode_result) < 0) {
     printf("%s: Fail to read Serial Number\n", sn_decode_result.key);
   } else {
     printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
   }
-#endif
 
   if (nvme_temp_read_decode(i2c_bus_dev, &ssd.temp, &temp_decode_result) < 0) {
     printf("%s: Fail to read Composite Temperature\n", temp_decode_result.key);
@@ -3222,19 +3498,11 @@ pal_get_drive_status(const char* i2c_bus_dev) {
     printf("%s: %s\n", temp_decode_result.key, temp_decode_result.value);
   }
 
-#ifdef CONFIG_GRANDCANYON2
-  if (nvme_pdlu_read_decode(i2c_bus_dev, &ssd.pdlu, &pdlu_decode_result) < 0) {
-    printf("%s: Fail to read Percentage Drive Life Useds\n", pdlu_decode_result.key);
-  } else {
-    printf("%s: %s\n", pdlu_decode_result.key, pdlu_decode_result.value);
-  }
-#else
   if (nvme_pdlu_read_decode(i2c_bus_dev, &ssd.pdlu, &pdlu_decode_result) < 0) {
     printf("%s: Fail to read Percentage Drive Life Useds\n", temp_decode_result.key);
   } else {
     printf("%s: %s\n", temp_decode_result.key, pdlu_decode_result.value);
   }
-#endif
 
   if (nvme_sflgs_read_decode(i2c_bus_dev, &ssd.sflgs, &status_flag_decode_result) < 0) {
     printf("%s: Fail to read Status Flags\n", status_flag_decode_result.self.key);
@@ -3261,201 +3529,6 @@ pal_get_drive_status(const char* i2c_bus_dev) {
 
   printf("\n");
   return 0;
-}
-#ifdef CONFIG_GRANDCANYON2
-/*
- * Read a single NVMe-MI register from MB E1.S via BIC MASTER_WRITE_READ.
- *
- * txbuf format (CMD_APP_MASTER_WRITE_READ):
- * [0] bus_id     = MB_E1S_BIC_BUS_IDX (0x02)
- * [1] slave_addr = 0x6A << 1 = 0xD4
- * [2] read_count = 1
- * [3] reg_addr   = target register
- */
-static int
-bic_read_nvme_reg(uint8_t reg, uint8_t *value)
-{
-    uint8_t tbuf[4] = {0};
-    uint8_t rbuf[8] = {0};
-    uint8_t rlen    = 0;
-    int     ret     = 0;
-
-    tbuf[0] = MB_E1S_BIC_BUS_IDX;  // bus = 0x02
-    tbuf[1] = NVME_MI_ADDR_8BIT;   // addr = 0xD4
-    tbuf[2] = 1;                   // read 1 byte
-    tbuf[3] = reg;                 // target register
-
-    ret = bic_ipmb_wrapper(NETFN_APP_REQ,
-                           CMD_APP_MASTER_WRITE_READ,
-                           tbuf, 4,
-                           rbuf, &rlen);
-
-    if (ret < 0 || rlen < 1) {
-        syslog(LOG_WARNING, "%s(): failed to read reg=0x%02X", __func__, reg);
-        return -1;
-    }
-
-    *value = rbuf[0];
-    return 0;
-}
-
-/*
- * Read a 16-bit word from NVMe-MI via two consecutive byte reads.
- * Byte swap is consistent with nvme_read_word().
- */
-static int
-bic_read_nvme_word(uint8_t reg, uint16_t *value)
-{
-    uint8_t hi = 0, lo = 0;
-
-    if (bic_read_nvme_reg(reg,     &hi) < 0 ||
-        bic_read_nvme_reg(reg + 1, &lo) < 0) {
-        return -1;
-    }
-
-    *value = (hi << 8) | lo;
-    return 0;
-}
-
-/*
- * Read a block of consecutive NVMe-MI registers.
- */
-static int
-bic_read_nvme_block(uint8_t start_reg, uint8_t *buf, uint8_t len)
-{
-    for (uint8_t i = 0; i < len; i++) {
-        if (bic_read_nvme_reg(start_reg + i, &buf[i]) < 0) {
-            return -1;
-        }
-    }
-    return 0;
-}
-
-int
-pal_get_mb_e1s_health(void)
-{
-  uint8_t warning = 0;
-  uint8_t sflgs   = 0;
-  int     ret     = 0;
-
-  if (bic_read_nvme_reg(NVME_WARNING_REG, &warning) < 0) {
-    syslog(LOG_CRIT, "FRU: %d E1.S Boot: fail to read SMART Warning via BIC",
-           FRU_E1S_IOCM);
-    return -1;
-  }
-
-  if (bic_read_nvme_reg(NVME_SFLGS_REG, &sflgs) < 0) {
-    syslog(LOG_CRIT, "FRU: %d E1.S Boot: fail to read Status Flags via BIC",
-           FRU_E1S_IOCM);
-    return -1;
-  }
-
-  if ((warning & NVME_SMART_WARNING_MASK) != NVME_SMART_WARNING_MASK) {
-    ret = -1;
-    if (!(warning & (1 << 0)))
-      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Spare Space below threshold", FRU_E1S_IOCM);
-    if (!(warning & (1 << 1)))
-      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Temperature above/under threshold", FRU_E1S_IOCM);
-    if (!(warning & (1 << 2)))
-      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: NVM Subsystem Reliability degraded", FRU_E1S_IOCM);
-    if (!(warning & (1 << 3)))
-      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Media placed in Read Only mode", FRU_E1S_IOCM);
-    if (!(warning & (1 << 4)))
-      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Volatile Memory Backup Device failed", FRU_E1S_IOCM);
-  }
-
-  if ((sflgs & NVME_STATUS_MASK) != NVME_STATUS_NORMAL) {
-    ret = -1;
-    if (!(sflgs & (1 << 5)))
-      syslog(LOG_CRIT, "FRU: %d MB E1.S Status Flags: Drive Functional check failed", FRU_E1S_IOCM);
-    if (!(sflgs & (1 << 3)))
-      syslog(LOG_CRIT, "FRU: %d MB E1.S Status Flags: Port 0 PCIe Link is down", FRU_E1S_IOCM);
-  }
-
-  return ret;
-}
-
-int
-pal_get_mb_e1s_status(void)
-{
-    ssd_data ssd;
-    t_key_value_pair  vendor_decode_result;
-    t_key_value_pair  sn_decode_result;
-    t_key_value_pair  temp_decode_result;
-    t_key_value_pair  pdlu_decode_result;
-    t_status_flags    status_flag_decode_result;
-    t_smart_warning   smart_warning_decode_result;
-
-    memset(&ssd,                         0, sizeof(ssd));
-    memset(&vendor_decode_result,        0, sizeof(vendor_decode_result));
-    memset(&sn_decode_result,            0, sizeof(sn_decode_result));
-    memset(&temp_decode_result,          0, sizeof(temp_decode_result));
-    memset(&pdlu_decode_result,          0, sizeof(pdlu_decode_result));
-    memset(&status_flag_decode_result,   0, sizeof(status_flag_decode_result));
-    memset(&smart_warning_decode_result, 0, sizeof(smart_warning_decode_result));
-
-    /* Vendor ID (word, reg 0x09) */
-    if (bic_read_nvme_word(NVME_VENDOR_REG, &ssd.vendor) < 0) {
-        printf("Vendor: Fail to read Vendor\n");
-        return -1;
-    } else {
-        nvme_vendor_decode(ssd.vendor, &vendor_decode_result);
-        printf("%s: %s\n", vendor_decode_result.key, vendor_decode_result.value);
-    }
-
-    /* Serial Number (20 bytes, reg 0x0B) */
-    if (bic_read_nvme_block(NVME_SERIAL_NUM_REG, ssd.serial_num, MAX_SERIAL_NUM_SIZE) < 0) {
-        printf("Serial Number: Fail to read Serial Number\n");
-    } else {
-        nvme_serial_num_decode(ssd.serial_num, &sn_decode_result);
-        printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
-    }
-
-    /* Composite Temperature (reg 0x03) */
-    if (bic_read_nvme_reg(NVME_TEMP_REG, &ssd.temp) < 0) {
-        printf("Composite Temperature: Fail to read Composite Temperature\n");
-    } else {
-        nvme_temp_decode(ssd.temp, &temp_decode_result);
-        printf("%s: %s\n", temp_decode_result.key, temp_decode_result.value);
-    }
-
-    /* Percentage Drive Life Used (reg 0x04) */
-    if (bic_read_nvme_reg(NVME_PDLU_REG, &ssd.pdlu) < 0) {
-        printf("Percentage Drive Life Used: Fail to read Percentage Drive Life Used\n");
-    } else {
-        nvme_pdlu_decode(ssd.pdlu, &pdlu_decode_result);
-        printf("%s: %s\n", pdlu_decode_result.key, pdlu_decode_result.value);
-    }
-
-    /* Status Flags (reg 0x01) */
-    if (bic_read_nvme_reg(NVME_SFLGS_REG, &ssd.sflgs) < 0) {
-        printf("Status Flags: Fail to read Status Flags\n");
-    } else {
-        nvme_sflgs_decode(ssd.sflgs, &status_flag_decode_result);
-        printf("%s: %s\n",    status_flag_decode_result.self.key,          status_flag_decode_result.self.value);
-        printf("    %s: %s\n", status_flag_decode_result.read_complete.key, status_flag_decode_result.read_complete.value);
-        printf("    %s: %s\n", status_flag_decode_result.ready.key,         status_flag_decode_result.ready.value);
-        printf("    %s: %s\n", status_flag_decode_result.functional.key,    status_flag_decode_result.functional.value);
-        printf("    %s: %s\n", status_flag_decode_result.reset_required.key,status_flag_decode_result.reset_required.value);
-        printf("    %s: %s\n", status_flag_decode_result.port0_link.key,    status_flag_decode_result.port0_link.value);
-        printf("    %s: %s\n", status_flag_decode_result.port1_link.key,    status_flag_decode_result.port1_link.value);
-    }
-
-    /* SMART Critical Warning (reg 0x02) */
-    if (bic_read_nvme_reg(NVME_WARNING_REG, &ssd.warning) < 0) {
-        printf("SMART Critical Warning: Fail to read SMART Critical Warning\n");
-    } else {
-        nvme_smart_warning_decode(ssd.warning, &smart_warning_decode_result);
-        printf("%s: %s\n",    smart_warning_decode_result.self.key,          smart_warning_decode_result.self.value);
-        printf("    %s: %s\n", smart_warning_decode_result.spare_space.key,   smart_warning_decode_result.spare_space.value);
-        printf("    %s: %s\n", smart_warning_decode_result.temp_warning.key,  smart_warning_decode_result.temp_warning.value);
-        printf("    %s: %s\n", smart_warning_decode_result.reliability.key,   smart_warning_decode_result.reliability.value);
-        printf("    %s: %s\n", smart_warning_decode_result.media_status.key,  smart_warning_decode_result.media_status.value);
-        printf("    %s: %s\n", smart_warning_decode_result.backup_device.key, smart_warning_decode_result.backup_device.value);
-    }
-
-    printf("\n");
-    return 0;
 }
 #endif
 
@@ -3860,6 +3933,10 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 
   } else if (fru == FRU_SCC) {
     snprintf(key, sizeof(key), "scc_sel_error");
+#ifdef CONFIG_GRANDCANYON2
+  } else if (fru == FRU_DPB) {
+    snprintf(key, sizeof(key), "dpb_sel_error");
+#endif
   } else {
     return 0;
   }
@@ -3892,9 +3969,15 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
       snprintf(key, sizeof(key), "uic_sensor_health");
       break;
     case FRU_DPB:
+#ifdef CONFIG_GRANDCANYON2
+      // PTB TSENSE temperatures are monitoring by BMC and the rest of sensors of DPB are monitoring by Expander.
+      snprintf(key, sizeof(key), "dpb_sensor_health");
+      break;
+#else
       // DPB sensor event SEL are sent by Expander
       // health value will change when get SEL
       return 0;
+#endif
     case FRU_SCC:
       // SCC IOC temperature is monitoring by BMC and the rest of sensors of SCC are monitoring by Expander.
       snprintf(key, sizeof(key), "scc_sensor_health");
@@ -3960,6 +4043,13 @@ pal_log_clear(char *fru) {
       syslog(LOG_ERR, "%s(): failed to clear dpb seneor health value", __func__);
     }
 
+#ifdef CONFIG_GRANDCANYON2
+    ret = pal_set_key_value("dpb_sel_error", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear dpb sel error value", __func__);
+    }
+#endif
+
   } else if (strcmp(fru, "scc") == 0) {
     ret = pal_set_key_value("scc_sensor_health", val);
     if (ret < 0) {
@@ -4005,6 +4095,13 @@ pal_log_clear(char *fru) {
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear dpb seneor health value", __func__);
     }
+
+#ifdef CONFIG_GRANDCANYON2
+    ret = pal_set_key_value("dpb_sel_error", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear dpb sel error value", __func__);
+    }
+#endif
 
     ret = pal_set_key_value("scc_sensor_health", val);
     if (ret < 0) {
@@ -4299,6 +4396,9 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
       if (snr_num == BIC_SENSOR_VR_FAULT) {
         snprintf(name, MAX_SNR_NAME, "VR_FAULT");
         return PAL_EOK;
+      } else if (snr_num == BIC_SENSOR_SENSOR_POLL) {
+        snprintf(name, MAX_SNR_NAME, "SENSOR_POLL");
+        return PAL_EOK;
       } else {
         snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
         return PAL_EOK;
@@ -4476,7 +4576,7 @@ static const vr_source_map_t vr_name_map[] = {
   { PVCCINFAON_CPU0,         "PVCCINFAON_CPU0" },
   { PVCCFA_EHV_CPU0,         "PVCCFA_EHV_CPU0" },
   { PVCCD_HV_CPU,            "PVCCD_HV_CPU" },
-  { P1V05_PCH_STB,           "P1V05_PCH_STB"},
+  { P1V05_PCH_STBY,           "P1V05_PCH_STBY"},
   { P1V8_STBY,               "P1V8_STBY"},
   { P5V_STBY,                "P5V_STBY"},
   { P3V3_STBY,               "P3V3_STBY"},
@@ -4507,6 +4607,41 @@ static int pal_parse_gc2_sys_vr_event(uint8_t *event_data, char *error_log)
   snprintf(event_str, sizeof(event_str),
            "%s status: 0x%02x%02x",
            name, event_data[SEL_EVENT_DATA2_INDEX], event_data[SEL_EVENT_DATA3_INDEX]);
+
+  strcat(error_log, event_str);
+
+  return PAL_EOK;
+}
+
+static int pal_parse_gc2_sys_sensor_poll_event(uint8_t *event_data, char *error_log)
+{
+  uint8_t is_global = 0;
+  uint8_t target = 0;
+  const char *state_str = NULL;
+  char event_str[MAX_EVENT_STR] = {0};
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  state_str = ((event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK) == 0x00) ?
+              "Disabled" : "Enabled";
+  /* event_data2 is 0xFF when this is the global sensor_poll_enable_flag, else 0x00.
+   * event_data3 is 0x00 when global, 0xFF when every sensor changed at once,
+   * else the sensor number that changed.
+   */
+  is_global = event_data[SEL_EVENT_DATA2_INDEX];
+  target = event_data[SEL_EVENT_DATA3_INDEX];
+
+  if (is_global == 0xFF) {
+    snprintf(event_str, sizeof(event_str), "Global Sensor Poll %s", state_str);
+  } else if (target == 0xFF) {
+    snprintf(event_str, sizeof(event_str), "All Sensors Poll %s", state_str);
+  } else {
+    snprintf(event_str, sizeof(event_str), "Sensor %s Poll %s",
+             pal_get_server_sensor_name(target), state_str);
+  }
 
   strcat(error_log, event_str);
 
@@ -4652,6 +4787,9 @@ pal_parse_sys_sts_event(uint8_t snr_num, uint8_t *event_data, char *error_log) {
 #ifdef CONFIG_GRANDCANYON2
   if (snr_num == BIC_SENSOR_VR_FAULT) {
     return pal_parse_gc2_sys_vr_event(event_data, error_log);
+  }
+  if (snr_num == BIC_SENSOR_SENSOR_POLL) {
+    return pal_parse_gc2_sys_sensor_poll_event(event_data, error_log);
   }
 #endif
   strcat(error_log, "Undefined system event");
@@ -5375,7 +5513,11 @@ pal_handle_string_sel(char *log, uint8_t log_len)
   if ((strstr(log, "DPB_") != NULL) || (strstr(log, "HDD_") != NULL)
        || (strstr(log, "FAN_") != NULL) || (strstr(log, "AIRFLOW") != NULL)) {
     fru = FRU_DPB;
+#ifdef CONFIG_GRANDCANYON2
+    snprintf(key, sizeof(key), "dpb_sel_error");
+#else
     snprintf(key, sizeof(key), "dpb_sensor_health");
+#endif
   } else if (strstr(log, "SCC_") != NULL) {
     fru = FRU_SCC;
     snprintf(key, sizeof(key), "scc_sel_error");
@@ -5795,10 +5937,20 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 int
 pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
   // The threshold of DPB's and SCC's sensors are monitoring by expander
+#ifdef CONFIG_GRANDCANYON2
+  // SCC IOC temperature and the PTB TSENSE temperatures are monitoring by BMC,
+  // because the expander does not know these sensor numbers.
+  if (((fru == FRU_DPB) && (snr_num != PTB_TSENSE_48V_TEMP_C) &&
+       (snr_num != PTB_TSENSE_GND_TEMP_C)) ||
+      ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP))) {
+    return 1;
+  }
+#else
   // Only SCC IOC temperature is monitoring by BMC
   if ((fru == FRU_DPB) || ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP))) {
     return 1;
   }
+#endif
 
 #ifdef CONFIG_GRANDCANYON2
   {
@@ -5817,9 +5969,20 @@ pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
 int
 pal_ignore_sel(uint8_t fru, uint8_t *sel) {
   char token[16] = {0};
+  char error_log[MAX_EVENT_STR] = {0};
 
   if ((sel == NULL) || (sel[2] != 0x02)) {
     return 0;
+  }
+
+  /* The sensor polling event is only for reference, so log it here with a lower priority and skip the default handling, which would log it into the event log. */
+  if ((sel[SEL_SNR_TYPE] == IPMI_OEM_SENSOR_TYPE_SYS_STA) &&
+      (sel[SEL_SNR_NUM] == BIC_SENSOR_SENSOR_POLL)) {
+    pal_parse_gc2_sys_sensor_poll_event(&sel[SEL_EVENT_DATA], error_log);
+    syslog(LOG_WARNING, "SEL Entry: FRU: %d, Sensor: SENSOR_POLL (0x%02X), Event Data: (%02X%02X%02X) %s",
+           fru, sel[SEL_SNR_NUM], sel[SEL_EVENT_DATA], sel[SEL_EVENT_DATA + 1],
+           sel[SEL_EVENT_DATA + 2], error_log);
+    return 1;
   }
 
   snprintf(token, sizeof(token), "0x%02X:0x%02X", sel[11], sel[13]);
@@ -6104,59 +6267,223 @@ pal_get_mfr_name(mfr_id_t mfr)
   }
 }
 
-int
-pal_exp_get_mfr_id(uint8_t bus, uint8_t addr, uint8_t *buf, uint8_t *len)
+mfr_id_t
+pal_exp_get_mfr_id(uint8_t bus, uint8_t addr)
 {
   uint8_t txbuf[4] = {0};
+  uint8_t rxbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t bus_sel = bus * 2 + 1;
-  int ret;
+  uint8_t len = 0;
+  uint8_t mfr_len;
+  int ret = -1;
   int retry = 0;
-
-  if (buf == NULL || len == NULL) {
-    return -1;
-  }
 
   txbuf[0] = bus_sel;
   txbuf[1] = addr;
-  txbuf[2] = BLOCK_READ_4BYTE;
+  txbuf[2] = BLOCK_READ_1BYTE;
   txbuf[3] = PMBUS_MFR_ID;
 
+  /* Step 1: read just the length byte. */
   while (retry < MAX_RETRY) {
-    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD, txbuf, sizeof(txbuf), buf, len);
-    if (ret == 0) {
-      return 0;
+    len = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD, txbuf, sizeof(txbuf), rxbuf, &len);
+    if (ret == 0 && len == 1) {
+      break;
     }
+    ret = -1;
     retry++;
     msleep(100);
   }
 
-  syslog(LOG_WARNING, "%s: read MFR_ID failed after %d retries, len=%u data=%02X %02X %02X %02X",
-         __func__, MAX_RETRY, *len, buf[0], buf[1], buf[2], buf[3]);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s: read MFR_ID length failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  mfr_len = rxbuf[0];
+
+  /* Step 2: re-send MFR_ID, now reading the full response for that length. */
+  if (mfr_len == 3) {
+    txbuf[2] = BLOCK_READ_4BYTE;
+  } else if (mfr_len == 2) {
+    txbuf[2] = BLOCK_READ_3BYTE;
+  } else {
+    syslog(LOG_WARNING, "%s: unexpected MFR_ID length=%u, bus=%u addr=0x%02X", __func__, mfr_len, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  retry = 0;
+  ret = -1;
+  while (retry < MAX_RETRY) {
+    len = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD, txbuf, sizeof(txbuf), rxbuf, &len);
+    if (ret == 0 && len == (uint8_t)(mfr_len + 1)) {
+      break;
+    }
+    ret = -1;
+    retry++;
+    msleep(100);
+  }
+
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s: read MFR_ID data failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  if (rxbuf[0] == 3 && memcmp(&rxbuf[1], "SPM", 3) == 0) {
+    return MFR_MPS;
+  }
+  if (rxbuf[0] == 2 && memcmp(&rxbuf[1], "TI", 2) == 0) {
+    return MFR_TI;
+  }
+
+  syslog(LOG_WARNING, "%s: Unknown MFR_ID len=%u data=%02X %02X %02X %02X",
+         __func__, rxbuf[0], rxbuf[0], rxbuf[1], rxbuf[2], rxbuf[3]);
+  return MFR_UNKNOWN;
+}
+
+static bool
+efuse_mfr_id_cache_get(uint8_t fru, uint8_t addr, mfr_id_t *mfr)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, sizeof(key), "efuse_mfr_id_fru%u_0x%02x", fru, addr);
+  if (kv_get(key, value, NULL, 0) != 0) {
+    return false;
+  }
+
+  *mfr = (mfr_id_t)atoi(value);
+  return (*mfr != MFR_UNKNOWN);
+}
+
+static void
+efuse_mfr_id_cache_set(uint8_t fru, uint8_t addr, mfr_id_t mfr)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (mfr == MFR_UNKNOWN) {
+    return;
+  }
+
+  snprintf(key, sizeof(key), "efuse_mfr_id_fru%u_0x%02x", fru, addr);
+  snprintf(value, sizeof(value), "%d", mfr);
+  kv_set(key, value, 0, 0);
+}
+
+static const struct {
+  uint8_t exp_bus;
+  uint8_t local_bus;
+} efuse_bus_pairs[] = {
+  { SCC_STBY_BUS, SCC_STBY_LOCAL_BUS },
+};
+
+/* Returns the matching local bus (0-255), or -1 if exp_bus has none. */
+int
+pal_efuse_local_bus_for(uint8_t exp_bus)
+{
+  size_t i;
+
+  for (i = 0; i < ARRAY_SIZE(efuse_bus_pairs); i++) {
+    if (efuse_bus_pairs[i].exp_bus == exp_bus) {
+      return efuse_bus_pairs[i].local_bus;
+    }
+  }
+
   return -1;
 }
 
 mfr_id_t
-pal_detect_efuse_mfr_id(uint8_t bus, uint8_t addr)
+pal_detect_efuse_mfr_id(uint8_t fru, uint8_t bus, uint8_t addr)
 {
-  uint8_t buf[4] = {0};
-  uint8_t len = 0;
-  int ret;
+  int local_bus = pal_efuse_local_bus_for(bus);
+  mfr_id_t mfr = MFR_UNKNOWN;
 
-  ret = pal_exp_get_mfr_id(bus, addr, buf, &len);
-  if (ret < 0) {
+  if (efuse_mfr_id_cache_get(fru, addr, &mfr)) {
+    return mfr;
+  }
+
+  if (local_bus >= 0) {
+    mfr = pal_detect_efuse_mfr_id_local((uint8_t)local_bus, addr);
+  }
+
+  if (mfr == MFR_UNKNOWN) {
+    mfr = pal_exp_get_mfr_id(bus, addr);
+  }
+
+  efuse_mfr_id_cache_set(fru, addr, mfr);
+  return mfr;
+}
+
+void
+pal_clear_efuse_mfr_id_cache(uint8_t fru, uint8_t addr)
+{
+  char key[MAX_KEY_LEN] = {0};
+
+  snprintf(key, sizeof(key), "efuse_mfr_id_fru%u_0x%02x", fru, addr);
+  kv_del(key, 0);
+}
+
+/* Same MFR_ID detection as pal_detect_efuse_mfr_id(), but reads over a
+ * local I2C bus directly instead of going through the IPMB expander. */
+mfr_id_t
+pal_detect_efuse_mfr_id_local(uint8_t bus, uint8_t addr)
+{
+  int fd = -1, ret = -1;
+  uint8_t retry = MAX_RETRY;
+  uint8_t tbuf[1] = {PMBUS_MFR_ID};
+  uint8_t rbuf[4] = {0};
+  uint8_t mfr_len;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open I2C bus=%u addr=0x%02X", __func__, bus, addr);
     return MFR_UNKNOWN;
   }
 
-if (buf[0] == 3 && memcmp(&buf[1], "SPM", 3) == 0){
+  /* Step 1: read just the length byte. */
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, sizeof(tbuf), rbuf, 1);
+  }
+
+  if (ret < 0) {
+    close(fd);
+    syslog(LOG_WARNING, "%s: read MFR_ID length failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  mfr_len = rbuf[0];
+
+  /* Step 2: re-send MFR_ID, now reading the full response for that length. */
+  if (mfr_len != 3 && mfr_len != 2) {
+    close(fd);
+    syslog(LOG_WARNING, "%s: unexpected MFR_ID length=%u, bus=%u addr=0x%02X", __func__, mfr_len, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  retry = MAX_RETRY;
+  ret = -1;
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, sizeof(tbuf), rbuf, mfr_len + 1);
+  }
+
+  close(fd);
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: read MFR_ID data failed, bus=%u addr=0x%02X", __func__, bus, addr);
+    return MFR_UNKNOWN;
+  }
+
+  if (rbuf[0] == 3 && memcmp(&rbuf[1], "SPM", 3) == 0) {
     return MFR_MPS;
   }
-
-if (buf[0] == 2 && memcmp(&buf[1], "TI", 2) == 0) {
+  if (rbuf[0] == 2 && memcmp(&rbuf[1], "TI", 2) == 0) {
     return MFR_TI;
   }
-  syslog(LOG_WARNING, "%s: Unknown MFR_ID len=%u data=%02X %02X %02X %02X",
-         __func__, len, buf[0], buf[1], buf[2], buf[3]);
 
+  syslog(LOG_WARNING, "%s: Unknown MFR_ID len=%u data=%02X %02X %02X %02X",
+         __func__, rbuf[0], rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
   return MFR_UNKNOWN;
 }
 
@@ -6270,5 +6597,39 @@ pal_detect_nic_pmon_module(void)
 
   nic_pmon_source_info = UNKNOWN_SOURCE;
   return nic_pmon_source_info;
+}
+
+const char *
+pal_get_fsc_fan_mode_name(fsc_fan_mode_t mode)
+{
+  switch (mode) {
+    case FSC_NORMAL_MODE:
+      return "normal_mode";
+    case FSC_TRANS_MODE:
+      return "trans_mode";
+    case FSC_BOOST_MODE:
+      return "boost_mode";
+    case FSC_PROGRESSIVE_MODE:
+      return "progressive_mode";
+    case FSC_STANDBY_BOOST_MODE:
+      return "standby_boost_mode";
+    default:
+      return "unknown";
+  }
+}
+
+bool
+pal_is_valid_fsc_fan_mode(fsc_fan_mode_t mode)
+{
+  switch (mode) {
+    case FSC_NORMAL_MODE:
+    case FSC_TRANS_MODE:
+    case FSC_BOOST_MODE:
+    case FSC_PROGRESSIVE_MODE:
+    case FSC_STANDBY_BOOST_MODE:
+      return true;
+    default:
+      return false;
+  }
 }
 #endif

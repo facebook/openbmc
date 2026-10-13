@@ -28,7 +28,7 @@ index 85aa5f09b1..8184de6244 100644
  #define AST2600_EVB_HW_STRAP1 0x000000C0
  #define AST2600_EVB_HW_STRAP2 0x00000003
  
- #define FUJI_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define FUJI_BMC_RAM_SIZE (2 * GiB)
  
 +/* Montblanc hardware value */
 +#define MONTBLANC_BMC_HW_STRAP1    0x00000000
@@ -126,7 +126,7 @@ index 85aa5f09b1..8184de6244 100644
      aspeed_machine_ast2600_class_emmc_init(oc);
  };
  
-+#define MONTBLANC_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++#define MONTBLANC_BMC_RAM_SIZE (2 * GiB)
 +
 +static void aspeed_machine_montblanc_class_init(ObjectClass *oc, const void *data)
 +{

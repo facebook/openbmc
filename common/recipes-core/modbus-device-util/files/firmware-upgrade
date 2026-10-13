@@ -1,122 +1,73 @@
 #!/bin/bash
 
 # ARGUMENTS:
-# 1: device type
-# 2: hyphen separated list of unique device addresses
-# 3: Optional override config
+# 1: firmware-upgrade service template parameter, <device_type>:<device_location>:<component>:<uuid>
+#    device_location is in <position>_<device_number> format
+#      On RMCv1, position = unique device address and device_number = "NA"
+#      On RMCv2, position = shelf (starts with 100) and device_number = spot in shelf
+#    component is the component within the device, or NA if the device has a single firmware
+# The firmware image is expected at /tmp/firmware-<device_type>-<device_location>-<component>
 
-if [ $# -lt 2 ]; then
-    echo "Usage: $0 <device_type> <unique_device_addresses> [override_config]
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <device_type>:<device_location>:<component>:<uuid>
       device_type: device type we will be upgrading
-      unique_device_addresses: The addresses of the modbus device to upgrade (hyphen separated)
-      override_config: Optional configuration file to override default settings"
+      device_location: The location of the modbus device to upgrade in <position>_<device_number> format
+      component: The sub-component in this device. Or NA if not applicable (Single firmware for device)
+      uuid: Unique identifier for this upgrade request
+    The firmware image is expected at /tmp/firmware-<device_type>-<device_location>-<component>"
     exit 1
 fi
 
-OVERRIDE_CONFIG_FILE=${3:-/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json}
-
 set -u
 
-DEVICE_TYPE="$1"
+IFS=: read -r DEVICE_TYPE DEVICE_LOCATION COMPONENT _ <<< "$1"
 
-# unique device addresses
-UDAS="$2"
-
-CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
-
-if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
-    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
+if [[ ! "$DEVICE_TYPE" =~ ^[a-zA-Z0-9_]+$ ]]; then
+    echo "Invalid device type: $DEVICE_TYPE" >&2
+    exit 1
 fi
 
-echo "Using $CONFIG_FILE config file"
-script_dir=$( dirname "${BASH_SOURCE[0]}" )
+if [[ ! "$DEVICE_LOCATION" =~ ^[0-9]+_([0-9]+|NA)$ ]]; then
+    echo "Invalid device location: $DEVICE_LOCATION" >&2
+    exit 1
+fi
 
-FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
+if [[ ! "$COMPONENT" =~ ^[a-zA-Z0-9_]+$ ]]; then
+    echo "Invalid component: $COMPONENT" >&2
+    exit 1
+fi
 
-ERRORS=""
-SUCCESSES=""
-OLD_IFS="$IFS"
-IFS='-'
-FIRMWARE_FILE=""
-UPDATE_COMMANDS=()
-for uda in $UDAS; do
-    if [ -z "$FIRMWARE_FILE" ]; then
-        FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${uda}"
-        trap "rm ${FIRMWARE_FILE}" EXIT
+position="${DEVICE_LOCATION%%_*}"
+device_number="${DEVICE_LOCATION#*_}"
+if [[ "$device_number" == "NA" ]] && (( 10#$position > 255 )); then
+    # Rackmon unique device addresses are port << 8 | addr
+    DEVICE_ARGS=(--address "$position")
+else
+    # Inventory names are upper case, e.g. BBU_1_1
+    name_type="${DEVICE_TYPE^^}"
+    # modbus-update.py resolves AALCv2 (RPU2) devices through the RPU name
+    if [[ "$name_type" == "RPU2" ]]; then
+        name_type="RPU"
     fi
-
-    manufacturer=$("$script_dir/get-manufacturer" "$DEVICE_TYPE" "$uda" "$CONFIG_FILE")
-
-    case "$manufacturer" in
-        "artesyn")
-            case "$DEVICE_TYPE" in
-                "psu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-aei.py --addr $uda $FIRMWARE_FILE")
-                    ;;
-                *)
-                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
-                    ;;
-            esac
-            ;;
-        "coolermaster")
-            case "$DEVICE_TYPE" in
-                "rpu2")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-coolermaster.py --addr $uda $FIRMWARE_FILE")
-                    ;;
-                *)
-                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
-                    ;;
-            esac
-            ;;
-        "delta")
-            case "$DEVICE_TYPE" in
-                "bbu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor delta --addr $uda $FIRMWARE_FILE")
-                    ;;
-                "psu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-delta-orv3.py --addr $uda $FIRMWARE_FILE")
-                    ;;
-                "rpu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-delta-plc.py --addr $uda --oem-block $FIRMWARE_FILE")
-                    ;;
-                *)
-                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
-                    ;;
-            esac
-            ;;
-        "panasonic")
-            case "$DEVICE_TYPE" in
-                "bbu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor panasonic --addr $uda $FIRMWARE_FILE")
-                    ;;
-                *)
-                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
-                    ;;
-            esac
-            ;;
-        *)
-            ERRORS+="Could not identify manufacturer for ${DEVICE_TYPE} at address ${uda}\n"
-            ;;
-    esac
-done
-
-IFS="$OLD_IFS"
-
-for cmd in "${UPDATE_COMMANDS[@]}"; do
-    if eval "$cmd"; then
-        SUCCESSES+="Successfully upgraded ${DEVICE_TYPE} with command: ${cmd}\n"
+    if [[ "$device_number" == "NA" ]]; then
+        DEVICE_ARGS=(--name "${name_type}_${position}")
     else
-        ERRORS+="Failed to upgrade ${DEVICE_TYPE} with command: ${cmd}\n"
+        DEVICE_ARGS=(--name "${name_type}_${position}_${device_number}")
     fi
-done
-
-if [ -z "$ERRORS" ]; then
-    echo "No errors"
-    echo -e "${SUCCESSES}"
-    exit 0
 fi
 
-echo -e "${SUCCESSES}"
-echo "FAILED TO UPGRADE ALL DEVICES. LOOK ABOVE FOR LOGS"
-echo -e "${ERRORS}"
-exit 1
+COMPONENT_ARGS=()
+if [[ "$COMPONENT" != "NA" ]]; then
+    COMPONENT_ARGS=(--component "$COMPONENT")
+fi
+
+FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${DEVICE_LOCATION}-${COMPONENT}"
+trap 'rm -f "$FIRMWARE_FILE"' EXIT
+
+# modbus-update.py takes the modbus lock itself
+if /usr/local/bin/modbus-update.py "${DEVICE_ARGS[@]}" "${COMPONENT_ARGS[@]}" "$FIRMWARE_FILE"; then
+    echo "Successfully upgraded ${DEVICE_TYPE} ${DEVICE_LOCATION} ${COMPONENT} using ${DEVICE_ARGS[*]}"
+else
+    echo "Failed to upgrade ${DEVICE_TYPE} ${DEVICE_LOCATION} ${COMPONENT} using ${DEVICE_ARGS[*]}" >&2
+    exit 1
+fi

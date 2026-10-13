@@ -24,8 +24,21 @@
 # Create "pwrcpld" and scm/chassis EEPROMs.
 #
 
+# Instantiate an i2c device only if the hardware responds, so EEPROMs which
+# are not fitted on all hardware revisions don't trigger at24 probe failures.
+i2c_device_add_if_present() {
+    if i2cget -y -f "$1" "$2" > /dev/null 2>&1; then
+        i2c_device_add "$1" "$2" "$3"
+    fi
+}
+
 # FRU IDPROMS
-i2c_device_add 4 0x50 24c512  # Chassis EEPROM
+i2c_device_add 4 0x50 24c64  # BMC IDPROM
+
+# The chassis EEPROM needs a newer switchcard and the SCM EEPROM newer
+# hardware, so both are optional.
+i2c_device_add_if_present 8 0x50 24c64   # Chassis EEPROM
+i2c_device_add_if_present 10 0x50 24c64  # SCM EEPROM
 
 # APML
 i2c_device_add 6 0x4c sbtsi

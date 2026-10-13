@@ -1,6 +1,9 @@
+import fcntl
 import importlib.util
 import io
 import os
+import tempfile
+import threading
 import unittest
 from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
@@ -50,7 +53,7 @@ class TestDecodeName(unittest.TestCase):
         self.assertEqual(mu.decode_name("PSU_100_3"), ("PSU", 100, 3))
 
     def test_number_is_optional(self):
-        self.assertEqual(mu.decode_name("RPU_200"), ("RPU", 200, None))
+        self.assertEqual(mu.decode_name("RPU_100"), ("RPU", 100, None))
 
     def test_type_is_upper_cased(self):
         self.assertEqual(mu.decode_name("psu_1_2"), ("PSU", 1, 2))
@@ -74,46 +77,35 @@ class TestIsRackmonPosition(unittest.TestCase):
 
 
 class TestGetRackmonDeviceUaddr(unittest.TestCase):
-    def test_rpu(self):
-        self.assertEqual(mu.get_rackmon_device_uaddr("RPU", 100, None), 0x10C)
-        self.assertEqual(mu.get_rackmon_device_uaddr("RPU", 102, None), 0x30C)
-
-    def test_rpu2(self):
-        self.assertEqual(mu.get_rackmon_device_uaddr("RPU2", 200, None), 0x10D)
-        self.assertEqual(mu.get_rackmon_device_uaddr("RPU2", 202, None), 0x30D)
-
-    def test_an_rpu_has_no_device_number(self):
-        for dev_type in ("RPU", "RPU2"):
-            with self.subTest(dev_type=dev_type):
-                with self.assertRaises(ValueError):
-                    mu.get_rackmon_device_uaddr(dev_type, 100, 1)
-
     def test_orv3_psu(self):
         # rack 0, PSU 1: dtype=3, r2=1 -> 0x1E0
-        self.assertEqual(mu.get_rackmon_device_uaddr("ORV3_PSU", 100, 1), 0x1E0)
-        self.assertEqual(mu.get_rackmon_device_uaddr("ORV3_PSU", 100, 2), 0x1E1)
+        self.assertEqual(mu.get_rackmon_orv3_device_uaddr("ORV3_PSU", 100, 1), 0x1E0)
+        self.assertEqual(mu.get_rackmon_orv3_device_uaddr("ORV3_PSU", 100, 2), 0x1E1)
 
     def test_orv3_bbu(self):
         # rack 1, BBU 2: dtype=1, r2=0 -> 0x249
-        self.assertEqual(mu.get_rackmon_device_uaddr("ORV3_BBU", 101, 2), 0x249)
+        self.assertEqual(mu.get_rackmon_orv3_device_uaddr("ORV3_BBU", 101, 2), 0x249)
 
     def test_the_shelf_ends_up_in_the_upper_byte(self):
         for position in range(100, 104):
-            uaddr = mu.get_rackmon_device_uaddr("ORV3_PSU", position, 1)
+            uaddr = mu.get_rackmon_orv3_device_uaddr("ORV3_PSU", position, 1)
             with self.subTest(position=position):
                 self.assertEqual(uaddr >> 8, position - 99)
 
     def test_addresses_of_one_shelf_are_distinct(self):
         seen = {
-            mu.get_rackmon_device_uaddr(dev_type, 100, num)
+            mu.get_rackmon_orv3_device_uaddr(dev_type, 100, num)
             for dev_type in ("ORV3_PSU", "ORV3_BBU")
             for num in range(1, 7)
         }
         self.assertEqual(len(seen), 12)
 
-    def test_unknown_device_type(self):
-        with self.assertRaises(ValueError):
-            mu.get_rackmon_device_uaddr("PSU", 100, 1)
+    def test_a_device_type_with_no_derivation(self):
+        # Including the RPUs, whose address comes off rackmon's list.
+        for dev_type in ("PSU", "RPU", "RPU2"):
+            with self.subTest(dev_type=dev_type):
+                with self.assertRaises(ValueError):
+                    mu.get_rackmon_orv3_device_uaddr(dev_type, 100, 1)
 
 
 class TestGetUpdater(unittest.TestCase):
@@ -243,40 +235,126 @@ class TestGetRackmonDeviceConfig(unittest.TestCase):
                 mu.get_rackmon_device_config(0x1E0)
 
 
+class TestRpuRackmonUaddr(unittest.TestCase):
+    """Both RPU generations share shelves 100-102, rackmon's list settles it"""
+
+    def rackmon_has(self, *devices):
+        return patch.object(
+            mu.rmd,
+            "list",
+            return_value=[{"uniqueDevAddress": u, "deviceType": t} for u, t in devices],
+        )
+
+    # AALCv1: one RPU per rack, so the shelf picks which.
+    def test_the_aalcv1_rpu_on_that_rack(self):
+        with self.rackmon_has((0x10C, "ORV3_RPU")):
+            self.assertEqual(mu.get_rackmon_rpu_device_uaddr(100), 0x10C)
+
+    def test_a_later_shelf_is_a_different_aalcv1_rpu(self):
+        with self.rackmon_has((0x10C, "ORV3_RPU"), (0x30C, "ORV3_RPU")):
+            self.assertEqual(mu.get_rackmon_rpu_device_uaddr(102), 0x30C)
+
+    def test_the_rest_of_the_rack_is_not_an_rpu(self):
+        # Every rack has PSUs and BBUs on it too.
+        with self.rackmon_has((0x1E0, "ORV3_PSU"), (0x10C, "ORV3_RPU")):
+            self.assertEqual(mu.get_rackmon_rpu_device_uaddr(100), 0x10C)
+
+    # AALCv2: one master controller for the whole pod, so every shelf
+    # oobit reports a pod component at is that same device.
+    def test_every_shelf_of_a_pod_is_the_one_device(self):
+        with self.rackmon_has((0x10D, "ORV3_RPU2")):
+            for position in (100, 101, 102):
+                with self.subTest(position=position):
+                    self.assertEqual(mu.get_rackmon_rpu_device_uaddr(position), 0x10D)
+
+    def test_a_pod_is_not_assumed_to_be_on_the_first_rack(self):
+        with self.rackmon_has((0x20D, "ORV3_RPU2")):
+            self.assertEqual(mu.get_rackmon_rpu_device_uaddr(102), 0x20D)
+
+    def test_no_rpu_on_that_shelf(self):
+        # Another rack's AALCv1 RPU is no help, and no pod to fall back on.
+        with self.rackmon_has((0x20C, "ORV3_RPU"), (0x1E0, "ORV3_PSU")):
+            with self.assertRaises(ValueError):
+                mu.get_rackmon_rpu_device_uaddr(100)
+
+    def test_a_register_map_this_script_does_not_know(self):
+        with self.rackmon_has((0x10C, "SOME_FUTURE_RPU")):
+            with self.assertRaises(ValueError):
+                mu.get_rackmon_rpu_device_uaddr(100)
+
+
+class TestNameToRackmonUaddr(unittest.TestCase):
+    def test_a_name_addresses_the_orv3_part(self):
+        self.assertEqual(mu.name_to_rackmon_uaddr("PSU", 100, 1), 0x1E0)
+        self.assertEqual(mu.name_to_rackmon_uaddr("BBU", 101, 2), 0x249)
+
+    def test_an_rpu_address_comes_from_rackmon(self):
+        with patch.object(
+            mu, "get_rackmon_rpu_device_uaddr", return_value=0x10D
+        ) as rpu_uaddr:
+            self.assertEqual(mu.name_to_rackmon_uaddr("RPU", 101, None), 0x10D)
+        rpu_uaddr.assert_called_once_with(101)
+
+    def test_an_rpu_has_no_device_number(self):
+        with self.assertRaises(ValueError):
+            mu.name_to_rackmon_uaddr("RPU", 100, 1)
+
+    def test_a_type_the_naming_scheme_does_not_place_on_the_bus(self):
+        for dev_type in ("CBU", "PSU_PMM", "BBU_PMM", "CBU_PMM"):
+            with self.subTest(dev_type=dev_type):
+                with self.assertRaises(ValueError):
+                    mu.name_to_rackmon_uaddr(dev_type, 100, 1)
+
+
 class TestGetDevice(unittest.TestCase):
     def test_a_legacy_shelf_goes_over_rackmon(self):
-        with patch.object(mu, "get_rackmon_device") as get_rackmon:
-            dev_type, dev = mu.get_device("PSU_100_1", None)
-        self.assertEqual(dev_type, "ORV3_PSU")
-        get_rackmon.assert_called_once_with(
-            "PSU_100_1", "ORV3_PSU", 100, 1, None, False
-        )
-        self.assertIs(dev, get_rackmon.return_value)
+        with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+            self.assertIs(mu.get_device("PSU_100_1", None), by_addr.return_value)
+        by_addr.assert_called_once_with(0x1E0, False)
 
     def test_bbu_on_a_legacy_shelf(self):
-        with patch.object(mu, "get_rackmon_device") as get_rackmon:
-            dev_type, _ = mu.get_device("BBU_101_2", None)
-        self.assertEqual(dev_type, "ORV3_BBU")
-        get_rackmon.assert_called_once_with(
-            "BBU_101_2", "ORV3_BBU", 101, 2, None, False
-        )
+        with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+            mu.get_device("BBU_101_2", None)
+        by_addr.assert_called_once_with(0x249, False)
 
-    def test_an_explicit_unique_address_forces_rackmon(self):
-        # Even at a shelf which would otherwise be phosphor-modbus.
-        with patch.object(mu, "get_rackmon_device") as get_rackmon:
-            dev_type, _ = mu.get_device("PSU_1_1", 0x1E0)
-        self.assertEqual(dev_type, "ORV3_PSU")
-        get_rackmon.assert_called_once_with("PSU_1_1", "ORV3_PSU", 1, 1, 0x1E0, False)
+    def test_the_type_is_rackmons_not_the_names(self):
+        # A name says PSU, rackmon says the part it probed at that
+        # address is the ORv3 one. Rackmon probed it, so rackmon wins
+        # and its updater variant is the one that runs.
+        with patch.object(
+            mu, "get_rackmon_device_by_addr", return_value=("ORV3_PSU", "dev")
+        ):
+            self.assertEqual(mu.get_device("PSU_100_1", None)[0], "ORV3_PSU")
 
-    def test_rpu_shelf_selects_the_rpu_generation(self):
-        with patch.object(mu, "get_rackmon_device") as get_rackmon:
-            self.assertEqual(mu.get_device("RPU_100", None)[0], "RPU")
-            self.assertEqual(mu.get_device("RPU_200", None)[0], "RPU2")
-        self.assertEqual(get_rackmon.call_count, 2)
+    def test_an_rpu_shelf_is_resolved_by_rackmon(self):
+        with patch.object(
+            mu, "get_rackmon_rpu_device_uaddr", return_value=0x10D
+        ) as rpu_uaddr:
+            with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+                mu.get_device("RPU_101", None)
+        rpu_uaddr.assert_called_once_with(101)
+        by_addr.assert_called_once_with(0x10D, False)
 
-    def test_a_type_rackmon_cannot_reach(self):
+    def test_every_shelf_of_an_aalcv2_pod_reaches_the_same_device(self):
+        # oobit reports the pod's components across shelves 100-102, but
+        # they are one modbus device, so all three names land on it.
+        pod = [{"uniqueDevAddress": 0x10D, "deviceType": "ORV3_RPU2"}]
+        with patch.object(mu.rmd, "list", return_value=pod):
+            with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+                for name in ("RPU_100", "RPU_101", "RPU_102"):
+                    mu.get_device(name, None)
+        self.assertEqual([call.args[0] for call in by_addr.call_args_list], [0x10D] * 3)
+
+    def test_a_type_rackmon_cannot_be_addressed_by_name(self):
         with self.assertRaises(ValueError):
             mu.get_device("CBU_100_1", None)
+
+    def test_a_type_rackmon_cannot_address_is_still_reachable_by_address(self):
+        # The naming scheme does not place a CBU on the bus, but an
+        # address does, and rackmon knows what it found there.
+        with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+            mu.get_device(None, 0x1F0)
+        by_addr.assert_called_once_with(0x1F0, False)
 
     def test_a_modern_shelf_goes_over_phosphor_modbus(self):
         with patch.object(mu, "get_phosphor_modbus_device") as get_pmodbus:
@@ -289,31 +367,101 @@ class TestGetDevice(unittest.TestCase):
         with patch.object(mu, "get_phosphor_modbus_device"):
             self.assertEqual(mu.get_device("PSU_1_1", None)[0], "PSU")
 
+    def test_an_address_on_its_own_is_resolved_by_rackmon(self):
+        with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+            self.assertIs(mu.get_device(None, 0x1E0), by_addr.return_value)
+        by_addr.assert_called_once_with(0x1E0, False)
 
-class TestGetRackmonDevice(unittest.TestCase):
-    def test_validates_the_address_before_handing_back_a_handle(self):
-        with patch.object(mu, "get_rackmon_device_config") as get_config:
+    def test_force_direct_survives_a_nameless_lookup(self):
+        with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+            mu.get_device(None, 0x1E0, True)
+        by_addr.assert_called_once_with(0x1E0, True)
+
+
+class TestGetRackmonDeviceByAddr(unittest.TestCase):
+    """--address without --name: rackmon says what the device is"""
+
+    def config(self, device_type="ORV3_HPR_PSU"):
+        return {
+            "uniqueDevAddress": 0x1E0,
+            "devAddress": 0xE0,
+            "baudrate": 19200,
+            "parity": "EVEN",
+            "deviceType": device_type,
+        }
+
+    def test_the_type_comes_off_rackmons_register_map(self):
+        with patch.object(
+            mu, "get_rackmon_device_config", return_value=self.config()
+        ) as get_config:
             with patch.object(mu, "ModbusRackmon") as modbus:
-                dev = mu.get_rackmon_device("PSU_100_1", "ORV3_PSU", 100, 1, None)
+                dev_type, dev = mu.get_rackmon_device_by_addr(0x1E0)
         get_config.assert_called_once_with(0x1E0)
+        self.assertEqual(dev_type, "PSU")
         modbus.assert_called_once_with(0x1E0)
         self.assertIs(dev, modbus.return_value)
 
-    def test_an_explicit_address_is_used_as_is(self):
-        with patch.object(mu, "get_rackmon_device_config"):
-            with patch.object(mu, "ModbusRackmon") as modbus:
-                mu.get_rackmon_device("PSU_100_1", "ORV3_PSU", 100, 1, 0x242)
-        modbus.assert_called_once_with(0x242)
+    def test_every_register_map_rackmon_ships_maps_to_a_device_type(self):
+        for rackmon_type, dev_type in (
+            ("ORV3_PSU", "ORV3_PSU"),
+            ("ORV3_BBU", "ORV3_BBU"),
+            ("ORV3_RPU", "RPU"),
+            ("ORV3_RPU2", "RPU2"),
+            ("ORV3_HPR_BBU", "BBU"),
+            ("ORV3_HPR_CBU", "CBU"),
+            ("ORV3_HPR_PMM_PSU", "PSU_PMM"),
+            ("ORV3_HPR_PMM_BBU", "BBU_PMM"),
+            ("ORV3_HPR_PMM_CBU", "CBU_PMM"),
+        ):
+            with self.subTest(rackmon_type=rackmon_type):
+                with patch.object(
+                    mu,
+                    "get_rackmon_device_config",
+                    return_value=self.config(rackmon_type),
+                ):
+                    with patch.object(mu, "ModbusRackmon"):
+                        self.assertEqual(
+                            mu.get_rackmon_device_by_addr(0x1E0)[0], dev_type
+                        )
 
-    def test_an_unknown_device_is_not_driven(self):
-        with patch.object(mu, "get_rackmon_device_config", side_effect=ValueError):
-            with patch.object(mu, "ModbusRackmon") as modbus:
-                with self.assertRaises(ValueError):
-                    mu.get_rackmon_device("PSU_100_1", "ORV3_PSU", 100, 1, None)
-        modbus.assert_not_called()
+    def test_hpr_parts_are_not_mistaken_for_their_orv3_namesakes(self):
+        # Going through a name, rackmon rewrites PSU to ORV3_PSU. The
+        # address path has rackmon's own answer, so an HPR PSU stays one
+        # and gets the HPR updater variant.
+        with patch.object(
+            mu, "get_rackmon_device_config", return_value=self.config("ORV3_HPR_PSU")
+        ):
+            with patch.object(mu, "ModbusRackmon"):
+                self.assertEqual(mu.get_rackmon_device_by_addr(0x1E0)[0], "PSU")
+
+    def test_a_register_map_with_no_updater(self):
+        for rackmon_type in ("ORV2_PSU", "MINIUPS", "Unknown"):
+            with self.subTest(rackmon_type=rackmon_type):
+                with patch.object(
+                    mu,
+                    "get_rackmon_device_config",
+                    return_value=self.config(rackmon_type),
+                ):
+                    with patch.object(mu, "ModbusRackmon") as modbus:
+                        with self.assertRaises(ValueError):
+                            mu.get_rackmon_device_by_addr(0x1E0)
+                    modbus.assert_not_called()
+
+    def test_force_direct_uses_the_same_line_settings(self):
+        with patch.object(mu, "get_rackmon_device_config", return_value=self.config()):
+            with patch.object(
+                mu, "get_rackmon_interface", return_value="/dev/ttyRS485-1"
+            ):
+                with patch.object(mu, "ModbusDirect") as modbus:
+                    with patch.object(mu, "RackmonMonitor") as monitor:
+                        mu.get_rackmon_device_by_addr(0x1E0, True)
+        monitor.assert_called_once_with("/dev/ttyRS485-1")
+        modbus.assert_called_once_with(
+            0xE0, 19200, "EVEN", "/dev/ttyRS485-1", monitor.return_value
+        )
 
 
-class TestGetRackmonDeviceForcedDirect(unittest.TestCase):
+class TestMakeRackmonDevice(unittest.TestCase):
     """--force-direct: a rackmon device driven over minimalmodbus instead"""
 
     def config(self):
@@ -322,19 +470,24 @@ class TestGetRackmonDeviceForcedDirect(unittest.TestCase):
             "devAddress": 0xE0,
             "baudrate": 19200,
             "parity": "EVEN",
+            "deviceType": "ORV3_PSU",
         }
 
+    def test_rackmons_own_backend_by_default(self):
+        with patch.object(mu, "ModbusRackmon") as modbus:
+            dev = mu.make_rackmon_device(0x1E0, self.config())
+        modbus.assert_called_once_with(0x1E0)
+        self.assertIs(dev, modbus.return_value)
+
     def test_the_line_settings_come_from_rackmons_own_device_config(self):
-        with patch.object(mu, "get_rackmon_device_config", return_value=self.config()):
-            with patch.object(
-                mu.rmd, "get_interface", return_value="/dev/ttyRS485-1"
-            ) as get_interface:
-                with patch.object(mu, "ModbusDirect") as modbus:
-                    with patch.object(mu, "RackmonMonitor") as monitor:
-                        dev = mu.get_rackmon_device(
-                            "PSU_100_1", "ORV3_PSU", 100, 1, None, True
-                        )
+        with patch.object(
+            mu, "get_rackmon_interface", return_value="/dev/ttyRS485-1"
+        ) as get_interface:
+            with patch.object(mu, "ModbusDirect") as modbus:
+                with patch.object(mu, "RackmonMonitor") as monitor:
+                    dev = mu.make_rackmon_device(0x1E0, self.config(), True)
         get_interface.assert_called_once_with(0x1E0)
+        monitor.assert_called_once_with("/dev/ttyRS485-1")
         modbus.assert_called_once_with(
             0xE0, 19200, "EVEN", "/dev/ttyRS485-1", monitor.return_value
         )
@@ -343,18 +496,23 @@ class TestGetRackmonDeviceForcedDirect(unittest.TestCase):
     def test_rackmon_is_still_the_monitor_to_suppress(self):
         # The device is ours to drive, but rackmond is still the daemon
         # polling it, so that is what has to stand off.
-        with patch.object(mu, "get_rackmon_device_config", return_value=self.config()):
-            with patch.object(mu.rmd, "get_interface", return_value="/dev/ttyRS485-1"):
-                with patch.object(mu, "ModbusDirect") as modbus:
-                    mu.get_rackmon_device("PSU_100_1", "ORV3_PSU", 100, 1, None, True)
+        with patch.object(mu, "get_rackmon_interface", return_value="/dev/ttyRS485-1"):
+            with patch.object(mu, "ModbusDirect") as modbus:
+                mu.make_rackmon_device(0x1E0, self.config(), True)
         monitor = modbus.call_args.args[4]
         self.assertIsInstance(monitor, mu.RackmonMonitor)
 
     def test_without_minimalmodbus_there_is_no_direct_backend(self):
-        with patch.object(mu, "get_rackmon_device_config", return_value=self.config()):
-            with patch.object(mu, "ModbusDirect", None):
+        with patch.object(mu, "ModbusDirect", None):
+            with self.assertRaises(ValueError):
+                mu.make_rackmon_device(0x1E0, self.config(), True)
+
+    def test_an_unknown_device_is_not_driven(self):
+        with patch.object(mu, "get_rackmon_device_config", side_effect=ValueError):
+            with patch.object(mu, "ModbusRackmon") as modbus:
                 with self.assertRaises(ValueError):
-                    mu.get_rackmon_device("PSU_100_1", "ORV3_PSU", 100, 1, None, True)
+                    mu.get_rackmon_device_by_addr(0x1E0)
+        modbus.assert_not_called()
 
 
 class TestGetPhosphorModbusDevice(unittest.TestCase):
@@ -390,7 +548,101 @@ class TestGetPhosphorModbusDevice(unittest.TestCase):
                 mu.get_pmodbus_config("BBU_1_2")
 
 
+def is_locked(path):
+    """Whether someone other than this descriptor holds the lock"""
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return True
+    finally:
+        os.close(fd)
+    return False
+
+
+class TestModbusLock(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.path = os.path.join(tmp.name, "modbus.lock")
+        self.legacy = os.path.join(tmp.name, "modbus_dynamo_solitonbeam.lock")
+
+    def hold(self, path):
+        """Take the lock the way flock(1) does, on a descriptor we inherit"""
+        fd = os.open(path, os.O_RDONLY | os.O_CREAT)
+        self.addCleanup(os.close, fd)
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        return fd
+
+    def enter_within(self, path, timeout=5):
+        """Enter and leave modbus_lock(), failing rather than hanging"""
+        states = []
+
+        def enter():
+            with patch("sys.stdout", new=io.StringIO()):
+                with mu.modbus_lock(path):
+                    states.append(is_locked(path))
+
+        thread = threading.Thread(target=enter, daemon=True)
+        thread.start()
+        thread.join(timeout)
+        self.assertFalse(thread.is_alive(), "modbus_lock() did not return")
+        return states
+
+    def test_the_lock_is_held_inside_and_released_after(self):
+        with mu.modbus_lock(self.path):
+            self.assertTrue(is_locked(self.path))
+        self.assertFalse(is_locked(self.path))
+
+    def test_the_lock_file_is_created_if_missing(self):
+        with mu.modbus_lock(self.path):
+            self.assertTrue(os.path.exists(self.path))
+
+    def test_the_lock_is_released_when_the_update_fails(self):
+        with self.assertRaises(RuntimeError):
+            with mu.modbus_lock(self.path):
+                raise RuntimeError("update failed")
+        self.assertFalse(is_locked(self.path))
+
+    def test_waits_for_another_holder(self):
+        other = os.open(self.path, os.O_RDONLY | os.O_CREAT)
+        fcntl.flock(other, fcntl.LOCK_EX)
+        # Not inherited: modbus_lock() would find it in /proc/self/fd.
+        with patch.object(mu, "inherited_lock_fd", return_value=None):
+            threading.Timer(0.2, os.close, [other]).start()
+            with patch("sys.stdout", new=io.StringIO()) as out:
+                with mu.modbus_lock(self.path):
+                    self.assertTrue(is_locked(self.path))
+        self.assertIn(f"Waiting for {self.path}", out.getvalue())
+
+    def test_a_lock_the_caller_took_is_used_rather_than_waited_on(self):
+        self.hold(self.path)
+        self.assertEqual(self.enter_within(self.path), [True])
+        # It is the caller's lock, so it is still held on the way out.
+        self.assertTrue(is_locked(self.path))
+
+    def test_a_lock_taken_through_the_legacy_path_is_the_same_lock(self):
+        open(self.path, "w").close()
+        os.symlink(self.path, self.legacy)
+        fd = self.hold(self.legacy)
+        self.assertEqual(mu.inherited_lock_fd(self.path), fd)
+        self.assertEqual(self.enter_within(self.path), [True])
+
+    def test_no_inherited_descriptor(self):
+        self.assertIsNone(mu.inherited_lock_fd(self.path))
+        open(self.path, "w").close()
+        self.assertIsNone(mu.inherited_lock_fd(self.path))
+
+
 class TestMain(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.lock = os.path.join(tmp.name, "modbus.lock")
+        patcher = patch.object(mu, "MODBUS_LOCK", self.lock)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def run_main(self, argv, dev, vendor="delta"):
         with patch("sys.argv", ["modbus-update.py"] + argv):
             with patch.object(mu, "get_device", return_value=("PSU", dev)):
@@ -408,6 +660,29 @@ class TestMain(unittest.TestCase):
         _, get_updater, _ = self.run_main(["-n", "PSU_1_1", "fw.bin"], dev)
         self.assertEqual(dev.suppressed, 1)
         get_updater.return_value.assert_called_once_with(dev, "fw.bin")
+
+    def test_the_device_is_only_touched_with_the_modbus_lock_held(self):
+        held = []
+
+        def get_manufacturer(device_type, dev):
+            held.append(is_locked(self.lock))
+            return "delta"
+
+        def update(dev, path):
+            held.append(is_locked(self.lock))
+
+        update.description = "update"
+        with patch("sys.argv", ["modbus-update.py", "-n", "PSU_1_1", "fw.bin"]):
+            with patch.object(mu, "get_device", return_value=("PSU", FakeDev())):
+                with patch.object(
+                    mu.manufacturers, "get_manufacturer", get_manufacturer
+                ):
+                    with patch.object(mu, "get_updater", return_value=update):
+                        with patch("sys.stdout", new=io.StringIO()):
+                            mu.main()
+        # Once reading the vendor out, once for the update itself.
+        self.assertEqual(held, [True, True])
+        self.assertFalse(is_locked(self.lock))
 
     def test_what_is_about_to_be_updated_is_printed_first(self):
         # The same lines a dry run prints, so a log of a real update
@@ -459,10 +734,6 @@ class TestMain(unittest.TestCase):
                             mu.main()
         return gd
 
-    def test_the_address_option_forces_a_rackmon_lookup(self):
-        gd = self.resolve_device(["-n", "PSU_1_1", "-a", "0x1e0", "f"])
-        gd.assert_called_once_with("PSU_1_1", 0x1E0, False)
-
     def test_the_backend_is_rackmons_own_unless_told_otherwise(self):
         gd = self.resolve_device(["-n", "PSU_100_1", "f"])
         gd.assert_called_once_with("PSU_100_1", None, False)
@@ -470,6 +741,31 @@ class TestMain(unittest.TestCase):
     def test_force_direct_is_passed_through(self):
         gd = self.resolve_device(["-n", "PSU_100_1", "--force-direct", "f"])
         gd.assert_called_once_with("PSU_100_1", None, True)
+
+    def test_an_address_is_enough_on_its_own(self):
+        gd = self.resolve_device(["--addr", "0x1e0", "f"])
+        gd.assert_called_once_with(None, 0x1E0, False)
+
+    def test_an_address_only_update_says_what_it_is_driving(self):
+        _, _, out = self.run_main(["-a", "0x1e0", "fw.bin"], FakeDev())
+        self.assertIn("Updating Address: 0x1e0", out)
+
+    def test_an_address_only_dry_run_names_the_address(self):
+        _, _, out = self.run_main(["-a", "0x1e0", "--dry-run", "fw.bin"], FakeDev())
+        self.assertIn("Dry run, not updating 0x1e0", out)
+
+    def test_neither_a_name_nor_an_address_is_a_usage_error(self):
+        with patch("sys.argv", ["modbus-update.py", "fw.bin"]):
+            with patch("sys.stderr", new=io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    mu.main()
+
+    def test_a_name_and_an_address_together_are_a_usage_error(self):
+        argv = ["modbus-update.py", "-n", "PSU_1_1", "-a", "0x1e0", "fw.bin"]
+        with patch("sys.argv", argv):
+            with patch("sys.stderr", new=io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    mu.main()
 
 
 if __name__ == "__main__":

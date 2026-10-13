@@ -1,4 +1,4 @@
-From 1d98c4b9df9d32806ba69186e867d0f8744fd91b Mon Sep 17 00:00:00 2001
+From 5cecc129a8cf620824d5a120639b984b8f3a1dc6 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Fri, 21 Aug 2026 15:01:30 +0800
 Subject: [PATCH] iio: adc: ti-ads112c04: Add support for TI ADS112C04
@@ -29,10 +29,10 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  create mode 100644 drivers/iio/adc/ti-ads112c04.c
 
 diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index d4965c4b5d86..e8b44d85140d 100644
+index 555c17ac38e4..76d3714eab93 100644
 --- a/drivers/iio/adc/Kconfig
 +++ b/drivers/iio/adc/Kconfig
-@@ -1658,6 +1658,16 @@ config TI_ADS1119
+@@ -1659,6 +1659,16 @@ config TI_ADS1119
           This driver can also be built as a module. If so, the module will be
           called ti-ads1119.
  

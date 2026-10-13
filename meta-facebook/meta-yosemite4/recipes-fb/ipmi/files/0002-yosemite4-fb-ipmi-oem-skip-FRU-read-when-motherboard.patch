@@ -1,4 +1,4 @@
-From bececfcf9f4a3dc01363f20c22a6b88bfda6a050 Mon Sep 17 00:00:00 2001
+From 0a72c79c16ee7b6c7072fb8b5ffae42628cb2230 Mon Sep 17 00:00:00 2001
 From: Liora Guo <liora.guo.wiwynn@gmail.com>
 Date: Thu, 6 Nov 2025 07:34:47 +0000
 Subject: [PATCH] yosemite4: fb-ipmi-oem: skip FRU read when motherboard path
@@ -30,10 +30,10 @@ generic selection. This prevents showing SN/PN from the wrong FRU.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/oemcommands.cpp b/src/oemcommands.cpp
-index 110af44..12bf77b 100644
+index 4464e63..bc53e73 100644
 --- a/src/oemcommands.cpp
 +++ b/src/oemcommands.cpp
-@@ -736,7 +736,7 @@ int8_t getFruData(std::string& data, std::string& name)
+@@ -737,7 +737,7 @@ int8_t getFruData(std::string& data, std::string& name)
      }
      else
      {

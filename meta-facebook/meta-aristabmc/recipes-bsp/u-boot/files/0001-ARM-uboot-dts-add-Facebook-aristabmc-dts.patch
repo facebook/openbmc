@@ -1,0 +1,119 @@
+From 84025664d411a70721229238edee0f19aed0ac4d Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Thu, 3 Sep 2026 11:39:36 +0000
+Subject: [PATCH] ARM: uboot: dts: add Facebook Aristabmc BMC device tree
+
+Add the Facebook Aristabmc BMC device tree and its U-Boot build target.
+
+Upstream-Status: Pending
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+ arch/arm/dts/Makefile                         |   1 +
+ .../arm/dts/aspeed-bmc-facebook-aristabmc.dts | 84 ++++++++++++++
+ 2 files changed, 85 insertions(+)
+ create mode 100644 arch/arm/dts/aspeed-bmc-facebook-aristabmc.dts
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 4195608f54..fa1aecc2ff 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -1284,6 +1284,7 @@ dtb-$(CONFIG_ASPEED_AST2600) += \
+ 	ast2600-ncsi.dtb
+ 
+ dtb-$(CONFIG_ASPEED_AST2700) += \
++	aspeed-bmc-facebook-aristabmc.dtb \
+ 	ast2700-evb.dtb \
+ 	ast2700-raw.dtb \
+ 	ast2700-slt.dtb \
+diff --git a/arch/arm/dts/aspeed-bmc-facebook-aristabmc.dts b/arch/arm/dts/aspeed-bmc-facebook-aristabmc.dts
+new file mode 100644
+index 0000000000..1fe7df2299
+--- /dev/null
++++ b/arch/arm/dts/aspeed-bmc-facebook-aristabmc.dts
+@@ -0,0 +1,84 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) Meta Platforms, Inc. and affiliates.
++
++/dts-v1/;
++
++#include "ast2700.dtsi"
++#include "ast2700-u-boot.dtsi"
++
++#define DUAL_NODE 0
++#define EDAF_128MB 0
++
++/ {
++	model = "Facebook Aristabmc BMC";
++	compatible = "facebook,aristabmc-bmc", "aspeed,ast2700";
++
++	aliases {
++		spi0 = &fmc;
++		ethernet0 = &mac0;
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0x4 0x00000000 0x0 0x40000000>;
++	};
++
++	chosen {
++		stdout-path = &uart12;
++	};
++
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++
++		#include "ast2700-evb-reserved-mem.dtsi"
++	};
++};
++
++&uart12 {
++	status = "okay";
++};
++
++/* MAC0 via RGMII fixed-link to the BCM53134 management switch. */
++&mac0 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii0_default>;
++
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
++&mac1 {
++	status = "disabled";
++};
++
++&mac2 {
++	status = "disabled";
++};
++
++&fmc {
++	status = "okay";
++
++	flash@0 {
++		status = "okay";
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <2>;
++		spi-rx-bus-width = <2>;
++	};
++
++	flash@1 {
++		status = "okay";
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <2>;
++		spi-rx-bus-width = <2>;
++	};
++};
++
++&wdt0 {
++	status = "okay";
++};
++
+-- 
+2.51.0

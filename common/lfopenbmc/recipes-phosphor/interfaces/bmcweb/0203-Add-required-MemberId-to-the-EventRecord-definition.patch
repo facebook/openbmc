@@ -1,4 +1,4 @@
-From 1cc84fc3502a5564b74a7c9edee7c75df6df48c7 Mon Sep 17 00:00:00 2001
+From 1d1bb9e5c7cdbf3f0ea17d3afda0bcd1a006ce22 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Tue, 11 Mar 2025 12:10:57 +0000
 Subject: [PATCH] Add required MemberId to the EventRecord definition
@@ -46,17 +46,17 @@ Change-Id: I99fcdcdccc97bfa39581d3e42ef407a8cfadaa83
  1 file changed, 2 insertions(+)
 
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 8704580f..69d1c3df 100644
+index 8704580f..6bd28a8e 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
-@@ -208,6 +208,7 @@ void Subscription::filterAndSendEventLogs(
-             logEntry.messageArgs.begin(), logEntry.messageArgs.end());
- 
-         nlohmann::json::object_t bmcLogEntry;
-+        uint64_t memberId = 0;
-         if (event_log::formatEventLogEntry(
-                 eventId, logEntry.id, logEntry.messageId, messageArgsView,
-                 logEntry.timestamp, userSub->customText, bmcLogEntry) != 0)
+@@ -200,6 +200,7 @@ void Subscription::filterAndSendEventLogs(
+     uint64_t eventId, const std::vector<EventLogObjectsType>& eventRecords)
+ {
+     nlohmann::json::array_t logEntryArray;
++    uint64_t memberId = 0;
+     for (const EventLogObjectsType& logEntry : eventRecords)
+     {
+         BMCWEB_LOG_DEBUG("Processing logEntry: {}, {} '{}'", logEntry.id,
 @@ -234,6 +235,7 @@ void Subscription::filterAndSendEventLogs(
              }
          }
@@ -66,5 +66,5 @@ index 8704580f..69d1c3df 100644
          eventId++;
      }
 -- 
-2.52.0
+2.53.0-Meta
 

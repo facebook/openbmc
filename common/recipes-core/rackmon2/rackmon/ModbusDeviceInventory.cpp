@@ -118,4 +118,18 @@ void ModbusDeviceInventory::setExclusiveModeForAll(bool enable) {
     device->setExclusiveMode(enable);
   }
 }
+
+bool ModbusDeviceInventory::setExclusiveModeForInterface(
+    const Modbus& interface,
+    bool enable) {
+  std::shared_lock lk(devicesMutex_);
+  bool found = false;
+  for (const auto& [key, device] : devices_) {
+    if (&device->getInterface() == &interface) {
+      device->setExclusiveMode(enable);
+      found = true;
+    }
+  }
+  return found;
+}
 }; // namespace rackmon

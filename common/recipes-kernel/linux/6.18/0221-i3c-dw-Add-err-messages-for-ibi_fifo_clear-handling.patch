@@ -1,4 +1,4 @@
-From 8b15035807b1c53604a670b33fb665750d40504c Mon Sep 17 00:00:00 2001
+From 74d499ff54620c5bbb219e93befbfd6085b07fbf Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Mon, 18 Aug 2025 18:20:47 +0800
 Subject: [PATCH] i3c: dw: Add err messages for ibi_fifo_clear handling
@@ -19,7 +19,7 @@ Test Plan:
  1 file changed, 17 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 2a37d686204d..7a4d1d01d66b 100644
+index dfda5a0a07d0..cde4f46d186c 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -393,9 +393,11 @@ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
@@ -60,7 +60,7 @@ index 2a37d686204d..7a4d1d01d66b 100644
  	} else {
  		list_del_init(&xfer->node);
  	}
-@@ -1704,7 +1714,7 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+@@ -1712,7 +1722,7 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
  		reg = readl(master->regs + IBI_QUEUE_STATUS);
  
  		if (reg & IBI_QUEUE_STATUS_RSP_NACK) {
@@ -69,7 +69,7 @@ index 2a37d686204d..7a4d1d01d66b 100644
  					    "Nacked IBI from non-requested dev addr %02lx\n",
  					    IBI_QUEUE_IBI_ADDR(reg));
  			goto ibi_fifo_clear;
-@@ -1732,7 +1742,10 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+@@ -1740,7 +1750,10 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
  					10, 1000000);
  	if (ret)
  		dev_err(&master->base.dev,
@@ -82,5 +82,5 @@ index 2a37d686204d..7a4d1d01d66b 100644
  	dw_i3c_master_exit_halt(master);
  }
 -- 
-2.52.0
+2.53.0-Meta
 

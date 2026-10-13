@@ -1,4 +1,4 @@
-From 096a0c72d9b25ae8a45f3798fa228f4264cbbb83 Mon Sep 17 00:00:00 2001
+From 177065d1294395f4b795f3ad23654a6d4f31f2c6 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
 Subject: [PATCH] Implement valve monitor service
@@ -109,7 +109,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  src/leakdetector/LeakGPIODetector.hpp         |   4 +-
  src/leakdetector/meson.build                  |   2 +-
  src/meson.build                               |  22 +-
- src/valve-monitor/GPIOValve.cpp               | 299 ++++++++++++++++++
+ src/valve-monitor/GPIOValve.cpp               | 300 ++++++++++++++++++
  src/valve-monitor/GPIOValve.hpp               | 105 ++++++
  src/valve-monitor/Readme.md                   |  50 +++
  src/valve-monitor/ValveEvents.cpp             |  34 ++
@@ -117,7 +117,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  src/valve-monitor/ValveMonitor.cpp            | 102 ++++++
  src/valve-monitor/ValveMonitor.hpp            |  49 +++
  src/valve-monitor/meson.build                 |  22 ++
- 19 files changed, 862 insertions(+), 79 deletions(-)
+ 19 files changed, 863 insertions(+), 79 deletions(-)
  create mode 100644 service_files/xyz.openbmc_project.valvemonitor.service
  rename src/{GPIOInterface.cpp => GPIInterface.cpp} (55%)
  create mode 100644 src/GPIInterface.hpp
@@ -458,12 +458,12 @@ index 0000000..22ff9ed
 +
 +} // namespace gpio
 diff --git a/src/leakdetector/LeakGPIODetector.cpp b/src/leakdetector/LeakGPIODetector.cpp
-index d6f1c5f..5ac2046 100644
+index 9ef133b..38ba204 100644
 --- a/src/leakdetector/LeakGPIODetector.cpp
 +++ b/src/leakdetector/LeakGPIODetector.cpp
-@@ -48,15 +48,15 @@ GPIODetector::GPIODetector(sdbusplus::async::context& ctx, Events& leakEvents,
-                  DetectorIntf::Detector::properties_t{
-                      config.name, DetectorState::Normal, config.type}),
+@@ -49,14 +49,14 @@ GPIODetector::GPIODetector(sdbusplus::async::context& ctx, Events& leakEvents,
+                      config.name, DetectorState::Normal, config.type},
+                  DetectorIntf::signal_action::defer_emit),
      ctx(ctx), leakEvents(leakEvents), config(config),
 -    gpioInterface(ctx, config.name, config.pinName,
 -                  (config.polarity == config::PinPolarity::activeLow),
@@ -472,9 +472,8 @@ index d6f1c5f..5ac2046 100644
 +                   (config.polarity == config::PinPolarity::activeLow),
 +                   std::bind_front(&GPIODetector::updateGPIOStateAsync, this))
  {
-     Detector::emit_added();
- 
      createAssociations();
+     DetectorIntf::emit_object_added();
  
 -    ctx.spawn(gpioInterface.start());
 +    ctx.spawn(inputInterface.start());
@@ -482,7 +481,7 @@ index d6f1c5f..5ac2046 100644
      debug("Created leak detector {NAME}", "NAME", config.name);
  }
 diff --git a/src/leakdetector/LeakGPIODetector.hpp b/src/leakdetector/LeakGPIODetector.hpp
-index 8c27f0e..0e22232 100644
+index 56ea3b9..c0e24f7 100644
 --- a/src/leakdetector/LeakGPIODetector.hpp
 +++ b/src/leakdetector/LeakGPIODetector.hpp
 @@ -1,6 +1,6 @@
@@ -554,7 +553,7 @@ index 3ecf709..2e7d82e 100644
  
 diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
 new file mode 100644
-index 0000000..f5e501b
+index 0000000..61da637
 --- /dev/null
 +++ b/src/valve-monitor/GPIOValve.cpp
 @@ -0,0 +1,300 @@

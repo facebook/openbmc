@@ -17,7 +17,18 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-#
-# Create "pwrcpld" and scm/chassis EEPROMs.
-#
-echo "FIXME: instantiate I2C client devices in setup_i2c.sh!!"
+# shellcheck disable=SC1091
+source /usr/local/bin/openbmc-utils.sh
+
+# Board EEPROMs (AT24-compatible 512-Kbit devices).
+i2c_device_add 14 0x50 24c512 # BMC EEPROM
+i2c_device_add 9 0x50 24c512  # CPU EEPROM
+i2c_device_add 9 0x52 24c512  # SMB EEPROM
+i2c_device_add 9 0x53 24c512  # Chassis EEPROM
+
+# Instantiate the CPU power CPLD.
+i2c_device_add 12 0x43 pwrcpld
+modprobe pwrcpld
+
+# Instantiate the switch-card/management-card CPLD on BMC SMBus 9.
+i2c_device_add 9 0x23 smbcpld

@@ -18,7 +18,34 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += "\
+    file://aristabmc_cpu_flash.layout \
+    file://bios_util.sh \
+    file://bios_ver.sh \
+    file://bmc_board_rev.sh \
     file://board-utils.sh \
+    file://cpld_ver.sh \
+    file://fpga_util.sh \
+    file://fpga_ver.sh \
+    file://oob-mdio-util.sh \
     file://setup-gpio.sh \
     file://setup_i2c.sh \
+    file://switchToCpu.sh \
     "
+
+OPENBMC_UTILS_FILES += "\
+    bios_util.sh \
+    bios_ver.sh \
+    bmc_board_rev.sh \
+    cpld_ver.sh \
+    fpga_util.sh \
+    fpga_ver.sh \
+    oob-mdio-util.sh \
+    switchToCpu.sh \
+    "
+
+do_install:append() {
+    install -m 0644 ${UNPACKDIR}/aristabmc_cpu_flash.layout \
+        ${D}${sysconfdir}/aristabmc_cpu_flash.layout
+}
+
+FILES:${PN} += "${sysconfdir}/aristabmc_cpu_flash.layout"

@@ -1,0 +1,142 @@
+From 454928e638a2dbd91e74d7fa9735a103dad0158a Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Wed, 9 Sep 2026 15:15:05 +0000
+Subject: [PATCH] pinctrl: aspeed: g7: add split UART groups
+
+The AST2700 platform description provides separate pinctrl states for
+the transmit and receive pins of each UART. This permits boards to mux
+only the signals that are routed, but the upstream-style SoC1 pinctrl
+driver currently exposes only combined UART groups. Requests for the
+split groups therefore fail and prevent affected UARTs from probing.
+
+Add TXD and RXD groups matching the Aspeed vendor driver while retaining
+the combined groups for compatibility with existing device trees.
+
+Source: 
+https://github.com/AspeedTech-BMC/linux/commit/becf678993bb0db1d5c8016c1166326fa20ac2f3
+
+Upstreaming in progress:
+https://lore.kernel.org/linux-aspeed/20250904103401.88287-1-billy_tsai@aspeedtech.com/
+https://lore.kernel.org/linux-aspeed/20250904103401.88287-2-billy_tsai@aspeedtech.com/
+https://lore.kernel.org/linux-aspeed/20250904103401.88287-3-billy_tsai@aspeedtech.com/
+https://lore.kernel.org/linux-aspeed/20250904103401.88287-4-billy_tsai@aspeedtech.com/
+
+Upstream-Status: Pending
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+ .../pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c   | 66 +++++++++++++++----
+ 1 file changed, 55 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
+index f8b4066699ce..8c5e89b6e968 100644
+--- a/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
++++ b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
+@@ -1153,16 +1153,38 @@ PIN_GROUP(THRU1, AB23, U22);
+ PIN_GROUP(THRU2, A19, A18);
+ PIN_GROUP(THRU3, B25, F26);
+ PIN_GROUP(UART0, AC16, AF16);
++PIN_GROUP(TXD0, AC16);
++PIN_GROUP(RXD0, AF16);
+ PIN_GROUP(UART1, W16, V16);
++PIN_GROUP(TXD1, W16);
++PIN_GROUP(RXD1, V16);
+ PIN_GROUP(UART2, AB18, AC18);
++PIN_GROUP(TXD2, AB18);
++PIN_GROUP(RXD2, AC18);
+ PIN_GROUP(UART3, K13, AA17);
++PIN_GROUP(TXD3, K13);
++PIN_GROUP(RXD3, AA17);
+ PIN_GROUP(UART5, AB17, AD16);
++PIN_GROUP(TXD5, AB17);
++PIN_GROUP(RXD5, AD16);
+ PIN_GROUP(UART6, AC17, AD17);
++PIN_GROUP(TXD6, AC17);
++PIN_GROUP(RXD6, AD17);
+ PIN_GROUP(UART7, AE16, AE17);
++PIN_GROUP(TXD7, AE16);
++PIN_GROUP(RXD7, AE17);
+ PIN_GROUP(UART8, M15, B19);
++PIN_GROUP(TXD8, M15);
++PIN_GROUP(RXD8, B19);
+ PIN_GROUP(UART9, B26, A25);
++PIN_GROUP(TXD9, B26);
++PIN_GROUP(RXD9, A25);
+ PIN_GROUP(UART10, A24, B24);
++PIN_GROUP(TXD10, A24);
++PIN_GROUP(RXD10, B24);
+ PIN_GROUP(UART11, E26, A21);
++PIN_GROUP(TXD11, E26);
++PIN_GROUP(RXD11, A21);
+ PIN_GROUP(USB2CD, PORTC_MODE);
+ PIN_GROUP(USB2CH, PORTC_MODE);
+ PIN_GROUP(USB2CU, PORTC_MODE);
+@@ -1398,16 +1420,38 @@ static const struct pingroup aspeed_g7_soc1_groups[] = {
+ 	GROUP(THRU2),
+ 	GROUP(THRU3),
+ 	GROUP(UART0),
++	GROUP(TXD0),
++	GROUP(RXD0),
+ 	GROUP(UART1),
++	GROUP(TXD1),
++	GROUP(RXD1),
+ 	GROUP(UART10),
++	GROUP(TXD10),
++	GROUP(RXD10),
+ 	GROUP(UART11),
++	GROUP(TXD11),
++	GROUP(RXD11),
+ 	GROUP(UART2),
++	GROUP(TXD2),
++	GROUP(RXD2),
+ 	GROUP(UART3),
++	GROUP(TXD3),
++	GROUP(RXD3),
+ 	GROUP(UART5),
++	GROUP(TXD5),
++	GROUP(RXD5),
+ 	GROUP(UART6),
++	GROUP(TXD6),
++	GROUP(RXD6),
+ 	GROUP(UART7),
++	GROUP(TXD7),
++	GROUP(RXD7),
+ 	GROUP(UART8),
++	GROUP(TXD8),
++	GROUP(RXD8),
+ 	GROUP(UART9),
++	GROUP(TXD9),
++	GROUP(RXD9),
+ 	GROUP(USB2CD),
+ 	GROUP(USB2CH),
+ 	GROUP(USB2CU),
+@@ -1659,17 +1703,17 @@ static const struct aspeed_g7_soc1_function aspeed_g7_soc1_functions[] = {
+ 	FUNC(THRU1, (2), "THRU1"),
+ 	FUNC(THRU2, (4), "THRU2"),
+ 	FUNC(THRU3, (4), "THRU3"),
+-	FUNC(UART0, (1), "UART0"),
+-	FUNC(UART1, (1), "UART1"),
+-	FUNC(UART10, (3), "UART10"),
+-	FUNC(UART11, (3), "UART11"),
+-	FUNC(UART2, (1), "UART2"),
+-	FUNC(UART3, (1), "UART3"),
+-	FUNC(UART5, (4), "UART5"),
+-	FUNC(UART6, (4), "UART6"),
+-	FUNC(UART7, (1), "UART7"),
+-	FUNC(UART8, (3), "UART8"),
+-	FUNC(UART9, (3), "UART9"),
++	FUNC(UART0, (1, 1, 1), "UART0", "TXD0", "RXD0"),
++	FUNC(UART1, (1, 1, 1), "UART1", "TXD1", "RXD1"),
++	FUNC(UART10, (3, 3, 3), "UART10", "TXD10", "RXD10"),
++	FUNC(UART11, (3, 3, 3), "UART11", "TXD11", "RXD11"),
++	FUNC(UART2, (1, 1, 1), "UART2", "TXD2", "RXD2"),
++	FUNC(UART3, (1, 1, 1), "UART3", "TXD3", "RXD3"),
++	FUNC(UART5, (4, 4, 4), "UART5", "TXD5", "RXD5"),
++	FUNC(UART6, (4, 4, 4), "UART6", "TXD6", "RXD6"),
++	FUNC(UART7, (1, 1, 1), "UART7", "TXD7", "RXD7"),
++	FUNC(UART8, (3, 3, 3), "UART8", "TXD8", "RXD8"),
++	FUNC(UART9, (3, 3, 3), "UART9", "TXD9", "RXD9"),
+ 	FUNC(USB2C, (0, 1, 2, 3), "USB2CUD", "USB2CD", "USB2CH", "USB2CU"),
+ 	FUNC(USB2D, (1, 2), "USB2DD", "USB2DH"),
+ 	FUNC(USBUART, (2), "USBUART"),
+-- 
+2.51.0

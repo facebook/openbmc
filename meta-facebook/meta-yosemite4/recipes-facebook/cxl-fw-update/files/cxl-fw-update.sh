@@ -22,7 +22,7 @@ readonly FAILURE_MSG="Failure"
 # phosphor-dbus-interfaces define
 readonly TargetDetermined="xyz.openbmc_project.Software.Update.TargetDetermined"
 readonly UpdateSuccessful="xyz.openbmc_project.Software.Update.UpdateSuccessful"
-readonly ApplyFailed="xyz.openbmc_project.Software.Update.ApplyFailed"
+readonly ActivateFailed="xyz.openbmc_project.Software.Update.ActivateFailed"
 
 WF_EID_suffix=2
 CXL1_EID_suffix=4
@@ -36,7 +36,7 @@ add_result_sel() {
 	RESULT="$1"
 
 	if [ "${RESULT}" == "${FAILURE_MSG}" ]; then
-		log-create ${ApplyFailed} --json "{\"IMAGE_IDENTIFIER\":\"${pldm_image}\", \"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\"}"
+		log-create ${ActivateFailed} --json "{\"IMAGE_IDENTIFIER\":\"${pldm_image}\", \"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\"}"
 	elif [ "${RESULT}" == "${SUCCESS_MSG}" ]; then
 		log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
 	fi

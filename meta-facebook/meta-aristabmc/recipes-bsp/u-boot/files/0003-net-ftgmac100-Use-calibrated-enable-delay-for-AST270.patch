@@ -1,0 +1,59 @@
+From b92572c7fa0acf4fb7b9c867cab3364a08845ec5 Mon Sep 17 00:00:00 2001
+From: Adam Calabrigo <adamc@arista.com>
+Date: Thu, 10 Sep 2026 11:43:39 +0000
+Subject: [PATCH] net: ftgmac100: Use calibrated enable delay for AST2700 RGMII
+
+The BootMCU RGMII calibration records both "disable" (tx_dis/rx_dis)
+and "enable" (tx_en/rx_en) tap indices in the SCU scratch registers.
+The disable values mark the edge of the working timing window (minimum
+viable delay, zero margin), while the enable values are the intended
+operating points with ~2 ns of margin.
+
+ftgmac100_set_ast2700_rgmii_delay() currently reads the disable values
+as its baseline.  When no DT delay properties are specified, the
+resulting mac_delay register is programmed right at the edge of the
+timing window, causing consistent or intermittent RGMII RX failures
+at 1 Gbps.
+
+Switch to reading the enable values so that the baseline includes the
+calibrated margin.  Board DT delay properties (tx-internal-delay-ps,
+rx-internal-delay-ps) continue to add on top of this baseline.
+
+Signed-off-by: Adam Calabrigo <adamc@arista.com>
+---
+ drivers/net/ftgmac100.c | 4 ++--
+ drivers/net/ftgmac100.h | 2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ftgmac100.c b/drivers/net/ftgmac100.c
+index 0791292b..6a25dd86 100644
+--- a/drivers/net/ftgmac100.c
++++ b/drivers/net/ftgmac100.c
+@@ -747,8 +747,8 @@ static int ftgmac100_set_ast2700_rgmii_delay(struct udevice *dev)
+ 
+ 	rgmii_delay_tx_unit = AST2700_MAC_TX_DLY_UNIT(reg_unit);
+ 	rgmii_delay_rx_unit = AST2700_MAC_RX_DLY_UNIT(reg_unit);
+-	rgmii_delay_tx_dis = AST2700_MAC_TX_DLY_DIS(reg_val);
+-	rgmii_delay_rx_dis = AST2700_MAC_RX_DLY_DIS(reg_val);
++	rgmii_delay_tx_dis = AST2700_MAC_TX_DLY_EN(reg_val);
++	rgmii_delay_rx_dis = AST2700_MAC_RX_DLY_EN(reg_val);
+ 
+ 	tx_delay_index = DIV_ROUND_CLOSEST(priv->rgmii_tx_delay,
+ 					   rgmii_delay_tx_unit);
+diff --git a/drivers/net/ftgmac100.h b/drivers/net/ftgmac100.h
+index 5bf21a3e..8ea8cc47 100644
+--- a/drivers/net/ftgmac100.h
++++ b/drivers/net/ftgmac100.h
+@@ -283,7 +283,9 @@ struct ftgmac100_rxdes {
+ #define AST2700_MAC_RX_DLY_UNIT(x)	FIELD_GET(GENMASK(31, 16), (x))
+ #define AST2700_MAC0_DLY_VAL    0x194
+ #define AST2700_MAC_TX_DLY_DIS(x)	FIELD_GET(GENMASK(7, 0), (x))
++#define AST2700_MAC_TX_DLY_EN(x)	FIELD_GET(GENMASK(15, 8), (x))
+ #define AST2700_MAC_RX_DLY_DIS(x)	FIELD_GET(GENMASK(23, 16), (x))
++#define AST2700_MAC_RX_DLY_EN(x)	FIELD_GET(GENMASK(31, 24), (x))
+ #define AST2700_MAC1_DLY_UNIT   0x198
+ #define AST2700_MAC1_DLY_VAL    0x19c
+ #define AST2700_MAC01_CLK_DLY	0x390
+-- 
+2.51.0
+

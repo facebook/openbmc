@@ -182,12 +182,15 @@ int CpldLatticeManager::jedFileParser()
             state = ParseState::Cfg;
             continue;
         }
-        else if (line.starts_with(TAG_END_CONFIG))
+        else if (line.starts_with(TAG_END_CONFIG) || line.starts_with(TAG_END_BITSTREAM))
         {
             state = ParseState::EndCfg;
             continue;
         }
-        else if (line.starts_with(TAG_UFM) || line.starts_with(TAG_TAG_DATA))
+        // LFMXO5-65T (XO5Familyv2_update) programs fwInfo.cfgData as one
+        // bitstream and never reads ufmData, so do not split UFM out at
+        else if (line.starts_with(TAG_UFM) || line.starts_with(TAG_TAG_DATA) ||
+                 (line.starts_with(TAG_END_CFG_XO5) && chip != "LFMXO5-65T"))
         {
             state = ParseState::Ufm;
             continue;
@@ -1092,7 +1095,7 @@ int CpldLatticeManager::readUserCode(uint32_t& userCode)
     const auto isXO5 = chip == "LFMXO5-25";
     size_t resSize;
     std::array<uint8_t, 6> data{};
-    if (isSOFTIP)
+    if (isSOFTIP && ((softIpVersion & 0xF0) == 0x10))
     {
         appendCrc16(cmd);
         resSize = 6;
@@ -1424,7 +1427,8 @@ bool XO5I2CManager::readPage(uint8_t block, uint8_t page,
 bool XO5I2CManager::eraseCfg()
 {
     const auto startBlock = (legacyMode) ? 0 : getStartBlock(cfgIndex);
-    const auto endBlock = startBlock + Cfg::BlocksPerCfg;
+    const auto endBlock = startBlock + Cfg::BlocksPerCfg +
+        (!fwInfo.ufmData.empty() ? Cfg::BlocksPerUfm : 0);
 
     auto eraseBlock = [this](uint8_t block) -> bool {
         if (legacyMode)
@@ -1465,7 +1469,8 @@ bool XO5I2CManager::eraseCfg()
 bool XO5I2CManager::programCfg()
 {
     const auto startBlock = (legacyMode) ? 0 : getStartBlock(cfgIndex);
-    const auto endBlock = startBlock + Cfg::BlocksPerCfg;
+    const auto endBlock = startBlock + Cfg::BlocksPerCfg +
+        (!fwInfo.ufmData.empty() ? Cfg::BlocksPerUfm : 0);
     const auto& cfgData = fwInfo.cfgData;
     const auto totalBytes = cfgData.size();
     size_t bytesWritten = 0;
@@ -1508,7 +1513,8 @@ bool XO5I2CManager::programCfg()
 bool XO5I2CManager::verifyCfg()
 {
     const auto startBlock = (legacyMode) ? 0 : getStartBlock(cfgIndex);
-    const auto endBlock = startBlock + Cfg::BlocksPerCfg;
+    const auto endBlock = startBlock + Cfg::BlocksPerCfg +
+        (!fwInfo.ufmData.empty() ? Cfg::BlocksPerUfm : 0);
     const auto& cfgData = fwInfo.cfgData;
     const auto totalBytes = cfgData.size();
     uint8_t readBuffer[1 + Cfg::PageSize];
@@ -1611,6 +1617,14 @@ int CpldLatticeManager::XO5Family_update(bool legacy)
     {
         std::cerr << "Error: Device not ready.\n";
         return -1;
+    }
+
+    if (!i2cManager.fwInfo.ufmData.empty())
+    {
+        i2cManager.fwInfo.cfgData.insert(i2cManager.fwInfo.cfgData.end(),
+                                         i2cManager.fwInfo.ufmData.begin(),
+                                         i2cManager.fwInfo.ufmData.end());
+        std::cout << std::format("JED includes UFM; UFM sector after {} will be programmed together.\n", target);
     }
 
     std::cout << std::format("Erasing {} ...\n", target);

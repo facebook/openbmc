@@ -1,0 +1,115 @@
+From 1e4abb6eace49f5bec19d225cea493c968f122ee Mon Sep 17 00:00:00 2001
+From: Frank Tsao <Frank.Tsao@quantatw.com>
+Date: Tue, 18 Aug 2026 00:44:25 +0800
+Subject: [PATCH] Revert "ssifbridged: handle Get System Interface
+ Capabilities"
+
+This reverts commit 49c757cec5dd7939968dd54fd60f483193aa3cb9.
+
+The SSIF in the Phoenix SoC is affected by this commit. Revert it
+temporarily as a workaround until a proper fix is identified.
+---
+ ssifbridged.cpp | 63 -------------------------------------------------
+ 1 file changed, 63 deletions(-)
+
+diff --git a/ssifbridged.cpp b/ssifbridged.cpp
+index 93452be..a2966c9 100644
+--- a/ssifbridged.cpp
++++ b/ssifbridged.cpp
+@@ -29,30 +29,9 @@
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+ 
+-#include <cstring>
+-
+ /* Max length of ipmi ssif message included netfn and cmd field */
+ constexpr const size_t ipmiSsifPayloadMax = 254;
+ 
+-/* IPMI App NetFn 0x06, Cmd 0x57 - Get System Interface Capabilities. */
+-constexpr uint8_t ipmiNetFnApp = 0x06;
+-constexpr uint8_t ipmiCmdGetSysIfCap = 0x57;
+-constexpr uint8_t ipmiSsifIfType = 0x00;
+-constexpr uint8_t ipmiSsifCapFlags = 0x80;
+-constexpr uint8_t ipmiSsifMaxXmitMsgSize = 0xFF;
+-constexpr uint8_t ipmiSsifMaxRecvMsgSize = 0xFF;
+-/* netfn/lun byte + cmd byte */
+-constexpr size_t ipmiHdrSize = 2;
+-/* completion code byte */
+-constexpr size_t ipmiCcSize = 1;
+-/* reserved byte in Get System Interface Capabilities response */
+-constexpr uint8_t ipmiSsifRsvd = 0x00;
+-/* payloadLen: ifType + capFlags + maxXmit + maxRecv + reserved */
+-constexpr size_t ipmiSsifCapPayloadLen = 5;
+-/* total IPMI length field: hdr + cc + payload */
+-constexpr uint32_t ipmiSsifCapLenField =
+-    ipmiHdrSize + ipmiCcSize + ipmiSsifCapPayloadLen;
+-
+ using phosphor::logging::level;
+ using phosphor::logging::log;
+ 
+@@ -105,8 +84,6 @@ class SsifChannel
+     bool timedOut = false;
+ 
+   protected:
+-    bool handleGetSysIfCap(uint8_t netfn, uint8_t cmd,
+-                           const std::vector<uint8_t>& data);
+     std::array<uint8_t, ssifMessageSize> xferBuffer{};
+     std::shared_ptr<boost::asio::io_context> io;
+     std::shared_ptr<sdbusplus::asio::connection> bus;
+@@ -177,42 +154,6 @@ void SsifChannel::asyncRead()
+         });
+ }
+ 
+-bool SsifChannel::handleGetSysIfCap(uint8_t netfn, uint8_t cmd,
+-                                    const std::vector<uint8_t>& data)
+-{
+-    if (netfn != ipmiNetFnApp || cmd != ipmiCmdGetSysIfCap)
+-    {
+-        return false;
+-    }
+-    if (data.empty() || data[0] != ipmiSsifIfType)
+-    {
+-        return false;
+-    }
+-
+-    std::vector<uint8_t> rsp(sizeof(ipmiSsifCapLenField) + ipmiHdrSize +
+-                             ipmiCcSize + ipmiSsifCapPayloadLen);
+-    std::memcpy(rsp.data(), &ipmiSsifCapLenField, sizeof(ipmiSsifCapLenField));
+-    size_t idx = sizeof(ipmiSsifCapLenField);
+-    rsp[idx++] = static_cast<uint8_t>(
+-        ((ipmiNetFnApp + 1) << netFnShift) | (prevReqCmd.lun & lunMask));
+-    rsp[idx++] = ipmiCmdGetSysIfCap;
+-    rsp[idx++] = ipmiSsifRsvd;
+-    rsp[idx++] = ipmiSsifRsvd;
+-    rsp[idx++] = ipmiSsifCapFlags;
+-    rsp[idx++] = ipmiSsifMaxXmitMsgSize;
+-    rsp[idx++] = ipmiSsifMaxRecvMsgSize;
+-
+-    numberOfReqNotRsp--;
+-    rspTimer.cancel();
+-    boost::system::error_code ecWr;
+-    size_t wlen = boost::asio::write(dev, boost::asio::buffer(rsp), ecWr);
+-    if (ecWr || wlen != rsp.size())
+-    {
+-        log<level::ERR>("handleGetSysIfCap: failed to send response");
+-    }
+-    return true;
+-}
+-
+ int SsifChannel::showNumOfReqNotRsp() const
+ {
+     return numberOfReqNotRsp;
+@@ -409,10 +350,6 @@ void SsifChannel::processMessage(const boost::system::error_code& ecRd,
+     std::vector<uint8_t> data(rawIter + sizeofLenField + 2, rawEnd);
+     // non-session bridges still need to pass an empty options map
+     std::map<std::string, std::variant<int>> options;
+-    if (handleGetSysIfCap(netfn, cmd, data))
+-    {
+-        return;
+-    }
+     static constexpr const char* ipmiQueueService =
+         "xyz.openbmc_project.Ipmi.Host";
+     static constexpr const char* ipmiQueuePath = "/xyz/openbmc_project/Ipmi";
+-- 
+2.34.1
+

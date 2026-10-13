@@ -6,7 +6,7 @@ import time
 import traceback
 
 import hexfile
-from modbus_monitor import RackmonMonitor
+from modbus_monitor import get_rackmon_interface, RackmonMonitor
 from modbus_update_helper import auto_int, bh, get_parser, print_perc, retry
 from pyrmd import (
     ModbusCRCError,
@@ -210,7 +210,7 @@ def update_psu(addr, filename, key):
 
 def main():
     args = parser.parse_args()
-    monitor = RackmonMonitor()
+    monitor = RackmonMonitor(get_rackmon_interface(args.addr))
     with monitor.suppress():
         try:
             update_psu(args.addr, args.file, args.key)

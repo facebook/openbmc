@@ -22,6 +22,7 @@ IMAGE_INSTALL += " \
     fbmc-snapshot \
     ssifd \
     rackmon \
+    psu-update \
     ftdicmd \
     libcpldupdate-dll-gpio \
     cpldupdate \

@@ -7,6 +7,7 @@ srcs += [
     'cpld.cpp',
     'hmc.cpp',
     'plat_fwupdate.cpp',
+    'plat_nic_ext.cpp',
 ]
 
 deps += [

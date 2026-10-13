@@ -1,4 +1,4 @@
-From c0700bb9b4c294e601f9cfca95c5e60cc0c23fa4 Mon Sep 17 00:00:00 2001
+From 10bc07b1c1240c8b6b0a4aeccaee2900066e7cec Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 3 Feb 2025 20:46:01 +0800
 Subject: [PATCH] ipmi: ssif_bmc: Add support for adjustable response timeout

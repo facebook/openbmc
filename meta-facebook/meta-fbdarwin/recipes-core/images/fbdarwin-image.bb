@@ -7,7 +7,7 @@ IMAGE_INSTALL += " \
   fio \
   prefdl-eeprom \
   serfmon-cache \
-  show-tech \
+  fbmc-snapshot \
   bmc-eeprom-checker \
   mdio-us-mac \
   "

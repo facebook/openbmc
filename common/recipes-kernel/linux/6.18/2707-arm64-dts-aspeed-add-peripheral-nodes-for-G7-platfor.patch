@@ -1,18 +1,18 @@
-From 81d5ddd77e1429837a3edfaff7cbac7224e16a30 Mon Sep 17 00:00:00 2001
+From daac25344eb0bb16ad2cca5ff2c9035d825dbed0 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Thu, 16 Apr 2026 09:49:37 +0800
 Subject: [PATCH] arm64: dts: aspeed: add peripheral nodes for G7 platforms
 
 Add device tree nodes for peripherals in AST2700, including SGPIOM,
-I2C, OTP, UDMA, FMC/SPI, MAC, ADC, LPC, and WDT.
+I2C, I3C, OTP, UDMA, FMC/SPI, MAC, ADC, LPC, and WDT.
 
 Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
 ---
- .../boot/dts/aspeed/aspeed-g7-common.dtsi     | 564 ++++++++++++++++++
- 1 file changed, 564 insertions(+)
+ .../boot/dts/aspeed/aspeed-g7-common.dtsi     | 772 ++++++++++++++++++
+ 1 file changed, 772 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
-index 2a6f80a255aa..2eb8b692d339 100644
+index 2a6f80a255aa..c6b261f2fd90 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 @@ -165,6 +165,22 @@ gpio1: gpio@14c0b000 {
@@ -38,7 +38,7 @@ index 2a6f80a255aa..2eb8b692d339 100644
  	intc1: interrupt-controller@14c18000 {
  		compatible = "aspeed,ast2700-intc1";
  		reg = <0 0x14c18000 0 0x400>;
-@@ -180,6 +196,22 @@ intc1: interrupt-controller@14c18000 {
+@@ -180,6 +196,246 @@ intc1: interrupt-controller@14c18000 {
  			<50 1 &bootmcu_intc 0>; /* only 1 pin to BootMCU */
  	};
  
@@ -47,6 +47,230 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		#address-cells = <1>;
 +		#size-cells = <1>;
 +		ranges = <0x0 0x0 0x14c0f000 0x1100>;
++	};
++
++	i3c0: i3c@14c20000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c20000 0x0 0x1000>;
++		interrupts-extended = <&intc1 96>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C0CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C0>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c0_default>;
++		status = "disabled";
++	};
++
++	i3c1: i3c@14c21000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c21000 0x0 0x1000>;
++		interrupts-extended = <&intc1 97>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C1CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C1>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c1_default>;
++		status = "disabled";
++	};
++
++	i3c2: i3c@14c22000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c22000 0x0 0x1000>;
++		interrupts-extended = <&intc1 98>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C2CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C2>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c2_default>;
++		status = "disabled";
++	};
++
++	i3c3: i3c@14c23000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c23000 0x0 0x1000>;
++		interrupts-extended = <&intc1 99>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C3CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C3>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c3_default>;
++		status = "disabled";
++	};
++
++	i3c4: i3c@14c24000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c24000 0x0 0x1000>;
++		interrupts-extended = <&intc1 100>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C4CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C4>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c4_default>;
++		status = "disabled";
++	};
++
++	i3c5: i3c@14c25000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c25000 0x0 0x1000>;
++		interrupts-extended = <&intc1 101>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C5CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C5>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c5_default>;
++		status = "disabled";
++	};
++
++	i3c6: i3c@14c26000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c26000 0x0 0x1000>;
++		interrupts-extended = <&intc1 102>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C6CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C6>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c6_default>;
++		status = "disabled";
++	};
++
++	i3c7: i3c@14c27000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c27000 0x0 0x1000>;
++		interrupts-extended = <&intc1 103>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C7CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C7>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c7_default>;
++		status = "disabled";
++	};
++
++	i3c8: i3c@14c28000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c28000 0x0 0x1000>;
++		interrupts-extended = <&intc1 104>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C8CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C8>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c8_default>;
++		status = "disabled";
++	};
++
++	i3c9: i3c@14c29000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c29000 0x0 0x1000>;
++		interrupts-extended = <&intc1 105>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C9CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C9>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c9_default>;
++		status = "disabled";
++	};
++
++	i3c10: i3c@14c2a000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2a000 0x0 0x1000>;
++		interrupts-extended = <&intc1 106>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C10CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C10>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c10_default>;
++		status = "disabled";
++	};
++
++	i3c11: i3c@14c2b000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2b000 0x0 0x1000>;
++		interrupts-extended = <&intc1 107>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C11CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C11>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c11_default>;
++		status = "disabled";
++	};
++
++	i3c12: i3c@14c2c000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2c000 0x0 0x1000>;
++		interrupts-extended = <&intc1 108>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C12CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C12>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c12_default>;
++		status = "disabled";
++	};
++
++	i3c13: i3c@14c2d000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2d000 0x0 0x1000>;
++		interrupts-extended = <&intc1 109>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C13CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C13>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c13_default>;
++		status = "disabled";
++	};
++
++	i3c14: i3c@14c2e000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2e000 0x0 0x1000>;
++		interrupts-extended = <&intc1 110>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C14CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C14>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c14_default>;
++		status = "disabled";
++	};
++
++	i3c15: i3c@14c2f000 {
++		compatible = "aspeed,ast2700-i3c-hci";
++		#address-cells = <3>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2f000 0x0 0x1000>;
++		interrupts-extended = <&intc1 111>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C15CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C15>, <&syscon1 SCU1_RESET_I3CDMA>;
++		reset-names = "core", "dma";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c15_default>;
++		status = "disabled";
 +	};
 +
 +	otp: otp@14c07000 {
@@ -61,7 +285,7 @@ index 2a6f80a255aa..2eb8b692d339 100644
  	uart0: serial@14c33000 {
  		compatible = "ns16550a";
  		reg = <0x0 0x14c33000 0x0 0x100>;
-@@ -333,6 +365,538 @@ uart14: serial@14c33d00 {
+@@ -333,6 +589,522 @@ uart14: serial@14c33d00 {
  		no-loopback-test;
  		status = "disabled";
  	};
@@ -334,7 +558,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x100 0xA0>, <0x1C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 64>;
@@ -351,7 +574,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x200 0xA0>, <0x2C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 65>;
@@ -368,7 +590,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x300 0xA0>, <0x3C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 66>;
@@ -385,7 +606,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x400 0xA0>, <0x4C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 67>;
@@ -402,7 +622,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x500 0xA0>, <0x5C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 68>;
@@ -419,7 +638,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x600 0xA0>, <0x6C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 69>;
@@ -436,7 +654,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x700 0xA0>, <0x7C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 70>;
@@ -453,7 +670,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x800 0xA0>, <0x8C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 71>;
@@ -470,7 +686,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x900 0xA0>, <0x9C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 72>;
@@ -487,7 +702,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0xA00 0xA0>, <0xAC0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 73>;
@@ -504,7 +718,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0xB00 0xA0>, <0xBC0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 74>;
@@ -521,7 +734,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0xC00 0xA0>, <0xCC0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 75>;
@@ -538,7 +750,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0xD00 0xA0>, <0xDC0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 76>;
@@ -555,7 +766,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0xE00 0xA0>, <0xEC0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 77>;
@@ -572,7 +782,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0xF00 0xA0>, <0xFC0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 78>;
@@ -589,7 +798,6 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +		reg = <0x1000 0xA0>, <0x10C0 0x40>;
 +		compatible = "aspeed,ast2700-i2c";
 +		aspeed,global-regs = <&i2c_global>;
-+		aspeed,enable-dma;
 +		clocks = <&syscon1 SCU1_CLK_APB>;
 +		resets = <&syscon1 SCU1_RESET_I2C>;
 +		interrupts-extended = <&intc1 79>;

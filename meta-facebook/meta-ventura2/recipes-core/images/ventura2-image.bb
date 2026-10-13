@@ -25,3 +25,6 @@ IMAGE_INSTALL:append = " event-emulator"
 
 # XR Config
 IMAGE_INSTALL:append = " xr21-gpio-mod"
+
+# i2c4 state monitor
+IMAGE_INSTALL:append = " i2c-hang-monitor"

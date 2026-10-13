@@ -163,6 +163,17 @@ static void print_hexstring(const json& j) {
   std::cout << std::endl;
 }
 
+static void print_interfaces(const json& j) {
+  for (const auto& [name, iface] : j.items()) {
+    std::cout << name << ": "
+              << (iface["status"].get<bool>() ? "monitoring" : "paused");
+    for (uint16_t addr : iface["devices"].get<std::vector<uint16_t>>()) {
+      std::cout << " 0x" << std::hex << addr << std::dec;
+    }
+    std::cout << '\n';
+  }
+}
+
 [[nodiscard]] static int print_text(const std::string& req_s, json& j) {
   std::string status;
   j.at("status").get_to(status);
@@ -175,6 +186,16 @@ static void print_hexstring(const json& j) {
       print_table(j["data"]);
     else if (req_s == "raw")
       print_hexstring(j["data"]);
+    else if (req_s == "getInterface")
+      print_interfaces(j["data"]);
+    else if (
+        (req_s == "pause" || req_s == "resume") && j.contains("data") &&
+        !j["data"].get<bool>()) {
+      // Per-interface pause/resume of an interface rackmond does not drive.
+      std::cerr << "FAILURE: rackmond does not manage this interface"
+                << std::endl;
+      return 1;
+    }
   } else {
     std::cerr << "FAILURE: " << status << std::endl;
     return 1;
@@ -317,9 +338,15 @@ do_raw_cmd(const std::string& req_s, int timeout, int resp_len, bool json_fmt) {
   return 0;
 }
 
-[[nodiscard]] static int do_cmd(const std::string& type, bool json_fmt) {
+[[nodiscard]] static int do_cmd(
+    const std::string& type,
+    bool json_fmt,
+    const std::string& devicePath = "") {
   json req;
   req["type"] = type;
+  if (!devicePath.empty()) {
+    req["device_path"] = devicePath;
+  }
   RackmonClient cli;
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
@@ -601,14 +628,31 @@ int main(int argc, const char** argv) {
       "Return values of provided register names only");
 
   // Pause command
-  app.add_subcommand("pause", "Pause monitoring")->callback([&]() {
-    return_code = do_cmd("pause", json_fmt);
-  });
+  std::string pausePath{};
+  CLI::App* pause = app.add_subcommand("pause", "Pause monitoring");
+  pause->add_option(
+      "--device-path",
+      pausePath,
+      "Pause only this interface instead of all of rackmond");
+  pause->callback(
+      [&]() { return_code = do_cmd("pause", json_fmt, pausePath); });
 
   // Resume command
-  app.add_subcommand("resume", "Resume monitoring")->callback([&]() {
-    return_code = do_cmd("resume", json_fmt);
-  });
+  std::string resumePath{};
+  CLI::App* resume = app.add_subcommand("resume", "Resume monitoring");
+  resume->add_option(
+      "--device-path",
+      resumePath,
+      "Resume only this interface instead of all of rackmond");
+  resume->callback(
+      [&]() { return_code = do_cmd("resume", json_fmt, resumePath); });
+
+  // Status command
+  app.add_subcommand(
+         "status",
+         "Return whether each interface is monitored or paused, and the "
+         "devices on it")
+      ->callback([&]() { return_code = do_cmd("getInterface", json_fmt); });
 
   // Rescan
   app.add_subcommand("rescan", "Force rescan all busses")->callback([&]() {

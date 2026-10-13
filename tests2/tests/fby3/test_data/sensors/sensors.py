@@ -116,6 +116,35 @@ SENSORS_BMC = [
 
 SENSOR_NIC = ["NIC_SENSOR_TEMP"]
 
+# SENSORS_BMC above describes the class 1 four-slot chassis. The class 2
+# single-host server has no Medusa board, no baseboard HSC and no PDB, so none
+# of the sensors below exist there. Verified 2026-10-01 against
+# sled2403 (class 1, 40 BMC sensors) and rtptest162 (class 2, 21).
+SENSORS_BMC_CLASS1_ONLY = [
+    "BMC_INLET_TEMP",
+    "BMC_SENSOR_P5V",
+    "BMC_SENSOR_HSC_TEMP",
+    "BMC_SENSOR_HSC_VIN",
+    "BMC_SENSOR_HSC_PIN",
+    "BMC_SENSOR_HSC_EIN",
+    "BMC_SENSOR_HSC_IOUT",
+    "BMC_SENSOR_HSC_PEAK_IOUT",
+    "BMC_SENSOR_HSC_PEAK_PIN",
+    "BMC_SENSOR_MEDUSA_VOUT",
+    "BMC_SENSOR_MEDUSA_VIN",
+    "BMC_SENSOR_MEDUSA_CURR",
+    "BMC_SENSOR_MEDUSA_PWR",
+    "BMC_SENSOR_MEDUSA_VDELTA",
+    "BMC_SENSOR_PDB_DL_VDELTA",
+    "BMC_SENSOR_PDB_BB_VDELTA",
+    "BMC_SENSOR_CURR_LEAKAGE",
+    "BMC_SENSOR_FAN_IOUT",
+    "BMC_SENSOR_FAN_PWR",
+]
+
+# Derived rather than hand-maintained so the two lists cannot drift apart.
+SENSORS_BMC_CLASS2 = [s for s in SENSORS_BMC if s not in SENSORS_BMC_CLASS1_ONLY]
+
 SENSORS = {
     "slot1": SENSORS_SLOT,
     "slot2": SENSORS_SLOT,
@@ -123,4 +152,11 @@ SENSORS = {
     "slot4": SENSORS_SLOT,
     "bmc": SENSORS_BMC,
     "nic": SENSOR_NIC,
+}
+
+# Per board class. Only the bmc FRU differs; absent slots are already handled
+# by check_fru_availability().
+SENSORS_BY_CLASS = {
+    1: SENSORS,
+    2: dict(SENSORS, bmc=SENSORS_BMC_CLASS2),
 }

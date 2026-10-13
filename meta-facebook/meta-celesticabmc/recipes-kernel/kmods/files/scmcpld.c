@@ -19,7 +19,8 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		" 0x7 : Tahansb800bc\n"
 		" 0x8 : Icecube\n"
 		" 0x9 : Icetea\n"
-		" 0xD : Ladakh800bcls",
+		" 0xD : Ladakh800bcls\n"
+		" 0xF : M4061CLSC",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x0,
@@ -62,6 +63,16 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		I2C_DEV_ATTR_STORE_DEFAULT,
 		0xf,
 		5,
+		1,
+	},
+	{
+		"bios_post_cmplt_l",
+		"0: Boot to OS Stage\n"
+		"1: POST Code Stage",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x12,
+		6,
 		1,
 	},
 	{

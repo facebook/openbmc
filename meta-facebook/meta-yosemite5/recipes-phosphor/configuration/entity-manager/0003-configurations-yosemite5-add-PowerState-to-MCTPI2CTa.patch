@@ -1,4 +1,4 @@
-From 9fd640558481d2e30434f834c5204af43b5c5bd7 Mon Sep 17 00:00:00 2001
+From 0a89bbeb2b1be384bd3edb25f67bec55e98793b1 Mon Sep 17 00:00:00 2001
 From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
 Date: Thu, 25 Jun 2026 03:03:56 +0000
 Subject: [PATCH] configurations: yosemite5: add PowerState to MCTPI2CTarget
@@ -24,10 +24,10 @@ Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
  8 files changed, 8 insertions(+)
 
 diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
-index 7ce945a..ee06c87 100644
+index c4a95b9..085e7b8 100644
 --- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
 +++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
-@@ -266,6 +266,7 @@
+@@ -287,6 +287,7 @@
              "Address": "0x32",
              "Bus": "15",
              "Name": "CXL",
@@ -36,10 +36,10 @@ index 7ce945a..ee06c87 100644
          },
          {
 diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
-index b5d69cb..bfc6d17 100644
+index 163d7d4..7a55dee 100644
 --- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
 +++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
-@@ -266,6 +266,7 @@
+@@ -287,6 +287,7 @@
              "Address": "0x32",
              "Bus": "12",
              "Name": "CXL",
@@ -48,10 +48,10 @@ index b5d69cb..bfc6d17 100644
          },
          {
 diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
-index ae83302..c78537c 100644
+index 8b8bbbf..51c99d2 100644
 --- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
 +++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
-@@ -266,6 +266,7 @@
+@@ -287,6 +287,7 @@
              "Address": "0x32",
              "Bus": "15",
              "Name": "CXL",
@@ -60,10 +60,10 @@ index ae83302..c78537c 100644
          },
          {
 diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
-index f0289dc..fbc2a83 100644
+index 76c6d13..1011ade 100644
 --- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
 +++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
-@@ -266,6 +266,7 @@
+@@ -287,6 +287,7 @@
              "Address": "0x32",
              "Bus": "12",
              "Name": "CXL",
@@ -72,10 +72,10 @@ index f0289dc..fbc2a83 100644
          },
          {
 diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
-index ec2148e..c6c9587 100644
+index 12efe40..5a04873 100644
 --- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
 +++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
-@@ -246,6 +246,7 @@
+@@ -265,6 +265,7 @@
              "Address": "0x32",
              "Bus": "15",
              "Name": "CXL",
@@ -84,10 +84,10 @@ index ec2148e..c6c9587 100644
          },
          {
 diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
-index 77b0a8c..90fa98f 100644
+index e65bccc..7b22231 100644
 --- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
 +++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
-@@ -246,6 +246,7 @@
+@@ -265,6 +265,7 @@
              "Address": "0x32",
              "Bus": "12",
              "Name": "CXL",
@@ -96,10 +96,10 @@ index 77b0a8c..90fa98f 100644
          },
          {
 diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
-index 22e72f0..01a3608 100644
+index 27cdfd6..e55f089 100644
 --- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
 +++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
-@@ -246,6 +246,7 @@
+@@ -265,6 +265,7 @@
              "Address": "0x32",
              "Bus": "15",
              "Name": "CXL",
@@ -108,10 +108,10 @@ index 22e72f0..01a3608 100644
          },
          {
 diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
-index bb8e684..c59d2c3 100644
+index 1766509..1701e17 100644
 --- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
 +++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
-@@ -246,6 +246,7 @@
+@@ -265,6 +265,7 @@
              "Address": "0x32",
              "Bus": "12",
              "Name": "CXL",

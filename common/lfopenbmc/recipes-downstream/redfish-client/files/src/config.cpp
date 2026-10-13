@@ -61,6 +61,17 @@ void from_json(const nlohmann::json& json, LogServiceConfig& config)
     }
 }
 
+void from_json(const nlohmann::json& json, SensorMapper& mapper)
+{
+    json.at("fromUrl").get_to(mapper.fromUrl);
+    json.at("toNamespace").get_to(mapper.toNamespace);
+    json.at("toId").get_to(mapper.toId);
+    if (auto it = json.find("hardShutdownHigh"); it != json.end())
+    {
+        mapper.hardShutdownHigh = it->get<double>();
+    }
+}
+
 void from_json(const nlohmann::json& json, SensorConfig& config)
 {
     json.at("associationPath").get_to(config.associationPath);

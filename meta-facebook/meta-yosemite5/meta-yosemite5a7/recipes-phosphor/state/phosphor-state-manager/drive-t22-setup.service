@@ -1,0 +1,12 @@
+[Unit]
+Description=Add the drive power services to the host power targets
+Before=phosphor-discover-system-state@0.service
+Before=obmc-host-startmin@0.target obmc-host-stop@0.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/phosphor-state-manager/drive-t22-setup
+
+[Install]
+WantedBy=multi-user.target

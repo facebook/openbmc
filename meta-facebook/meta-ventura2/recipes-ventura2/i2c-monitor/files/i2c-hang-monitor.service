@@ -1,0 +1,14 @@
+[Unit]
+Description=AST2600 I2C hang monitor and MCTP/PLDM recovery
+After=mctpd.service pldmd.service
+Wants=mctpd.service
+
+[Service]
+Type=simple
+ExecStartPre=/bin/sleep 30
+ExecStart=/usr/libexec/i2c-hang-monitor
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

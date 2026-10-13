@@ -1,0 +1,67 @@
+From 483308b82612f9a0be66735df9803664767baff6 Mon Sep 17 00:00:00 2001
+From: Rex Fu <Rex.Fu@amd.com>
+Date: Wed, 23 Sep 2026 16:39:45 +0800
+Subject: [PATCH] arm: dts: anacapa: Align Cable and SSD SGPIO pin names
+
+Summary:
+- Align Cable present and SSD power fault SGPIO pin names with upstream
+  Anacapa DTS.
+
+LORE: https://lore.kernel.org/all/20260602-anacapa-devlop-phase-devicetree-v3-4-7c93c5df8d9b@gmail.com/
+
+Motivation:
+- To keep local Anacapa DTS naming consistent with upstream DTS.
+
+Test Plan:
+- Build pass
+
+Signed-off-by: Rex Fu <Rex.Fu@amd.com>
+---
+ .../aspeed/aspeed-bmc-facebook-anacapa-evt2.dts  | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 9ebd0bddd..601600cad 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -1196,9 +1196,9 @@ &sgpiom0 {
+ 	"L_PRSNT_EDSFF1_N", "",
+ 	"R_PRSNT_EDSFF2_N", "",
+ 	"R_PRSNT_EDSFF3_N", "",
+-	"HPM_EDSFF_PG", "",
+-	"", "",
++	"EDSFF_BOOT_FLT", "",
+ 	"", "",
++	"P12V_PWR_CABLE_PRSNT_L_R", "",
+ 	"PRSNT_NFC_BOARD_R", "",
+ 
+ 	/* H0-H7 line 112-127 */
+@@ -1208,8 +1208,8 @@ &sgpiom0 {
+ 	"R_BNIC2_FLT", "",
+ 	"R_BNIC3_FLT", "",
+ 	"R_RTM_SW_FLT", "",
+-	"", "",
+-	"", "",
++	"RBB_Cable_Present", "",
++	"LBB_Cable_Present", "",
+ 
+ 	/* I0-I7 line 128-143 */
+ 	"EAM0_BRD_PRSNT_R_L", "",
+@@ -1242,10 +1242,10 @@ &sgpiom0 {
+ 	"PDB_ALERT_R_N", "",
+ 
+ 	/* L0-L7 line 176-191 */
+-	"L_EDSFF0_PG", "",
+-	"L_EDSFF1_PG", "",
+-	"R_EDSFF2_PG", "",
+-	"R_EDSFF3_PG", "",
++	"L_EDSFF0_FLT", "",
++	"L_EDSFF1_FLT", "",
++	"R_EDSFF2_FLT", "",
++	"R_EDSFF3_FLT", "",
+ 	"CPU0_CORETYPE0", "",
+ 	"CPU0_CORETYPE1", "",
+ 	"CPU0_CORETYPE2", "",
+-- 
+2.34.1
+

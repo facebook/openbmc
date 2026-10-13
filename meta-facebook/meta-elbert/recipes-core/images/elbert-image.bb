@@ -18,6 +18,7 @@ IMAGE_INSTALL += " \
   ast-mdio \
   cpldupdate \
   libcpldupdate-dll-ioctl \
+  fbmc-snapshot \
   fio \
   flashrom \
   fscd \

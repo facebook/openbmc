@@ -67,10 +67,26 @@ class TestModbusAddressing(unittest.TestCase):
 
 class TestModbusMonitors(unittest.TestCase):
     def test_rackmon_is_the_default_monitor(self):
-        dev = Modbus(0x28)
+        with patch(
+            "modbus_impl_pyrmd.get_rackmon_interface", return_value="/dev/ttyUSB0"
+        ):
+            dev = Modbus(0x28)
         self.assertIsInstance(dev.monitor, MonitorChain)
         self.assertEqual(len(dev.monitor.monitors), 1)
         self.assertIsInstance(dev.monitor.monitors[0], RackmonMonitor)
+
+    def test_only_the_port_the_device_is_on_is_paused(self):
+        with patch(
+            "modbus_impl_pyrmd.get_rackmon_interface", return_value="/dev/ttyUSB0"
+        ) as get_interface:
+            dev = Modbus(0x0132)
+        get_interface.assert_called_once_with(0x0132)
+        self.assertEqual(dev.monitor.monitors[0].devpath, "/dev/ttyUSB0")
+
+    def test_a_device_rackmon_does_not_know_pauses_all_of_it(self):
+        with patch("modbus_impl_pyrmd.get_rackmon_interface", return_value=None):
+            dev = Modbus(0x28)
+        self.assertIsNone(dev.monitor.monitors[0].devpath)
 
     def test_a_device_which_is_not_behind_a_pmm(self):
         # 0x28 is outside every PMM's range.

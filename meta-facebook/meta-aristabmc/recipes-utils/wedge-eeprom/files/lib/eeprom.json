@@ -6,11 +6,11 @@
             "sysfs_path": "/sys/bus/i2c/devices/14-0050/eeprom"
         },
         {
-            "name": "cpu",
+            "name": "scm",
             "sysfs_path": "/sys/bus/i2c/devices/9-0050/eeprom"
         },
         {
-            "name": "switchcard",
+            "name": "smb",
             "sysfs_path": "/sys/bus/i2c/devices/9-0052/eeprom"
         },
         {

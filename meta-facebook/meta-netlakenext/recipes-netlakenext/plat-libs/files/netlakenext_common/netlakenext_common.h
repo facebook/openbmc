@@ -67,6 +67,9 @@ extern "C" {
 #define CPLD_FW_VER_REG 0x28002000
 #define CPLD_RETRY_TIME 3
 #define CPLD_REG_BYTE 1
+#define CPLD_VR_OCP_LATCH_REG 0x0D
+#define CPLD_VR_OCP_LATCH_PVDDCR_PVDDCRSOC_BIT (0x10)
+#define CPLD_VR_OCP_LATCH_PVDD_MISC_BIT (0x08)
 
 //In Netlake codebase, all definition used 0 base bus, 8 bit address
 #define VR_BUS  0
@@ -236,6 +239,7 @@ int netlakenext_common_get_vr_sku(uint8_t* sku);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakenext_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);
 void netlakenext_vr_dump(void);
+void netlakenext_vr_dump_single(uint8_t addr);
 
 #ifdef __cplusplus
 } // extern "C"

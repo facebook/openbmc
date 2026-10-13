@@ -1,4 +1,4 @@
-From 17b1b46c6c9ae5a0e8e3b8229ba0825beb1ae029 Mon Sep 17 00:00:00 2001
+From c48026a58fd0450b5300dba1f850f18a928c73de Mon Sep 17 00:00:00 2001
 From: Fred Chen <Fred.Chen@quantatw.com>
 Date: Tue, 21 Jul 2026 15:20:54 +0800
 Subject: [PATCH] configurations: santabarbara: add MB ADI VR sensors
@@ -26,12 +26,12 @@ Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
  2 files changed, 287 insertions(+)
 
 diff --git a/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json b/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
-index a039f94..0340d48 100644
+index 43227c5..e436b6f 100644
 --- a/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
 +++ b/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
-@@ -875,6 +875,281 @@
-             "Name": "Santabarbara_MB_CPLD",
-             "Type": "LatticeLFMXO5_25Firmware"
+@@ -885,6 +885,114 @@
+             "Name": "Santabarbara_MB_VR_pvddcr_soc_p0",
+             "Type": "MAX209XXFirmware"
          },
 +        {
 +            "Address": "0x3d",
@@ -141,6 +141,13 @@ index a039f94..0340d48 100644
 +            "vout1_Name": "MB_VR_CPU_PVDDCR_SOC_VOLT_V",
 +            "vout2_Name": "MB_VR_CPU_PVDDIO_VOLT_V"
 +        },
+         {
+             "Address": "0x3e",
+             "Bus": 18,
+@@ -895,6 +1003,65 @@
+             "Name": "Santabarbara_MB_VR_pvddcr_cpu1_p0",
+             "Type": "MAX209XXFirmware"
+         },
 +        {
 +            "Address": "0x3e",
 +            "Bus": 18,
@@ -200,6 +207,13 @@ index a039f94..0340d48 100644
 +            "temp1_Name": "MB_VR_CPU_PVDDCR_CPU1_TEMP_C",
 +            "vout1_Name": "MB_VR_CPU_PVDDCR_CPU1_VOLT_V"
 +        },
+         {
+             "Address": "0x3f",
+             "Bus": 18,
+@@ -905,6 +1072,114 @@
+             "Name": "Santabarbara_MB_VR_pvddcr_cpu0_p0",
+             "Type": "MAX209XXFirmware"
+         },
 +        {
 +            "Address": "0x3f",
 +            "Bus": 18,
@@ -311,7 +325,7 @@ index a039f94..0340d48 100644
          {
              "Address": "0x46",
              "Bus": "18",
-@@ -1080,6 +1355,11 @@
+@@ -1110,6 +1385,11 @@
              "ILimitMax": 100,
              "ILimitMin": 0,
              "Inputs": [
@@ -323,7 +337,7 @@ index a039f94..0340d48 100644
                  "MB_VR_PVDD18_S5_TEMP_C"
              ],
              "Name": "PID_MB_VR",
-@@ -1630,6 +1910,11 @@
+@@ -1660,6 +1940,11 @@
          {
              "Class": "temp",
              "Inputs": [
@@ -336,7 +350,7 @@ index a039f94..0340d48 100644
              ],
              "Name": "Stepwise_MB_VR",
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index a2dd53d..cad0256 100644
+index b93d4f2..3a601cd 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1007,6 +1007,8 @@

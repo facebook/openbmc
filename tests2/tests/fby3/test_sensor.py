@@ -20,8 +20,9 @@
 import unittest
 
 from common.base_sensor_test import SensorUtilTest
-from tests.fby3.test_data.sensors.sensors import SENSORS
-from utils.test_utils import qemu_check, check_fru_availability
+from tests.fby3.board_class import select_by_class
+from tests.fby3.test_data.sensors.sensors import SENSORS, SENSORS_BY_CLASS
+from utils.test_utils import check_fru_availability, qemu_check
 
 
 class Slot1SensorTest(SensorUtilTest, unittest.TestCase):
@@ -30,12 +31,17 @@ class Slot1SensorTest(SensorUtilTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util {}".format(self.FRU_NAME)]
 
+    def expected_sensors(self):
+        # A class 2 single-host server has no Medusa board, HSC or PDB, so the
+        # bmc FRU exposes a smaller set there.
+        return select_by_class(SENSORS_BY_CLASS, SENSORS)[self.FRU_NAME]
+
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_sensor_keys(self):
         if not check_fru_availability(self.FRU_NAME):
             self.skipTest("skip test due to {} not available".format(self.FRU_NAME))
         result = self.get_parsed_result()
-        for key in SENSORS[self.FRU_NAME]:
+        for key in self.expected_sensors():
             with self.subTest(sensor=key):
                 self.assertIn(key, result.keys(), "Missing sensor {}".format(key))
 

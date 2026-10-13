@@ -1,4 +1,4 @@
-From 368a27bfb7a092bac202c461b7fc3f062d19b665 Mon Sep 17 00:00:00 2001
+From 0b2d8c6da9f93748cf97ea72fde4bb953739d404 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 29 May 2026 12:35:05 +0000
 Subject: [PATCH] State.Drive: Add NotAllowed error to RequestedDriveTransition

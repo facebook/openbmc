@@ -1,0 +1,165 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot <eblot@meta.com>
+Date: Thu, 11 Sep 2026 00:00:00 -0700
+Subject: [PATCH] bootp: add static DHCP leases
+
+Addresses are handed out as vdhcp_startaddr + slot, taking the first free
+slot, so which client gets which address depends only on the order they ask
+in. Let the caller bind a MAC to an address: that MAC always gets its slot,
+and no one else is ever given it.
+
+This is the static-lease feature of an ordinary DHCP server, and costs
+nothing when no lease is configured.
+
+Exposed as a function rather than a SlirpConfig field: upstream already
+defines config version 6 for its own use, so claiming a version here would
+make slirp read fields a version-6 caller never set.
+
+Applies to the slirp subproject, not to QEMU's own tree.
+
+Signed-off-by: Emmanuel Blot <eblot@meta.com>
+---
+diff --git a/src/bootp.c b/src/bootp.c
+index 147955f..50f80e6 100644
+--- a/src/bootp.c
++++ b/src/bootp.c
+@@ -40,14 +40,69 @@ static const uint8_t rfc1533_cookie[] = { RFC1533_COOKIE };
+ 
+ #define DPRINTF(...) DEBUG_RAW_CALL(__VA_ARGS__)
+ 
++/* The slot a MAC holds a static lease on, or -1 if it holds none. */
++static int static_lease_slot(Slirp *slirp, const uint8_t *macaddr)
++{
++    int i;
++
++    for (i = 0; i < NB_BOOTP_CLIENTS; i++) {
++        BOOTPClient *bc = &slirp->bootp_clients[i];
++
++        if (bc->reserved && !memcmp(macaddr, bc->macaddr, 6))
++            return i;
++    }
++    return -1;
++}
++
++int slirp_add_static_lease(Slirp *slirp, const uint8_t macaddr[6],
++                           struct in_addr addr)
++{
++    uint32_t slot = ntohl(addr.s_addr) - ntohl(slirp->vdhcp_startaddr.s_addr);
++    BOOTPClient *bc;
++    int i;
++
++    if (slot >= NB_BOOTP_CLIENTS) {
++        errno = EINVAL;
++        return -1;
++    }
++    if (static_lease_slot(slirp, macaddr) >= 0) {
++        errno = EEXIST;
++        return -1;
++    }
++    bc = &slirp->bootp_clients[slot];
++    if (bc->reserved ||
++        (bc->allocated && memcmp(macaddr, bc->macaddr, 6))) {
++        errno = EADDRINUSE;
++        return -1;
++    }
++    for (i = 0; i < NB_BOOTP_CLIENTS; i++) {
++        BOOTPClient *held = &slirp->bootp_clients[i];
++
++        if ((uint32_t)i != slot && held->allocated &&
++            !memcmp(macaddr, held->macaddr, 6)) {
++            errno = EBUSY;
++            return -1;
++        }
++    }
++    bc->reserved = true;
++    memcpy(bc->macaddr, macaddr, 6);
++    return 0;
++}
++
+ static BOOTPClient *get_new_addr(Slirp *slirp, struct in_addr *paddr,
+                                  const uint8_t *macaddr)
+ {
+     BOOTPClient *bc;
+     int i;
+ 
++    i = static_lease_slot(slirp, macaddr);
++    if (i >= 0)
++        goto found;
++
+     for (i = 0; i < NB_BOOTP_CLIENTS; i++) {
+         bc = &slirp->bootp_clients[i];
++        if (bc->reserved)
++            continue;
+         if (!bc->allocated || !memcmp(macaddr, bc->macaddr, 6))
+             goto found;
+     }
+@@ -65,9 +120,16 @@ static BOOTPClient *request_addr(Slirp *slirp, const struct in_addr *paddr,
+     uint32_t req_addr = ntohl(paddr->s_addr);
+     uint32_t dhcp_addr = ntohl(slirp->vdhcp_startaddr.s_addr);
+     BOOTPClient *bc;
++    int leased;
+ 
+     if (req_addr >= dhcp_addr && req_addr < (dhcp_addr + NB_BOOTP_CLIENTS)) {
+         bc = &slirp->bootp_clients[req_addr - dhcp_addr];
++        /* Leases bind both ways; refusing NAKs the client back to DISCOVER. */
++        leased = static_lease_slot(slirp, macaddr);
++        if (leased >= 0 && (uint32_t)leased != req_addr - dhcp_addr)
++            return NULL;
++        if (bc->reserved && memcmp(macaddr, bc->macaddr, 6))
++            return NULL;
+         if (!bc->allocated || !memcmp(macaddr, bc->macaddr, 6)) {
+             bc->allocated = 1;
+             return bc;
+diff --git a/src/bootp.h b/src/bootp.h
+index cf7797f..17eaad4 100644
+--- a/src/bootp.h
++++ b/src/bootp.h
+@@ -120,6 +120,7 @@ struct bootp_t {
+ 
+ typedef struct {
+     uint16_t allocated;
++    bool reserved;
+     uint8_t macaddr[6];
+ } BOOTPClient;
+ 
+diff --git a/src/libslirp.h b/src/libslirp.h
+index 9acdcee..e02c12f 100644
+--- a/src/libslirp.h
++++ b/src/libslirp.h
+@@ -213,6 +213,20 @@ void slirp_input(Slirp *slirp, const uint8_t *pkt, int pkt_len);
+ SLIRP_EXPORT
+ void slirp_handle_timer(Slirp *slirp, SlirpTimerId id, void *cb_opaque);
+ 
++/* Bind a MAC to a DHCP address. Call during setup.
++ *
++ * Returns 0, or -1 with errno:
++ *   EINVAL      address outside the DHCP pool
++ *   EADDRINUSE  address already leased, or in use by another client
++ *   EEXIST      this MAC already holds a lease
++ *   EBUSY       this MAC already holds an address
++ *
++ * Test SLIRP_HAVE_STATIC_LEASE if the libslirp may predate this. */
++#define SLIRP_HAVE_STATIC_LEASE 1
++SLIRP_EXPORT
++int slirp_add_static_lease(Slirp *slirp, const uint8_t macaddr[6],
++                           struct in_addr addr);
++
+ /* These set up / remove port forwarding between a host port in the real world
+  * and the guest network. */
+ SLIRP_EXPORT
+diff --git a/src/libslirp.map b/src/libslirp.map
+index 3921f8a..a938977 100644
+--- a/src/libslirp.map
++++ b/src/libslirp.map
+@@ -38,3 +38,8 @@ SLIRP_4.5 {
+ SLIRP_4.7 {
+     slirp_handle_timer;
+ } SLIRP_4.5;
++
++/* Local extension, not an upstream release. */
++SLIRP_META_1 {
++    slirp_add_static_lease;
++} SLIRP_4.7;
+-- 
+2.53.0-Meta
+

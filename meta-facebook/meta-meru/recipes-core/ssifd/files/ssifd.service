@@ -1,0 +1,15 @@
+# Copyright (c) 2026 Arista Networks, Inc.
+
+[Unit]
+Description=SSIF bridge to the OpenBMC IPMI daemon
+Wants=ipmid.service
+After=ipmid.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ssifd
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

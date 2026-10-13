@@ -37,7 +37,7 @@
 
 # Netlake 2.0 (SSIF) configuration
 SSIF_I2C_BUS="${SSIF_I2C_BUS:-5}"
-SSIF_I2C_ADDR="${SSIF_I2C_ADDR:-0x10}"
+SSIF_I2C_ADDR="${SSIF_I2C_ADDR:-0x30}"
 
 # Netlake 1.0 (IPMB / slave-mqueue) configuration
 # Note: In 0x1010, the upper byte 0x1000 is the slave-mqueue flag,

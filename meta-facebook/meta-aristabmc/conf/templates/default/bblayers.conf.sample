@@ -31,7 +31,11 @@ BBLAYERS ?= " \
   ##OEROOT##/../.. \
   ##OEROOT##/meta-security \
   ##OEROOT##/meta-security/meta-tpm \
+  ##OEROOT##/meta-arm/meta-arm \
+  ##OEROOT##/meta-arm/meta-arm-bsp \
+  ##OEROOT##/meta-arm/meta-arm-toolchain \
   ##OEROOT##/../../meta-aspeed \
+  ##OEROOT##/../../meta-zephyr/meta-zephyr-core \
   ##OEROOT##/../../meta-facebook \
   ##OEROOT##/../../meta-facebook/meta-aristabmc \
   ##OEROOT##/../../meta-facebook/meta-fboss-lite \

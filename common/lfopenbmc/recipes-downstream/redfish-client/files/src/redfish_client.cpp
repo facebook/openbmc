@@ -32,39 +32,43 @@ RedfishClient::RedfishClient(sdbusplus::async::context& ctx, const std::string& 
     ctx(ctx), configDir(configDir), persistDir(persistDir)
 {}
 
-RedfishClient::RedfishClient(sdbusplus::async::context& ctx, const Config& config,
-              const std::string& persistDir) :
-    ctx(ctx), config(config), persistDir(persistDir)
+RedfishClient::RedfishClient(sdbusplus::async::context& ctx,
+                             const std::vector<Config>& configs,
+                             const std::string& persistDir) :
+    ctx(ctx), configs(configs), persistDir(persistDir)
 {}
 
 auto RedfishClient::run() -> sdbusplus::async::task<>
 {
     info("Running RedfishClient");
-    if (!config.has_value())
+    if (configs.empty())
     {
         co_await loadConfig();
     }
 
     registerLogMappers();
 
-    if (config->sensorConfig.has_value())
+    for (const auto& config : configs)
     {
-        const auto& sensorConfig = config->sensorConfig.value();
-        info("Configured Sensor objects: {SIZE}", "SIZE",
-             sensorConfig.mappers.size());
-        ctx.spawn(SensorHandler::run(ctx, config->host, sensorConfig));
-    }
+        if (config.sensorConfig.has_value())
+        {
+            const auto& sensorConfig = config.sensorConfig.value();
+            info("Configured Sensor objects: {SIZE}", "SIZE",
+                 sensorConfig.mappers.size());
+            ctx.spawn(SensorHandler::run(ctx, config.host, sensorConfig));
+        }
 
-    if (config->logServiceConfig.has_value())
-    {
-        ctx.spawn(LogServiceHandler::run(
-            ctx, config->host, config->logServiceConfig.value(), persistDir));
-    }
+        if (config.logServiceConfig.has_value())
+        {
+            ctx.spawn(LogServiceHandler::run(
+                ctx, config.host, config.logServiceConfig.value(), persistDir));
+        }
 
-    if (config->updateServiceConfig.has_value())
-    {
-        ctx.spawn(UpdateServiceHandler::run(
-                ctx, config->host, config->updateServiceConfig.value()));
+        if (config.updateServiceConfig.has_value())
+        {
+            ctx.spawn(UpdateServiceHandler::run(
+                ctx, config.host, config.updateServiceConfig.value()));
+        }
     }
     co_return;
 }
@@ -74,27 +78,32 @@ RedfishClient::~RedfishClient() = default;
 auto RedfishClient::loadConfig() -> sdbusplus::async::task<>
 {
     auto compatiblePlatformName = co_await getCompatiblePlatformNames();
-    config = loadCompatibleConfig(configDir, compatiblePlatformName);
+    configs = loadCompatibleConfigs(configDir, compatiblePlatformName);
     co_return;
 }
 
 void RedfishClient::registerLogMappers()
 {
     auto& registry = LogEntryMapperRegistry::instance();
-    if (config->components.has_value()) {
-        for (const auto& componentName : config->components.value()) {
+    if (!configs.empty() && configs.front().components)
+    {
+        const auto& config = configs.front();
+        for (const auto& componentName : config.components.value())
+        {
             info("Registering component: {COMPONENT}", "COMPONENT", componentName);
-            component_config::registerComponent(componentName, *config, ctx, config->host);
+            component_config::registerComponent(componentName, config, ctx,
+                                                config.host);
         }
     }
     registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
     info("Mapper registration complete");
 }
 
-Config RedfishClient::loadCompatibleConfig(
+std::vector<Config> RedfishClient::loadCompatibleConfigs(
     const std::string& configDir,
     const std::vector<std::string>& compatiblePlatformNames)
 {
+    std::vector<Config> matchedConfigs;
     namespace fs = std::filesystem;
     for (const auto& entry : fs::directory_iterator(configDir))
     {
@@ -115,13 +124,19 @@ Config RedfishClient::loadCompatibleConfig(
             {
                 info("Matched config file: {FILE}", "FILE",
                      entry.path().string());
-                return config;
+                matchedConfigs.push_back(std::move(config));
+                break;
             }
         }
     }
-    error("No matching config file found for platform list: {PLATFORM}",
-          "PLATFORM", std::format("{}", compatiblePlatformNames));
-    throw std::runtime_error("No matching config file found");
+    if (matchedConfigs.empty())
+    {
+        error("No matching config file found for platform list: {PLATFORM}",
+              "PLATFORM", std::format("{}", compatiblePlatformNames));
+        throw std::runtime_error("No matching config file found");
+    }
+
+    return matchedConfigs;
 }
 
 auto RedfishClient::subtree_for_target_interface(

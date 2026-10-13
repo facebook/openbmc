@@ -2,6 +2,7 @@
 #include <redfish-binding/Sensor_Sensor.hpp>
 #include <redfish_client/core/sensor.hpp>
 #include <xyz/openbmc_project/Association/Definitions/client.hpp>
+#include <xyz/openbmc_project/Sensor/Threshold/HardShutdown/client.hpp>
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
 
 #include <cmath>
@@ -58,7 +59,8 @@ class SensorTest : public ::testing::Test
         const std::string& ns, const std::string& id,
         const std::string& associationPath, double reading,
         const std::string& unit, std::optional<double> minValue = std::nullopt,
-        std::optional<double> maxValue = std::nullopt)
+        std::optional<double> maxValue = std::nullopt,
+        std::optional<double> hardShutdownHigh = std::nullopt)
     {
         nlohmann::json json;
         json["Reading"] = reading;
@@ -72,7 +74,8 @@ class SensorTest : public ::testing::Test
             json["ReadingRangeMax"] = maxValue.value();
         }
         auto parsed = redfish_binding::Sensor::parseSensor(json.dump());
-        return Sensor::create(ctx, ns, id, associationPath, parsed);
+        return Sensor::create(ctx, ns, id, associationPath, hardShutdownHigh,
+                              parsed);
     }
 
     auto getSensorClient()
@@ -87,6 +90,13 @@ class SensorTest : public ::testing::Test
         using AssociationClient =
             sdbusplus::client::xyz::openbmc_project::association::Definitions<>;
         return AssociationClient(ctx).service(kBusName).path(kMetricPath);
+    }
+
+    auto getHardShutdownClient()
+    {
+        using HardShutdownClient = sdbusplus::client::xyz::openbmc_project::
+            sensor::threshold::HardShutdown<>;
+        return HardShutdownClient(ctx).service(kBusName).path(kMetricPath);
     }
 
     // Tests that deal with lambdas can silently pass if the code that triggers
@@ -243,6 +253,31 @@ TEST_F(SensorTest, ValueUpdateKeepsUnitAndRange)
     }());
 }
 
+TEST_F(SensorTest, HardShutdownAlarmTracksPolledValue)
+{
+    ctx.spawn([this]() -> sdbusplus::async::task<> {
+        auto sensorServer = createSensor(kSensorNamespace, kSensorId,
+                                         kAssociationPath, 119.0, "Cel",
+                                         std::nullopt, std::nullopt, 120.0);
+        EXPECT_NE(nullptr, sensorServer);
+        auto hardShutdownClient = getHardShutdownClient();
+
+        EXPECT_EQ(120.0, co_await hardShutdownClient.hard_shutdown_high());
+        EXPECT_FALSE(
+            co_await hardShutdownClient.hard_shutdown_alarm_high());
+
+        co_await sensorServer->updateValue(121.0);
+        EXPECT_TRUE(co_await hardShutdownClient.hard_shutdown_alarm_high());
+
+        co_await sensorServer->updateValue(119.0);
+        EXPECT_FALSE(
+            co_await hardShutdownClient.hard_shutdown_alarm_high());
+
+        testBodyExecuted = true;
+        co_return;
+    }());
+}
+
 TEST_F(SensorTest, MaxMinOmitted)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
@@ -289,7 +324,7 @@ TEST_F(SensorTest, MissingUnitsIsNotCreated)
         json["Reading"] = 5.0;
         auto parsed = redfish_binding::Sensor::parseSensor(json.dump());
         auto sensorServer = Sensor::create(ctx, kSensorNamespace, kSensorId,
-                                           kAssociationPath, parsed);
+                                           kAssociationPath, std::nullopt, parsed);
         EXPECT_EQ(nullptr, sensorServer);
 
         // Nothing is published on the bus.
@@ -310,7 +345,7 @@ TEST_F(SensorTest, MissingReadingBecomesNan)
         json["ReadingUnits"] = "Cel";
         auto parsed = redfish_binding::Sensor::parseSensor(json.dump());
         auto sensorServer = Sensor::create(ctx, kSensorNamespace, kSensorId,
-                                           kAssociationPath, parsed);
+                                           kAssociationPath, std::nullopt, parsed);
         EXPECT_NE(nullptr, sensorServer);
 
         auto sensorClient = getSensorClient();

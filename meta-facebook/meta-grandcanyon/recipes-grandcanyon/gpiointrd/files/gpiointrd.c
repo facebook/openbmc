@@ -100,7 +100,8 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
         
         if ((press_time >= SHORT_PRESS_BUTTON_TIME) && (press_time < STUCK_BUTTON_TIME)) {
           syslog(LOG_CRIT, "Debug card reset button pressed %d seconds: BMC RESET\n", press_time);
-          run_command("reboot");
+          // UIC FPGA resets BMC via EXTRST# 2 seconds after the button is released, save system time to RTC before that
+          run_command("/etc/init.d/hwclock.sh stop");
         } else if (press_time > STUCK_BUTTON_TIME) {
           syslog(LOG_CRIT, "DEASSERT: Debug card reset button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
         }

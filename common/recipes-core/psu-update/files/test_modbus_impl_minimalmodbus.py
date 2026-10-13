@@ -206,7 +206,7 @@ class TestSelect(ModbusTestCase):
         # have applied its own settings.
         dev = self.device(addr=0x7B, baudrate=19200, parity="N")
         self.assertIs(dev.dev.serial, dev.pmm.dev.serial)
-        with patch.object(dev.pmm.dev, "write_registers"):
+        with patch.object(dev.pmm.dev, "write_register"):
             dev.pmm.write(0x7B, 1)
         self.assertEqual(dev.dev.serial.baudrate, PMM_BAUDRATE)
         with patch.object(dev.dev, "read_registers", return_value=[0]):
@@ -231,9 +231,15 @@ class TestTransfers(ModbusTestCase):
         read.assert_called_once_with(8, 8)
 
     def test_write_a_single_register(self):
-        # Callers pass a bare value, minimalmodbus only takes a list.
-        with patch.object(self.dev.dev, "write_registers") as write:
+        # Some devices reject 0x10 for a single register, so a bare value
+        # goes out as 0x06.
+        with patch.object(self.dev.dev, "write_register") as write:
             self.dev.write(0x300, 0x55AA)
+        write.assert_called_once_with(0x300, 0x55AA, functioncode=6)
+
+    def test_write_a_one_element_list_is_still_a_block_write(self):
+        with patch.object(self.dev.dev, "write_registers") as write:
+            self.dev.write(0x300, [0x55AA])
         write.assert_called_once_with(0x300, [0x55AA])
 
     def test_write_a_block_of_registers(self):

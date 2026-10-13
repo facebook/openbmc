@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 import os.path
-from ctypes import CDLL, c_uint, pointer
+from ctypes import CDLL, c_uint, c_uint8, pointer
 from re import match
 from subprocess import PIPE, Popen
 
@@ -144,6 +144,17 @@ def sensor_valid_check(board, sname, check_name, attribute):
             e1s_i2c_enable = data.split("=")
 
             if int(e1s_present[1]) == is_present and int(e1s_i2c_enable[1]) == is_enable:
+                return 1
+            else:
+                return 0
+        elif attribute["type"] == "sensor_existing":
+            # Some sensors only exist on specific stages, e.g. PTB TSENSE temperatures.
+            # pal_is_sensor_existing() checks the stage dependent FRU sensor list, so
+            # fscd ignores these sensors instead of treating them as missing sensors.
+            if lpal_hndl.pal_is_sensor_existing(
+                c_uint8(int(attribute["fru_id"], 0)),
+                c_uint8(int(attribute["sensor_num"], 0)),
+            ):
                 return 1
             else:
                 return 0

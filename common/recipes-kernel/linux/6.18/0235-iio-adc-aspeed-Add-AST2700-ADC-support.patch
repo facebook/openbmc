@@ -1,4 +1,4 @@
-From 1c2c08572a4d6ec3e656ca13bc4111bffb4f3f3d Mon Sep 17 00:00:00 2001
+From c22b6bca303d1bc7ac0bfff4bc6d8506d1f56e49 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 3 Nov 2025 18:52:17 +0800
 Subject: [PATCH] iio: adc: aspeed: Add AST2700 ADC support
@@ -12,11 +12,24 @@ Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
 Reviewed-by: David Lechner <dlechner@baylibre.com>
 Signed-off-by: Jonathan Cameron <Jonathan.Cameron@huawei.com>
 ---
+ arch/arm/boot/dts/aspeed/aspeed-g4.dtsi |  1 +
  arch/arm/boot/dts/aspeed/aspeed-g5.dtsi |  1 +
  arch/arm/boot/dts/aspeed/aspeed-g6.dtsi |  2 ++
  drivers/iio/adc/aspeed_adc.c            | 43 ++++++++++++++++++++-----
- 3 files changed, 38 insertions(+), 8 deletions(-)
+ 4 files changed, 39 insertions(+), 8 deletions(-)
 
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-g4.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g4.dtsi
+index c3d4d916c69b..48e9a11a9648 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-g4.dtsi
++++ b/arch/arm/boot/dts/aspeed/aspeed-g4.dtsi
+@@ -224,6 +224,7 @@ adc: adc@1e6e9000 {
+ 				clocks = <&syscon ASPEED_CLK_APB>;
+ 				resets = <&syscon ASPEED_RESET_ADC>;
+ 				#io-channel-cells = <1>;
++				aspeed,scu = <&syscon>;
+ 				status = "disabled";
+ 			};
+ 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
 index 6e61ba53cd5c..6b5044ffdd02 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
@@ -30,7 +43,7 @@ index 6e61ba53cd5c..6b5044ffdd02 100644
  			};
  
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index 63bf8b7f3ce2..d730b1f722d6 100644
+index b35b2390c98a..2b582f74b24c 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 @@ -447,6 +447,7 @@ adc0: adc@1e6e9000 {
@@ -127,5 +140,5 @@ index 8ab29948214a..040045770276 100644
  };
  MODULE_DEVICE_TABLE(of, aspeed_adc_matches);
 -- 
-2.52.0
+2.53.0-Meta
 

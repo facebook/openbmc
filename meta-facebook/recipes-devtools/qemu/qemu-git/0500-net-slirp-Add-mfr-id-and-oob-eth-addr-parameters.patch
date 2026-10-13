@@ -1,4 +1,4 @@
-From c0d9d85e8e9411504424324aa6b77211dcdbc1a9 Mon Sep 17 00:00:00 2001
+From da80c65fd96ba642d54d066286360dd796f3496a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Thu, 5 Jan 2023 01:13:45 -0800
 Subject: [PATCH] net/slirp: Add mfr-id and oob-eth-addr parameters
@@ -81,10 +81,10 @@ index 451c0fd1ba..75bc2d25e7 100644
      while (slirp_configs) {
          config = slirp_configs;
 diff --git a/qapi/net.json b/qapi/net.json
-index 85c78710fe..78138a1241 100644
+index f0312dfb71..4277a98af6 100644
 --- a/qapi/net.json
 +++ b/qapi/net.json
-@@ -360,6 +360,11 @@
+@@ -354,6 +354,11 @@
  #
  # @tftp-server-name: RFC2132 "TFTP server name" string (Since 3.1)
  #
@@ -96,7 +96,7 @@ index 85c78710fe..78138a1241 100644
  # Since: 1.2
  ##
  { 'struct': 'NetdevUserOptions',
-@@ -385,7 +390,9 @@
+@@ -379,7 +384,9 @@
      '*smbserver': 'str',
      '*hostfwd':   ['NetdevUserHostForward'],
      '*guestfwd':  ['NetdevUserGuestForward'],

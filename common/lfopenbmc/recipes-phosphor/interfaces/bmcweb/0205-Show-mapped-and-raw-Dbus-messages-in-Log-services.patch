@@ -1,4 +1,4 @@
-From d1e52741a0dfdffa0685c1976d54a34b7ce48543 Mon Sep 17 00:00:00 2001
+From 42a3e0f1abe30722ae5230942d00d4262528f623 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH] Show mapped and raw Dbus messages in Log services
@@ -55,14 +55,14 @@ Ran it in QEMU, fetched logs and raw and mapped are shown [1].
 Change-Id: I84258ce334e1572d5c4debd65d9bb5ffb89924df
 Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
 ---
- redfish-core/include/utils/eventlog_utils.hpp | 27 ++++++++++---------
- 1 file changed, 15 insertions(+), 12 deletions(-)
+ redfish-core/include/utils/eventlog_utils.hpp | 26 +++++++++++--------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
 diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
-index 15965e4b..0c0210ed 100644
+index b005bb59..1ef3ff61 100644
 --- a/redfish-core/include/utils/eventlog_utils.hpp
 +++ b/redfish-core/include/utils/eventlog_utils.hpp
-@@ -539,26 +539,29 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -540,23 +540,27 @@ inline bool fillEventLogLogEntryFromDbusLogEntry(
      const std::string& collectionStr, const std::string_view memberId,
      const std::string& logEntryDescriptor)
  {
@@ -71,14 +71,11 @@ index 15965e4b..0c0210ed 100644
      if constexpr (BMCWEB_REDFISH_ALLOW_DBUS_MESSAGES_MAPPING)
      {
          EventLogObjectsType eventLogObjectsType;
-         auto success =
-             dbus_registries_map::dbusEventLogEntryToEventLogObjectsType(
-                 entry, eventLogObjectsType);
--        if (!success)
-+        if (success)
+-        if (!dbus_registries_map::dbusEventLogEntryToEventLogObjectsType(
++        if (dbus_registries_map::dbusEventLogEntryToEventLogObjectsType(
+                 entry, eventLogObjectsType))
          {
--            messages::internalError(asyncResp->res);
--            return;
+-            return false;
 +            objectToFillOut["Message"] = std::move(eventLogObjectsType.message);
 +            objectToFillOut["MessageId"] =
 +                std::move(eventLogObjectsType.messageId);

@@ -149,6 +149,9 @@ def _fake_instrument():
         def read_string(self, *args, **kwargs):
             return Instrument._unstubbed("read_string")()
 
+        def write_register(self, *args, **kwargs):
+            return Instrument._unstubbed("write_register")()
+
         def write_registers(self, *args, **kwargs):
             return Instrument._unstubbed("write_registers")()
 

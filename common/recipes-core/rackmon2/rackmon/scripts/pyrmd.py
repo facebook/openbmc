@@ -86,13 +86,6 @@ class RackmonInterface:
             log("<-", status)
             raise ModbusException(status)
 
-    # rackmon reports an unknown address as ERR_INVALID_ARGS and a known
-    # but dormant device as ERR_IO_FAILURE. Both mean "no interface to
-    # report" rather than a failure to talk to rackmon itself.
-    @classmethod
-    def _isNoSuchDevice(cls, exception):
-        return str(exception) in ("ERR_INVALID_ARGS", "ERR_IO_FAILURE")
-
     @classmethod
     def _write(cls, addr, register, data, timeout):
         cmd = {
@@ -146,12 +139,18 @@ class RackmonInterface:
         return ret
 
     @classmethod
-    def _pause(cls):
-        return {"type": "pause"}
+    def _pause(cls, device_path=None):
+        req = {"type": "pause"}
+        if device_path is not None:
+            req["device_path"] = device_path
+        return req
 
     @classmethod
-    def _resume(cls):
-        return {"type": "resume"}
+    def _resume(cls, device_path=None):
+        req = {"type": "resume"}
+        if device_path is not None:
+            req["device_path"] = device_path
+        return req
 
     @classmethod
     def _rescan(cls):
@@ -162,8 +161,8 @@ class RackmonInterface:
         return {"type": "listModbusDevices"}
 
     @classmethod
-    def _get_interface(cls, addr):
-        return {"type": "getInterface", "devAddress": addr}
+    def _get_interface(cls):
+        return {"type": "getInterface"}
 
     @classmethod
     def _data(cls, raw, dataFilter=None):
@@ -261,12 +260,14 @@ class RackmonInterface:
         return cls._rawResp(result, fullResp, isinstance(raw_cmd, bytes))
 
     @classmethod
-    def pause(cls):
-        cls._do(cls._pause)
+    def pause(cls, device_path=None):
+        # With a device_path, returns whether rackmond manages (and so
+        # paused) that interface. Without one, pauses all of rackmond.
+        return cls._do(cls._pause, device_path).get("data")
 
     @classmethod
-    def resume(cls):
-        cls._do(cls._resume)
+    def resume(cls, device_path=None):
+        return cls._do(cls._resume, device_path).get("data")
 
     @classmethod
     def rescan(cls):
@@ -278,13 +279,8 @@ class RackmonInterface:
         return result["data"]
 
     @classmethod
-    def get_interface(cls, addr):
-        try:
-            result = cls._do(cls._get_interface, addr)
-        except ModbusException as e:
-            if cls._isNoSuchDevice(e):
-                return None
-            raise
+    def get_interface(cls):
+        result = cls._do(cls._get_interface)
         return result["data"]
 
     @classmethod
@@ -346,12 +342,14 @@ class RackmonAsyncInterface(RackmonInterface):
         return cls._rawResp(result, fullResp, isinstance(raw_cmd, bytes))
 
     @classmethod
-    async def pause(cls):
-        await cls._do(cls._pause)
+    async def pause(cls, device_path=None):
+        resp = await cls._do(cls._pause, device_path)
+        return resp.get("data")
 
     @classmethod
-    async def resume(cls):
-        await cls._do(cls._resume)
+    async def resume(cls, device_path=None):
+        resp = await cls._do(cls._resume, device_path)
+        return resp.get("data")
 
     @classmethod
     async def rescan(cls):
@@ -363,13 +361,8 @@ class RackmonAsyncInterface(RackmonInterface):
         return result["data"]
 
     @classmethod
-    async def get_interface(cls, addr):
-        try:
-            result = await cls._do(cls._get_interface, addr)
-        except ModbusException as e:
-            if cls._isNoSuchDevice(e):
-                return None
-            raise
+    async def get_interface(cls):
+        result = await cls._do(cls._get_interface)
         return result["data"]
 
     @classmethod

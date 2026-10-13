@@ -1,0 +1,33 @@
+From aef7a7df56cc539e14efa84ad942d89a48126be7 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Tue, 8 Sep 2026 11:11:49 +0000
+Subject: [PATCH] wedge_power stop logging before reset system
+
+---
+ wedge_power.sh | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/wedge_power.sh b/wedge_power.sh
+index 51531b1..a7ac19b 100755
+--- a/wedge_power.sh
++++ b/wedge_power.sh
+@@ -149,6 +149,9 @@ do_reset() {
+         sync
+         if [ $timer -eq 0 ]; then
+ 
++            systemctl stop syslog.socket rsyslog.service
++            sync
++            umount /mnt/data
+             chassis_power_cycle
+             defer_check_if_powered_off $((PWR_CYCLE_DEF_INTERVAL + PWR_OFF_CHECK_TOLERANCE)) &
+ 
+@@ -157,6 +160,9 @@ do_reset() {
+             logger -p user.crit "Power reset the whole system with start-up time delay $wake_t seconds ..."
+             echo  "Power reset the whole system with start-up time delay $wake_t seconds ..."
+             sync
++            systemctl stop syslog.socket rsyslog.service
++            sync
++            umount /mnt/data
+             chassis_power_cycle
+             # The BMC does not immediately power off after performing chassis_power_cycle.
+             defer_check_if_powered_off $((wake_t + PWR_OFF_CHECK_TOLERANCE)) &

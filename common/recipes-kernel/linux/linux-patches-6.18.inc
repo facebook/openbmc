@@ -84,6 +84,8 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0500-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
     file://0501-net-ncsi-specify-maximum-package-to-probe.patch \
+    file://0502-net-usb-cdc_ether-add-NCSI-passthrough-support.patch \
+    file://0503-net-ncsi-fix-use-after-free-in-ncsi_unregister_dev.patch \
 "
 
 #
@@ -94,20 +96,36 @@ SRC_URI:append = " \
     file://0601-hwmon-max31790-add-fanN_enable-for-all-fans.patch \
     file://0602-hwmon-pmbus-Add-xdpe132g5c-driver.patch \
     file://0603-hwmon-Add-net_brcm-driver.patch \
-    file://0604-Kernel6v5-Support-apml-driver.patch \
-    file://0605-apml-Add-support-for-SP7-platform.patch \
-    file://0606-hwmon-pmbus-tda38640-Add-identification-for-PMBUS_VO.patch \
-    file://0607-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
-    file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
-    file://0609-amd-apml-sbrmi-update-SBRMI-revision-for-Venice.patch \
-    file://0610-iio-adc-rtq6056-add-i2c_device_id-support.patch \
-    file://0611-nfc-nxp-nci-Add-ISO15693-support.patch \
-    file://0612-misc-amd-apml-Add-Venice-B0-I3C-device-IDs.patch \
-    file://0613-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
-    file://0614-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
-    file://0615-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \
-    file://0616-hwmon-kb9002-Add-driver-for-Kandou-KB9002-retimer.patch \
-    file://0617-hwmon-pmbus-Add-MPQ82D00-support.patch \
+    file://0604-misc-amd-apml-support-APML-driver.patch \
+    file://0605-hwmon-pmbus-tda38640-Add-identification-for-PMBUS_VO.patch \
+    file://0606-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
+    file://0607-iio-adc-ltc2309-add-support-for-ltc2305.patch \
+    file://0608-nfc-nxp-nci-Add-ISO15693-support.patch \
+    file://0609-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
+    file://0610-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
+    file://0611-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \
+    file://0612-hwmon-kb9002-Add-driver-for-Kandou-KB9002-retimer.patch \
+    file://0613-hwmon-pmbus-Add-MPQ82D00-support.patch \
+    file://0614-hwmon-pmbus-ltc4286-Add-writable-shunt_resistor-sysf.patch \
+"
+
+#
+# AST2700 I3C patches
+#
+SRC_URI:append = " \
+    file://0700-i3c-mipi-i3c-hci-Fix-race-in-DMA-ring-enqueue-for-pa.patch \
+    file://0701-i3c-mipi-i3c-hci-Fix-race-between-DMA-ring-dequeue-a.patch \
+    file://0702-i3c-mipi-i3c-hci-Consolidate-common-xfer-processing-.patch \
+    file://0703-i3c-mipi-i3c-hci-Fix-race-in-DMA-error-handling-in-i.patch \
+    file://0704-i3c-mipi-i3c-hci-Add-DMA-ring-abort-reset-quirk-for-.patch \
+    file://0705-dt-bindings-i3c-Document-the-AST2700-I3C-controller.patch \
+    file://0706-i3c-mipi-i3c-hci-Support-address-indexed-DAT-slots.patch \
+    file://0707-i3c-mipi-i3c-hci-Add-a-quirk-for-64-bit-DMA-addressi.patch \
+    file://0708-i3c-mipi-i3c-hci-Add-a-quirk-to-clear-the-TX-start-t.patch \
+    file://0709-i3c-mipi-i3c-hci-Add-support-for-the-AST2700-I3C-con.patch \
+    file://0710-i3c-mipi-i3c-hci-Program-AST2700-IBI-termination-thr.patch \
+    file://0711-i3c-mipi-i3c-hci-Improve-AST2700-PIO-TX-queue-utiliz.patch \
+    file://0712-i3c-mipi-i3c-hci-Support-the-AST2700-internal-pull-u.patch \
 "
 
 #
@@ -143,5 +161,9 @@ SRC_URI:append = " \
     file://2708-pinctrl-aspeed-Fix-GPIO-mux-value-for-ADC-capable-ba.patch \
     file://2709-usb-host-ehci-platform-add-ASPEED-AST2700-support.patch \
     file://2710-arm64-dts-aspeed-add-EHCI-and-MDIO-nodes-for-G7-plat.patch \
+    file://2711-usb-gadget-aspeed-vhub-Add-AST2700-support.patch \
+    file://2712-arm64-dts-aspeed-Add-AST2700-VHUBA0-node.patch \
+    file://2713-spi-aspeed-Add-AST2700-TX-RX-controller.patch \
+    file://2714-arm64-dts-aspeed-Add-AST2700-128MB-flash-layout.patch \
+    file://2715-pinctrl-aspeed-Split-TRST-out-of-the-AST2700-SoC1-JT.patch \
 "
-

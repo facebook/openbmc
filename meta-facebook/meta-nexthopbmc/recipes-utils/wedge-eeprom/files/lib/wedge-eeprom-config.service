@@ -1,0 +1,14 @@
+[Unit]
+Description=Update Wedge Eeprom Config
+After=setup_board.service
+# configure-eth0 runs dhcp-id (bare weutil), which needs the generated config.
+Before=configure-eth0.service
+
+[Service]
+ExecStart=/usr/local/bin/wedge-eeprom-config.py
+SyslogIdentifier=wedge-eeprom-config.py
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

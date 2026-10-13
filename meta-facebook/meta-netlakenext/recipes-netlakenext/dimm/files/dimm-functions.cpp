@@ -21,6 +21,7 @@
 #include <syslog.h>
 #include <time.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/libgpio.h>
 #include <facebook/netlakenext_common.h>
 #include "dimm.h"
 #include "dimm-util-plat.h"
@@ -57,6 +58,9 @@ static const char *fru_name_netlake2[NUM_FRU_NETLAKE2] = {
 };
 
 bool is_pmic_error_flag[MAX_DIMM_NUM_NETLAKE2][MAX_PMIC_ERR_TYPE];
+
+// sticky flag to log invalid PMIC data(0xff) only once until it recovers
+static bool is_pmic_data_invalid[MAX_DIMM_NUM_NETLAKE2] = {false};
 
 static uint8_t *spd_addr = netlake2_spd_addr;
 static uint8_t *pmic_addr = netlake2_pmic_addr;
@@ -255,11 +259,55 @@ int get_pmic_error_data_raw(uint8_t slot_id, uint8_t dimm, uint8_t *error_data) 
   return 0;
 }
 
+// 0xff means the PMIC register was not read correctly. Log it only once until
+// the data recovers, to avoid flooding syslog on every monitor cycle.
+static bool
+is_pmic_data_valid(uint8_t dimm, const uint8_t *data) {
+  for (uint8_t reg_idx = 0; reg_idx < ERR_PATTERN_LEN; reg_idx++) {
+    if (data[reg_idx] != 0xff) {
+      continue;
+    }
+
+    // POST complete may be de-asserted during the read, which means the DIMM
+    // I2C bus MUX was switched back to the host, so 0xff is expected here.
+    gpio_value_t post = gpio_get_value_by_shadow("FM_BIOS_POST_CMPLT_R_N");
+
+    if (!is_pmic_data_invalid[dimm]) {
+      const char *reason = "";
+      if (post == GPIO_VALUE_HIGH) {
+        reason = " (POST not complete, DIMM I2C bus MUX switched to host)";
+      } else if (post != GPIO_VALUE_LOW) {
+        reason = " (failed to get POST complete status)";
+      }
+      syslog(LOG_WARNING, "Invalid PMIC data(0xff) on DIMM %s%s, "
+             "raw R05/06/08/09/0A/0B: %02x %02x %02x %02x %02x %02x",
+             dimm_label[0][dimm], reason,
+             data[0], data[1], data[2], data[3], data[4], data[5]);
+      // POST not complete is transient, don't latch the one-shot flag so a
+      // later genuine failure can still be logged
+      is_pmic_data_invalid[dimm] = (post != GPIO_VALUE_HIGH);
+    }
+    return false;
+  }
+
+  if (is_pmic_data_invalid[dimm]) {
+    syslog(LOG_WARNING, "PMIC data on DIMM %s is valid again", dimm_label[0][dimm]);
+    is_pmic_data_invalid[dimm] = false;
+  }
+
+  return true;
+}
+
 int compare_pmic_raw_and_log(uint8_t dimm, const uint8_t *data) {
   uint8_t err_idx = 0;
 
   if (data == NULL || dimm >= MAX_DIMM_NUM_NETLAKE2) {
     return -1;
+  }
+
+  // skip the comparison on invalid data to avoid false alerts
+  if (!is_pmic_data_valid(dimm, data)) {
+    return 0;
   }
 
   for (err_idx = 0; err_idx < MAX_PMIC_ERR_TYPE; err_idx++) {

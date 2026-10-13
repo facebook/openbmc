@@ -24,7 +24,7 @@ from time import sleep
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 from utils.test_utils import running_systemd
-from utils.watchdog_util import WatchdogUtils
+from utils.watchdog_util import UnknownSocError, WatchdogUtils
 
 
 class WatchdogTest(object):
@@ -139,3 +139,13 @@ class WatchdogTest(object):
             iterations - 1,
             "Failed to kick watchdog for {} iterations".format(iterations),
         )
+
+    def test_second_watchdog_disabled_after_boot(self):
+        """
+        Test if the second watchdog has been disabled after kernel boot.
+        """
+        try:
+            running = self.wdtUtils.second_watchdog_is_running()
+        except UnknownSocError as e:
+            self.skipTest(str(e))
+        self.assertFalse(running, "Second watchdog is not disabled after bmc bootup")

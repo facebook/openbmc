@@ -21,7 +21,8 @@ TEST(Config, FullConfig)
       {
         "fromUrl": "/redfish/v1/Chassis/Chassis_A/Sensors/Temp_0",
         "toNamespace": "temperature",
-        "toId": "Chassis_A_Temp_0"
+        "toId": "Chassis_A_Temp_0",
+        "hardShutdownHigh": 120.0
       },
       {
         "fromUrl": "/redfish/v1/Chassis/Chassis_A/Sensors/Voltage_2",
@@ -74,10 +75,13 @@ TEST(Config, FullConfig)
               "/redfish/v1/Chassis/Chassis_A/Sensors/Temp_0");
     EXPECT_EQ(config.sensorConfig->mappers[0].toNamespace, "temperature");
     EXPECT_EQ(config.sensorConfig->mappers[0].toId, "Chassis_A_Temp_0");
+    ASSERT_TRUE(config.sensorConfig->mappers[0].hardShutdownHigh.has_value());
+    EXPECT_EQ(*config.sensorConfig->mappers[0].hardShutdownHigh, 120.0);
     EXPECT_EQ(config.sensorConfig->mappers[1].fromUrl,
               "/redfish/v1/Chassis/Chassis_A/Sensors/Voltage_2");
     EXPECT_EQ(config.sensorConfig->mappers[1].toNamespace, "voltage");
     EXPECT_EQ(config.sensorConfig->mappers[1].toId, "Chassis_A_Voltage_2");
+    EXPECT_FALSE(config.sensorConfig->mappers[1].hardShutdownHigh.has_value());
     EXPECT_EQ(config.logServiceConfig.has_value(), true);
     EXPECT_EQ(config.logServiceConfig->urls.size(), 1);
     EXPECT_EQ(config.logServiceConfig->urls[0],

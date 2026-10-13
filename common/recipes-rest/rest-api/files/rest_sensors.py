@@ -18,10 +18,31 @@
 # Boston, MA 02110-1301 USA
 #
 
+import functools
 import re
 import subprocess
 
+import rest_pal_legacy
 from rest_utils import DEFAULT_TIMEOUT_SEC
+
+# Platforms whose sensor names were published with the older Aspeed I2C
+# device-tree node name ("<addr>.i2c-bus"). Adapter names are "<addr>.<node>"
+# and newer kernels renamed the node, which would rename every I2C sensor and
+# break ODS history, so pin these platforms to "<addr>.i2c-bus" by address.
+LEGACY_ASPEED_I2C_ADAPTER_PLATFORMS = {"wedge100"}
+
+
+@functools.lru_cache(maxsize=64)
+def legacy_adapter_name(adapter_name: str) -> str:
+    if (
+        rest_pal_legacy.pal_get_platform_name()
+        not in LEGACY_ASPEED_I2C_ADAPTER_PLATFORMS
+    ):
+        return adapter_name
+    addr, sep, _ = adapter_name.partition(".")
+    if sep and addr.startswith("1e78a"):
+        return addr + ".i2c-bus"
+    return adapter_name
 
 
 # Handler for sensors resource endpoint
@@ -46,7 +67,11 @@ def get_sensors():
             tdata = sdata.split(":")
             if len(tdata) < 2:
                 continue
-            sresult[tdata[0].strip()] = tdata[1].strip()
+            key = tdata[0].strip()
+            value = tdata[1].strip()
+            if key == "Adapter":
+                value = legacy_adapter_name(value)
+            sresult[key] = value
         result.append(sresult)
 
     fresult = {"Information": result, "Actions": [], "Resources": []}
@@ -104,7 +129,7 @@ def get_sensors_full():  # noqa: C901
             pos = skipline_re.match(data, pos).end()
             continue
         sresult["name"] = m.group(1)
-        sresult["adapter"] = m.group(2)
+        sresult["adapter"] = legacy_adapter_name(m.group(2))
         pos = m.end()
 
         # match the sensors

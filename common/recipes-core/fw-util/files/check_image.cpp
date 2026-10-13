@@ -13,6 +13,10 @@
 
 using nlohmann::json;
 
+#ifndef FW_UTIL_IMAGE_META_OFFSET
+#define FW_UTIL_IMAGE_META_OFFSET 0x000F0000
+#endif
+
 // Add compatibility for SSL 1.x :-/
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #define EVP_MD_CTX_new EVP_MD_CTX_create
@@ -220,7 +224,7 @@ void validateFIT(
 }
 
 void getMeta(const Image& img, json& desc) {
-  char* data = img.peekExact(0x000F0000, 64 * 1024);
+  char* data = img.peekExact(FW_UTIL_IMAGE_META_OFFSET, 64 * 1024);
   if (data[0] != '{') {
     throw std::runtime_error("Not a JSON");
   }

@@ -140,6 +140,7 @@ install_wrapper() {
 INTERFACE_CONFIG ?= "/usr/share/rackmon/interface/aspeed_uart.conf"
 INTERFACE_CONFIG:ventura = "/usr/share/rackmon/interface/ventura.conf"
 INTERFACE_CONFIG:ventura2 = "/usr/share/rackmon/interface/ventura2.conf"
+INTERFACE_CONFIG:ventura2a7 = "/usr/share/rackmon/interface/ventura2.conf"
 INTERFACE_CONFIG:wedge400 = "\${INTERFACE_CONFIG_FILE}"
 
 SERVICE_AFTER ?= ""

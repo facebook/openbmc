@@ -19,6 +19,7 @@
 #
 
 import json
+import unittest
 
 from aiohttp import test_utils, web
 from common_middlewares import jsonerrorhandler
@@ -62,3 +63,16 @@ class TestErrorHandler(test_utils.AioHTTPTestCase):
         assert request.status == 200
         resp = await request.json()
         self.assertEqual({"status": "ok"}, resp)
+
+
+class TestDefaultAclConfig(unittest.TestCase):
+    def test_logfile_post_is_allowed_before_configure_runs(self):
+        # A reboot reverts acl_config.py to this shipped copy. The middleware
+        # refuses a non-GET it has no rule for, so without this entry reading
+        # the BMC log is a 403 until the device is reconfigured.
+        import acl_config
+
+        self.assertEqual(
+            acl_config.RULES.get("/api/sys/logfile"),
+            {"POST": ["MANAGED_HOST_ANY"]},
+        )

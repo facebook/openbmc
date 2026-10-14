@@ -185,7 +185,6 @@ SRC_URI:append = " \
            file://0691-hw-i2c-aspeed_i2c-only-clear-target-status-the-ISR-h.patch \
            file://0692-hw-i2c-aspeed_i2c-model-AST2700-I2CC_SIRQ_LOG-target.patch \
            file://0693-hw-i2c-aspeed_i2c-fix-AST2700-target-buffer-mode-rec.patch \
-           file://0694-hw-arm-aspeed-enable-both-fby35-BMC-MACs.patch \
            file://0695-hw-arm-bletchley-take-the-FRU-MAC-from-the-configure.patch \
            file://0696-slirp-pin-the-guest-address-with-a-static-DHCP-lease.patch \
            file://0697-hw-i2c-aspeed_i2c-hold-the-target-RX-ACK-until-the-I.patch \

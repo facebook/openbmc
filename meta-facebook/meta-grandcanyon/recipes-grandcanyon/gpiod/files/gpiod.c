@@ -393,12 +393,18 @@ server_power_monitor() {
           if ((server_pre_pwr_status == SERVER_POWER_ON)
            && ((server_cur_pwr_status == SERVER_POWER_OFF) || (server_cur_pwr_status == SERVER_12V_OFF))) {
             syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SERVER);
+#ifdef CONFIG_GRANDCANYON2
+            pal_correct_power_transition_state(SERVER_POWER_OFF);
+#endif
         
           //*****Server power from off change to on
           } else if (((server_pre_pwr_status == SERVER_POWER_OFF) || (server_pre_pwr_status == SERVER_12V_OFF))
                    && (server_cur_pwr_status == SERVER_POWER_ON)) {
             pal_clear_mrc_warning(FRU_SERVER);
             syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
+#ifdef CONFIG_GRANDCANYON2
+            pal_correct_power_transition_state(SERVER_POWER_ON);
+#endif
           }
 
           server_pre_pwr_status = server_cur_pwr_status;

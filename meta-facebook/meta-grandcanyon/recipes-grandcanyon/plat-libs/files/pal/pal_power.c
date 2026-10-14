@@ -35,6 +35,28 @@ set_power_transition_state(const char *state)
   syslog(LOG_WARNING, "%s(): power transition state = %s", __func__, state);
 }
 
+void
+pal_correct_power_transition_state(uint8_t power_status) {
+  char current[64] = {0};
+  FILE *fp = fopen(POWER_STATE_FILE, "r");
+
+  if (fp) {
+    if (fgets(current, sizeof(current), fp)) {
+      current[strcspn(current, "\r\n")] = '\0';
+    }
+    fclose(fp);
+  }
+
+  // AC/SLED-level transition currently owns the state file; DC-level
+  // correction should not clobber it.
+  if ((strncmp(current, "AC_", 3) == 0) ||
+      (strncmp(current, "SLED_CYCLE", 10) == 0)) {
+    return;
+  }
+
+  set_power_transition_state(power_status == SERVER_POWER_ON ? "DC_ON" : "DC_OFF");
+}
+
 static const char *
 power_transition_base(bool include_on_transition)
 {
@@ -819,9 +841,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 #endif
       ret = pal_host_power_on_pre_actions();
       if (ret < 0) {
-#ifdef CONFIG_GRANDCANYON2
-    set_power_transition_state("DC_OFF");
-#endif
         return POWER_STATUS_ERR;
       }
       
@@ -854,9 +873,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       set_power_transition_state("DC_OFF_TRANSITION");
 #endif
       if (pal_host_power_off_pre_actions() < 0 ) {
-#ifdef CONFIG_GRANDCANYON2
-        set_power_transition_state("DC_ON");
-#endif
         return POWER_STATUS_ERR;
       }
 
@@ -880,6 +896,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
+#ifdef CONFIG_GRANDCANYON2
+        set_power_transition_state("DC_OFF_TRANSITION");
+#endif
         if (pal_host_power_off_pre_actions() < 0 ) {
           return POWER_STATUS_ERR;
         }
@@ -893,7 +912,16 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         if (ret == 0) {
           pal_host_power_on_post_actions();
         }
+#ifdef CONFIG_GRANDCANYON2
+        else {
+          return ret;
+        }
+        set_power_transition_state("DC_ON_TRANSITION");
+#endif
       } else {
+#ifdef CONFIG_GRANDCANYON2
+        set_power_transition_state("DC_ON_TRANSITION");
+#endif
         if (pal_host_power_on_pre_actions() < 0 ) {
           return POWER_STATUS_ERR;
         }
@@ -915,6 +943,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         pal_clear_cpu_vr_unr_fan_boost_event("server power cycle");
 #endif
       }
+#ifdef CONFIG_GRANDCANYON2
+      set_power_transition_state(ret == 0 ? "DC_ON" : "DC_ON_TRANSITION");
+#endif
       return ret;
 
     case SERVER_GRACEFUL_SHUTDOWN:
@@ -925,9 +956,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         set_power_transition_state("DC_OFF_TRANSITION");
 #endif
       if (pal_host_power_off_pre_actions() < 0 ) {
-#ifdef CONFIG_GRANDCANYON2
-        set_power_transition_state("DC_ON");
-#endif
         return POWER_STATUS_ERR;
       }
       
@@ -969,17 +997,14 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
       if(power_12v_on_pre_actions() < 0)
       {
-        set_power_transition_state("AC_OFF");
         return POWER_STATUS_ERR;
       }
       if(server_power_12v_on() < 0)
       {
-        set_power_transition_state("AC_OFF");
         return POWER_STATUS_ERR;
       }
       if(power_12v_on_post_actions() < 0)
       {
-        set_power_transition_state("AC_OFF");
         return POWER_STATUS_ERR;
       }
       pal_clear_cpu_vr_unr_fan_boost_event("server 12V on");
@@ -1005,29 +1030,22 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       set_power_transition_state("AC_OFF_TRANSITION");
 #endif
       if (pal_host_power_off_pre_actions() < 0 ) {
-#ifdef CONFIG_GRANDCANYON2
-        set_power_transition_state("AC_ON");
-#endif
         return POWER_STATUS_ERR;
       }
 #ifdef CONFIG_GRANDCANYON2
       if (power_12v_off_pre_actions() < 0)
       {
-        set_power_transition_state("AC_ON");
         return POWER_STATUS_ERR;
       }
       if (server_power_12v_off() < 0) {
-        set_power_transition_state("AC_ON");
         return POWER_STATUS_ERR;
       }
       if (pal_host_power_off_post_actions() < 0)
       {
-        set_power_transition_state("AC_ON");
         return POWER_STATUS_ERR;
       }
       if (power_12v_off_post_actions() < 0)
       {
-        set_power_transition_state("AC_ON");
         return POWER_STATUS_ERR;
       }
       set_power_transition_state("AC_OFF");
@@ -1041,25 +1059,19 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_12V_CYCLE:
-#ifdef CONFIG_GRANDCANYON2
-      set_power_transition_state("AC_OFF_TRANSITION");
-#endif
       if (status == SERVER_12V_OFF) {
 #ifdef CONFIG_GRANDCANYON2
         set_power_transition_state("AC_ON_TRANSITION");
         if(power_12v_on_pre_actions() < 0)
         {
-          set_power_transition_state("AC_OFF");
           return POWER_STATUS_ERR;
         }
         if(server_power_12v_on() < 0)
         {
-          set_power_transition_state("AC_OFF");
           return POWER_STATUS_ERR;
         }
         if(power_12v_on_post_actions() < 0)
         {
-          set_power_transition_state("AC_OFF");
           return POWER_STATUS_ERR;
         }
         pal_clear_cpu_vr_unr_fan_boost_event("server 12V cycle");
@@ -1067,30 +1079,26 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         return server_power_12v_on();
 #endif
       } else {
-        if (pal_host_power_off_pre_actions() < 0 ) {
 #ifdef CONFIG_GRANDCANYON2
-          set_power_transition_state("AC_ON");
+        set_power_transition_state("AC_OFF_TRANSITION");
 #endif
+        if (pal_host_power_off_pre_actions() < 0 ) {
           return POWER_STATUS_ERR;
         }
 #ifdef CONFIG_GRANDCANYON2
         if (power_12v_off_pre_actions() < 0)
         {
-          set_power_transition_state("AC_ON");
           return POWER_STATUS_ERR;
         }
         if (server_power_12v_off() < 0) {
-          set_power_transition_state("AC_ON");
           return POWER_STATUS_ERR;
         }
         if (pal_host_power_off_post_actions() < 0)
         {
-          set_power_transition_state("AC_ON");
           return POWER_STATUS_ERR;
         }
         if (power_12v_off_post_actions() < 0)
         {
-          set_power_transition_state("AC_ON");
           return POWER_STATUS_ERR;
         }
         set_power_transition_state("AC_OFF");
@@ -1098,17 +1106,14 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         set_power_transition_state("AC_ON_TRANSITION");
         if(power_12v_on_pre_actions() < 0)
         {
-          set_power_transition_state("AC_OFF");
           return POWER_STATUS_ERR;
         }
         if(server_power_12v_on() < 0)
         {
-          set_power_transition_state("AC_OFF");
           return POWER_STATUS_ERR;
         }
         if(power_12v_on_post_actions() < 0)
         {
-          set_power_transition_state("AC_OFF");
           return POWER_STATUS_ERR;
         }
 #else
@@ -1159,7 +1164,6 @@ pal_sled_cycle(void) {
     if (system("sv start sensord") != 0) {
       syslog(LOG_WARNING, "%s(): Failed to restart sensord after sled cycle failure\n", __func__);
     }
-    set_power_transition_state("AC_ON");
 #endif
     return PAL_ENOTSUP;
   }
@@ -1308,9 +1312,6 @@ pal_server_power_cycle() {
   ret = pal_server_power_ctrl(SET_DC_POWER_OFF);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot set power state to off\n", __func__);
-#ifdef CONFIG_GRANDCANYON2
-    set_power_transition_state("DC_ON");
-#endif
     return ret;
   }
 

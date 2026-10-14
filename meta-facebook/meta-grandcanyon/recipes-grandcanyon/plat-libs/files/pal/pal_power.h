@@ -101,6 +101,7 @@ int pal_restore_host_power_on_pre_actions();
 bool pal_power_transition_event_filtered(const char *key_suffix,
                                          bool include_on_transition,
                                          const char *token);
+void pal_correct_power_transition_state(uint8_t power_status);
 #endif
 
 #endif

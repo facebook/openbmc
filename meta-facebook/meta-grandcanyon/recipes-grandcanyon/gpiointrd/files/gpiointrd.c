@@ -39,6 +39,11 @@
 #include <openbmc/obmc-i2c.h>
 #include <facebook/fbgc_gpio.h>
 
+#ifdef CONFIG_GRANDCANYON2
+static bool is_gpio_filtered_by_transition(const char *gpio_name);
+#define IS_SEL_FILTERED(name) is_gpio_filtered_by_transition(name)
+#endif
+
 #define POLL_TIMEOUT -1 /* Forever */
 
 #define STUCK_BUTTON_TIME  10  // second
@@ -76,6 +81,9 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
     return;
   }
   
+#ifdef CONFIG_GRANDCANYON2
+  bool filtered = IS_SEL_FILTERED(cfg->shadow);
+#endif
   ret = pal_get_debug_card_uart_sel(&uart_sel_value);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s(): fail to get BMC UART selection\n", __func__);
@@ -99,11 +107,23 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
         press_time = now_timespec.tv_sec - press_dbg_rst_btn_time.tv_sec;
         
         if ((press_time >= SHORT_PRESS_BUTTON_TIME) && (press_time < STUCK_BUTTON_TIME)) {
+#ifdef CONFIG_GRANDCANYON2
+          if (!filtered) {
+            syslog(LOG_CRIT, "Debug card reset button pressed %d seconds: BMC RESET\n", press_time);
+          }
+#else
           syslog(LOG_CRIT, "Debug card reset button pressed %d seconds: BMC RESET\n", press_time);
+#endif
           // UIC FPGA resets BMC via EXTRST# 2 seconds after the button is released, save system time to RTC before that
           run_command("/etc/init.d/hwclock.sh stop");
         } else if (press_time > STUCK_BUTTON_TIME) {
+#ifdef CONFIG_GRANDCANYON2
+          if (!filtered) {
+            syslog(LOG_CRIT, "DEASSERT: Debug card reset button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+          }
+#else
           syslog(LOG_CRIT, "DEASSERT: Debug card reset button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+#endif
         }
       }
     }
@@ -129,7 +149,13 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
         
         if ((press_time >= SHORT_PRESS_BUTTON_TIME) && (press_time < STUCK_BUTTON_TIME)) {
           if (power_status == SERVER_POWER_ON) {
+#ifdef CONFIG_GRANDCANYON2
+            if (!filtered) {
+              syslog(LOG_CRIT, "Debug card reset button pressed %d seconds: HOST RESET\n", press_time);
+            }
+#else
             syslog(LOG_CRIT, "Debug card reset button pressed %d seconds: HOST RESET\n", press_time);
+#endif
             ret = pal_set_server_power(FRU_SERVER, SERVER_POWER_RESET);
             if (ret < 0) {
               syslog(LOG_ERR, "%s(): fail to send host reset command\n", __func__);
@@ -140,7 +166,13 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
             return;
           }
         } else if (press_time > STUCK_BUTTON_TIME) {
+#ifdef CONFIG_GRANDCANYON2
+          if (!filtered) {
+            syslog(LOG_CRIT, "DEASSERT: Debug card reset button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+          }
+#else
           syslog(LOG_CRIT, "DEASSERT: Debug card reset button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+#endif
         }
       }
     } else if (strcmp(cfg->shadow, "DEBUG_PWR_BTN_N") == 0) {
@@ -157,7 +189,13 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
         
         if ((press_time >= SHORT_PRESS_BUTTON_TIME) && (press_time < STUCK_BUTTON_TIME)) {
           if (power_status == SERVER_POWER_OFF) {
+#ifdef CONFIG_GRANDCANYON2
+            if (!filtered) {
+              syslog(LOG_CRIT, "Debug card power button pressed %d seconds: HOST POWER ON ", press_time);
+            }
+#else
             syslog(LOG_CRIT, "Debug card power button pressed %d seconds: HOST POWER ON ", press_time);
+#endif
             ret = pal_set_server_power(FRU_SERVER, SERVER_POWER_ON);
             if (ret < 0) {
               syslog(LOG_ERR, "%s(): fail to send host power on command\n", __func__);
@@ -167,7 +205,13 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
           } else if (power_status == SERVER_POWER_ON) {
             // press more than 4s: power off
             if (press_time > LONG_PRESS_BUTTON_TIME) {
+#ifdef CONFIG_GRANDCANYON2
+              if (!filtered) {
+                syslog(LOG_CRIT, "Debug card power button pressed %d seconds: HOST POWER OFF ", press_time);
+              }
+#else
               syslog(LOG_CRIT, "Debug card power button pressed %d seconds: HOST POWER OFF ", press_time);
+#endif
               ret = pal_set_server_power(FRU_SERVER, SERVER_POWER_OFF);
               if (ret < 0) {
                 syslog(LOG_ERR, "%s(): fail to send host power off command\n", __func__);
@@ -176,7 +220,13 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
             
             // press 1-4s: graceful shutdown
             } else {
+#ifdef CONFIG_GRANDCANYON2
+              if (!filtered) {
+                syslog(LOG_CRIT, "Debug card power button pressed %d seconds: HOST GRACEFUL SHUTDOWN ", press_time);
+              }
+#else
               syslog(LOG_CRIT, "Debug card power button pressed %d seconds: HOST GRACEFUL SHUTDOWN ", press_time);
+#endif
               ret = pal_set_server_power(FRU_SERVER, SERVER_GRACEFUL_SHUTDOWN);
               if (ret < 0) {
                 syslog(LOG_ERR, "%s(): fail to send host graceful shutdown command\n", __func__);
@@ -188,7 +238,13 @@ debug_card_pwr_rst_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t
             return;
           }
         } else if (press_time > STUCK_BUTTON_TIME) {
+#ifdef CONFIG_GRANDCANYON2
+          if (!filtered) {
+            syslog(LOG_CRIT, "DEASSERT: Debug card power button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+          }
+#else
           syslog(LOG_CRIT, "DEASSERT: Debug card power button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+#endif
         }
       }
     }
@@ -213,6 +269,9 @@ debug_card_uart_sel_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_
     return;
   }
 
+#ifdef CONFIG_GRANDCANYON2
+  bool filtered = IS_SEL_FILTERED(cfg->shadow);
+#endif
   clock_gettime(CLOCK_MONOTONIC, &now_timespec);
 
   if (strcmp(cfg->shadow, "DEBUG_BMC_UART_SEL_R") == 0) {
@@ -245,7 +304,13 @@ debug_card_uart_sel_btn_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_
         pthread_cond_signal(&uart_sel_condition);
 
       } else if (press_time > STUCK_BUTTON_TIME) {
+#ifdef CONFIG_GRANDCANYON2
+        if (!filtered) {
+          syslog(LOG_CRIT, "DEASSERT: Debug card uart selection button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+        }
+#else
         syslog(LOG_CRIT, "DEASSERT: Debug card uart selection button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+#endif
       }
     }
   }
@@ -284,13 +349,31 @@ static void
     sem_wait(&semaphore_button_stuck_event);
 
     if (is_button_stucked(&is_dbg_rst_btn_pressed) == true) {
+#ifdef CONFIG_GRANDCANYON2
+      if (!IS_SEL_FILTERED("DEBUG_RST_BTN_N")) {
+        syslog(LOG_CRIT, "ASSERT: Debug card reset button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+      }
+#else
       syslog(LOG_CRIT, "ASSERT: Debug card reset button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+#endif
     }
     if (is_button_stucked(&is_dbg_pwr_btn_pressed) == true) {
+#ifdef CONFIG_GRANDCANYON2
+      if (!IS_SEL_FILTERED("DEBUG_PWR_BTN_N")) {
+        syslog(LOG_CRIT, "ASSERT: Debug card power button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+      }
+#else
       syslog(LOG_CRIT, "ASSERT: Debug card power button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+#endif
     }
     if (is_button_stucked(&is_dbg_uart_sel_btn_pressed) == true) {
+#ifdef CONFIG_GRANDCANYON2
+      if (!IS_SEL_FILTERED("DEBUG_BMC_UART_SEL_R")) {
+        syslog(LOG_CRIT, "ASSERT: Debug card uart selection button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+      }
+#else
       syslog(LOG_CRIT, "ASSERT: Debug card uart selection button seems to stuck for a long time (more than %d seconds)\n", STUCK_BUTTON_TIME);
+#endif
     }
   }
 
@@ -346,16 +429,31 @@ fru_missing_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
     return;
   }
   
+#ifdef CONFIG_GRANDCANYON2
+  bool filtered = IS_SEL_FILTERED(cfg->shadow);
+#endif
   if (strcmp(cfg->shadow, "NIC_PRSNTB3_N") == 0) {
     if (curr == GPIO_VALUE_HIGH) {
+#ifdef CONFIG_GRANDCANYON2
+      if (!filtered) {
+        syslog(LOG_CRIT, "ASSERT: nic missing");
+      }
+#else
       syslog(LOG_CRIT, "ASSERT: nic missing");
+#endif
       pal_set_error_code(ERR_CODE_NIC_MISSING, ERR_CODE_ENABLE);
 
       if (pal_nic_poweroff_action() < 0) {
         syslog(LOG_WARNING, "%s(): Fail to handle actions after NIC is removed.", __func__);
       }
     } else if (curr == GPIO_VALUE_LOW) {
+#ifdef CONFIG_GRANDCANYON2
+      if (!filtered) {
+        syslog(LOG_CRIT, "DEASSERT: nic missing");
+      }
+#else
       syslog(LOG_CRIT, "DEASSERT: nic missing");
+#endif
       pal_set_error_code(ERR_CODE_NIC_MISSING, ERR_CODE_DISABLE);
 
       if (pal_nic_poweron_action() < 0) {
@@ -369,13 +467,37 @@ fru_missing_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
       return;
     }
     if (server_power_status == SERVER_12V_OFF) {
+#ifdef CONFIG_GRANDCANYON2
+        if (!filtered) {
+          syslog(LOG_CRIT, "Server is AC OFF");
+        }
+#else
         syslog(LOG_CRIT, "Server is AC OFF");
+#endif
       } else if (server_power_status == SERVER_12V_ON) {
+#ifdef CONFIG_GRANDCANYON2
+        if (!filtered) {
+          syslog(LOG_CRIT, "Server is AC ON");
+        }
+#else
         syslog(LOG_CRIT, "Server is AC ON");
+#endif
       } else if (server_power_status == SERVER_POWER_OFF) {
+#ifdef CONFIG_GRANDCANYON2
+        if (!filtered) {
+          syslog(LOG_CRIT, "Server is DC OFF");
+        }
+#else
         syslog(LOG_CRIT, "Server is DC OFF");
+#endif
       } else if (server_power_status == SERVER_POWER_ON) {
+#ifdef CONFIG_GRANDCANYON2
+        if (!filtered) {
+          syslog(LOG_CRIT, "Server is DC ON");
+        }
+#else
         syslog(LOG_CRIT, "Server is DC ON");
+#endif
       }
   }
   

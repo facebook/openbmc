@@ -47,6 +47,6 @@ IMAGE_INSTALL += " \
   cpld-handler \
   apml \
   crashdump-amd \
-  addc \
+  bmc-ras \
   yaap \
   "

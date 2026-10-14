@@ -1,7 +1,7 @@
 require common/images/fb-openbmc-image.inc
 
 IMAGE_INSTALL:append = " apml"
-IMAGE_INSTALL:append = " addc"
+IMAGE_INSTALL:append = " bmc-ras"
 IMAGE_INSTALL:append = " dimm-util"
 IMAGE_INSTALL:append = " stress-ng"
 IMAGE_INSTALL:append = " libcper"

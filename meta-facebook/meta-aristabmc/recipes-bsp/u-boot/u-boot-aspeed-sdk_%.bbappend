@@ -27,6 +27,11 @@ SRC_URI:append:aristabmc = " \
     file://0003-net-ftgmac100-Use-calibrated-enable-delay-for-AST270.patch \
     "
 
+do_compile:prepend:aristabmc() {
+    printf ' %s\n' "${OPENBMC_VERSION}" > "${S}/.scmversion"
+    printf ' %s\n' "${OPENBMC_VERSION}" > "${B}/.scmversion"
+}
+
 # Build the initial SPI-NOR environment image.  This supplies the console
 # settings on a freshly programmed/reset environment instead of relying on
 # U-Boot's compiled-in defaults alone.

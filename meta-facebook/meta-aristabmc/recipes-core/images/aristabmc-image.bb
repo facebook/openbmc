@@ -19,10 +19,10 @@ require recipes-core/images/fboss-lite-image.inc
 require aristabmc-image-layout.inc
 
 IMAGE_INSTALL:append = " \
+    fbmc-snapshot \
     fio \
     ipmitool \
     kernel-module-cpld \
     libcpldupdate-dll-ioctl \
     ssifd \
-    fbmc-snapshot \
     "

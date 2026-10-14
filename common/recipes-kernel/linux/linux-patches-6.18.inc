@@ -76,6 +76,7 @@ SRC_URI:append = " \
     file://0241-iio-adc-ti-ads112c04-Add-support-for-TI-ADS112C04.patch \
     file://0242-ipmi-ssif_bmc-Prevent-pending-response-from-being-lo.patch \
     file://0243-aspeed-i2c-fix-AST2700-target-buffer-mode-NULL-deref.patch \
+    file://0244-i2c-ast2600-reset-more-ISR-status.patch \
 "
 
 #

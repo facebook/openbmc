@@ -1,0 +1,174 @@
+#!/bin/bash
+
+declare -a EIDS
+
+is_host_on() {
+    local host_power_state=""
+    host_power_state="$(busctl get-property xyz.openbmc_project.State.Host /xyz/openbmc_project/state/host0 xyz.openbmc_project.State.Host CurrentHostState | cut -d'"' -f2)"
+
+    if [ "$host_power_state" != "xyz.openbmc_project.State.Host.HostState.Running" ]; then
+        return 1
+    fi
+    return 0
+}
+
+get_numeric_sensor_by_eid() {
+    local eid=$1
+    local sensor_id=$2
+    local pldmtool_out
+
+    pldmtool_out="$(pldmtool platform GetSensorReading -i "$sensor_id" -r 0 -m "$eid")"
+    if echo "$pldmtool_out" | jq 'has("presentReading")' | grep -q true; then
+        local op_state
+        op_state="$(echo "$pldmtool_out" | jq -r '.sensorOperationalState')"
+        if [ "$op_state" != "Sensor Enabled" ]; then
+            echo "nan"
+            return 0
+        fi
+        echo "$pldmtool_out" | jq '.presentReading'
+        return 0
+    else
+        return 1
+    fi
+}
+
+update_numeric_sensor_value() {
+    local eid="$1"
+    local sensor_id="$2"
+    local sensor_name="$3"
+    local sensor_val
+
+    if ! sensor_val="$(get_numeric_sensor_by_eid "${eid}" "${sensor_id}")"; then
+        echo "update_numeric_sensor_value(): pldmtool failed, eid: $eid, sensor_id: $sensor_id, sensor_name: $sensor_name"
+        return 1
+    fi
+    case "${sensor_id}" in
+        61|63|64|65)
+            unit="temperature"
+            ;;
+        67|68)
+            unit="power"
+            ;;
+        70|71)
+            unit="voltage"
+            ;;
+        *)
+            return
+            ;;
+    esac
+
+    # Unit modifier: -3
+    case "${sensor_id}" in
+        67|68|70|71)
+           sensor_val=$(awk "BEGIN {printf \"%.3f\", ${sensor_val}/1000}")
+           ;;
+    esac
+
+    busctl set-property xyz.openbmc_project.ExternalSensor "/xyz/openbmc_project/sensors/$unit/$sensor_name" xyz.openbmc_project.Sensor.Value Value d "$sensor_val"
+
+    if [ "$sensor_val" = "nan" ]; then
+        available="false"
+    else
+        available="true"
+    fi
+    busctl set-property xyz.openbmc_project.ExternalSensor "/xyz/openbmc_project/sensors/$unit/$sensor_name" xyz.openbmc_project.State.Decorator.Availability Available b "$available"
+}
+
+poll_numeric_sensor() {
+    local eid="$1"
+    local sensor_id="$2"
+    local sensor_name="$3"
+
+    if ! is_host_on; then
+        echo "poll_numeric_sensor(): host is off, eid: $eid"
+        return 1
+    fi
+
+    update_numeric_sensor_value "$eid" "$sensor_id" "$sensor_name"
+    return 0
+}
+
+set_all_external_sensors_invalid() {
+    for i in "${!EIDS[@]}"; do
+        if [ -z "${EIDS[$i]}" ]; then
+            continue
+        fi
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/NIC"${i}"_TEMP_C xyz.openbmc_project.Sensor.Value Value d "nan"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/NIC"${i}"_VR_TEMP_C xyz.openbmc_project.Sensor.Value Value d "nan"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/NIC"${i}"_BOARD_TEMP_C xyz.openbmc_project.Sensor.Value Value d "nan"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/NIC"${i}"_OSFP_TEMP_C xyz.openbmc_project.Sensor.Value Value d "nan"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/power/NIC"${i}"_VR_PWR_W xyz.openbmc_project.Sensor.Value Value d "nan"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/power/NIC"${i}"_ASIC_PWR_W xyz.openbmc_project.Sensor.Value Value d "nan"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/voltage/NIC"${i}"_VR_VIN_VOLT_V xyz.openbmc_project.Sensor.Value Value d "nan"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/voltage/NIC"${i}"_ASIC_VOLT_V xyz.openbmc_project.Sensor.Value Value d "nan"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/NIC"${i}"_TEMP_C xyz.openbmc_project.State.Decorator.Availability Available b "false"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/NIC"${i}"_VR_TEMP_C xyz.openbmc_project.State.Decorator.Availability Available b "false"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/NIC"${i}"_BOARD_TEMP_C xyz.openbmc_project.State.Decorator.Availability Available b "false"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/NIC"${i}"_OSFP_TEMP_C xyz.openbmc_project.State.Decorator.Availability Available b "false"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/power/NIC"${i}"_VR_PWR_W xyz.openbmc_project.State.Decorator.Availability Available b "false"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/power/NIC"${i}"_ASIC_PWR_W xyz.openbmc_project.State.Decorator.Availability Available b "false"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/voltage/NIC"${i}"_VR_VIN_VOLT_V xyz.openbmc_project.State.Decorator.Availability Available b "false"
+        busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/voltage/NIC"${i}"_ASIC_VOLT_V xyz.openbmc_project.State.Decorator.Availability Available b "false"
+    done
+}
+
+refresh_eids() {
+    # clear the original data
+    EIDS=()
+
+    local json_file="/run/mctp-eids.json"
+
+    [ -f "$json_file" ] || return 0
+
+    while read -r iface eid; do
+        idx=${iface#meta_mctpusb}
+        EIDS[idx]=$eid
+    done < <(
+        jq -r '.[] | "\(.interface) \(.eid)"' "$json_file"
+    )
+}
+
+execute_when_host_off() {
+    set_all_external_sensors_invalid
+    LAST_HOST_READY="0"
+}
+
+# Get initial host power state
+LAST_HOST_READY=$(is_host_on && echo "1" || echo "0")
+
+while true; do
+    sleep 1
+    HOST_READY=$(is_host_on && echo "1" || echo "0")
+
+    if [ "$HOST_READY" != "$LAST_HOST_READY" ]; then
+        if [ "$HOST_READY" = "1" ]; then
+            sleep 10
+        else
+            execute_when_host_off
+        fi
+    fi
+    LAST_HOST_READY="$HOST_READY"
+
+    # Skip sensor polling when host power off
+    if [ "$HOST_READY" != "1" ]; then
+        continue
+    fi
+
+    refresh_eids
+
+    for i in "${!EIDS[@]}"; do
+        if [ -z "${EIDS[$i]}" ]; then
+            continue
+        fi
+        poll_numeric_sensor "${EIDS[$i]}" 61 "NIC${i}_TEMP_C"
+        poll_numeric_sensor "${EIDS[$i]}" 63 "NIC${i}_VR_TEMP_C"
+        poll_numeric_sensor "${EIDS[$i]}" 64 "NIC${i}_BOARD_TEMP_C"
+        poll_numeric_sensor "${EIDS[$i]}" 65 "NIC${i}_OSFP_TEMP_C"
+        poll_numeric_sensor "${EIDS[$i]}" 67 "NIC${i}_VR_PWR_W"
+        poll_numeric_sensor "${EIDS[$i]}" 68 "NIC${i}_ASIC_PWR_W"
+        poll_numeric_sensor "${EIDS[$i]}" 70 "NIC${i}_VR_VIN_VOLT_V"
+        poll_numeric_sensor "${EIDS[$i]}" 71 "NIC${i}_ASIC_VOLT_V"
+    done
+done
+
+exit 0

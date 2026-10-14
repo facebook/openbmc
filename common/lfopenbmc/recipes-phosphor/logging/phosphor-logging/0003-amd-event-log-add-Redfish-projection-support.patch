@@ -1,7 +1,7 @@
 From da8cc22cc062824485bfbad4c31b4808bfb1812b Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 10 Sep 2026 03:17:47 -0500
-Subject: [PATCH] amd-event-log: add Redfish projection support
+Subject: [PATCH 12/17] amd-event-log: add Redfish projection support
 
 Add AMD Redfish projection support for AMD Event Log
 (AEL) runtime metadata.
@@ -18,6 +18,40 @@ the Redfish projection layer.
 
 Also add unit tests covering AMD Redfish payload
 generation and projection behavior.
+
+Tested:
+'''
+Enabled amd-event-log and set runtime-metadata-plugin to
+'xyz.openbmc_project.Logging.Extension.CPER.Processed'
+
+{
+        "type" : "a{sv}",
+        "data" : [
+                {
+                        "DiagnosticDataType" : {
+                                "type" : "s",
+                                "data" : "xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER"
+                        },
+                        "NotificationType" : {
+                                "type" : "s",
+                                "data" : ""
+                        },
+                        "SectionType" : {
+                                "type" : "s",
+                                "data" : ""
+                        },
+                        "Oem" : {
+                                "type" : "a{ss}",
+                                "data" : {
+                                        "AMD" : "{\"@odata.type\":\"#VENDOR_Message.v1_0_0.VENDOR_Message\",
+  \"AMDFieldIdentifiers\":[{\"AFID\":10000009,\"Description\":null}],\"AMDFieldIdentifiers@odata.count\":1,
+  \"RackUnitPosition\":\"/xyz/openbmc_project/inventory/system/board/NFC_Tag\"}"
+                                }
+                        }
+                }
+        ]
+}
+'''
 
 Change-Id: I9bc8dd9b9097726fe1feb4d2c253756a8a061700
 Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
@@ -623,5 +657,5 @@ index d94b2d4..e82dd6c 100644
 +    ),
 +)
 -- 
-2.53.0-Meta
+2.43.0
 

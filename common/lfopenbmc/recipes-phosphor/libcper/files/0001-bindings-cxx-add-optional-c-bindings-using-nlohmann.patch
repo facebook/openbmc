@@ -1,0 +1,1041 @@
+From 797c1c4881f42df14601138027af7652bf52c564 Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Fri, 28 Aug 2026 18:10:06 -0400
+Subject: [PATCH] bindings-cxx: add optional c++ bindings using nlohmann
+
+Take the approach of libgpiod (and libgpiod-cxx) to define C++
+bindings for the libcper.  These provide more ergonomic functions
+for getting an `nlohmann::json` instance instead of using json-c.
+
+Tested: Added test cases for all example conversions to ensure they
+match the same IR JSON content as the C-only bindings.
+
+Change-Id: I80565a6331321d967e0c080dd9193dff4e90ed1c
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ .gitignore                       |   2 +-
+ README.md                        |   4 +
+ bindings/cxx/.clang-format       | 136 +++++++++++++++++++++++++++++++
+ bindings/cxx/include/libcper.hpp |  47 +++++++++++
+ bindings/cxx/meson.build         |  30 +++++++
+ bindings/cxx/src/ir.cpp          |  83 +++++++++++++++++++
+ bindings/meson.build             |   3 +
+ meson.build                      |  21 +++++
+ meson.options                    |   5 ++
+ subprojects/nlohmann_json.wrap   |   6 ++
+ tests/cper-example-sections.h    |  44 ++++++++++
+ tests/cxx/.clang-format          | 136 +++++++++++++++++++++++++++++++
+ tests/cxx/examples.cpp           | 125 ++++++++++++++++++++++++++++
+ tests/cxx/ir.cpp                 | 115 ++++++++++++++++++++++++++
+ tests/cxx/meson.build            |  42 ++++++++++
+ tests/ir-tests.c                 |  16 +++-
+ tests/meson.build                |   4 +
+ 17 files changed, 815 insertions(+), 4 deletions(-)
+ create mode 100644 bindings/cxx/.clang-format
+ create mode 100644 bindings/cxx/include/libcper.hpp
+ create mode 100644 bindings/cxx/meson.build
+ create mode 100644 bindings/cxx/src/ir.cpp
+ create mode 100644 bindings/meson.build
+ create mode 100644 subprojects/nlohmann_json.wrap
+ create mode 100644 tests/cper-example-sections.h
+ create mode 100644 tests/cxx/.clang-format
+ create mode 100644 tests/cxx/examples.cpp
+ create mode 100644 tests/cxx/ir.cpp
+ create mode 100644 tests/cxx/meson.build
+
+diff --git a/.gitignore b/.gitignore
+index 873c957..9eddefe 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,4 +23,4 @@ specification/document/*.*gz
+ specification/document/*aux
+ 
+ subprojects/*
+--subprojects/*.wrap
+\ No newline at end of file
++!subprojects/*.wrap
+\ No newline at end of file
+diff --git a/README.md b/README.md
+index e9048f3..d16182d 100644
+--- a/README.md
++++ b/README.md
+@@ -51,6 +51,10 @@ json_object* cper_to_ir(FILE* cper_file);
+ void ir_to_cper(json_object* ir, FILE* out);
+ ```
+ 
++There is also a C++ binding (`libcper-cxx`) that returns the IR as
++`nlohmann::json` via `<libcper.hpp>`. It builds by default; pass
++`-Dbindings-cxx=disabled` to omit it.
++
+ ## Specification
+ 
+ The specification for this project's CPER-JSON format can be found in
+diff --git a/bindings/cxx/.clang-format b/bindings/cxx/.clang-format
+new file mode 100644
+index 0000000..e5530e6
+--- /dev/null
++++ b/bindings/cxx/.clang-format
+@@ -0,0 +1,136 @@
++---
++Language:        Cpp
++# BasedOnStyle:  LLVM
++AccessModifierOffset: -2
++AlignAfterOpenBracket: Align
++AlignConsecutiveAssignments: false
++AlignConsecutiveDeclarations: false
++AlignEscapedNewlines: Right
++AlignOperands:  Align
++AlignTrailingComments:
++  Kind: Always
++  OverEmptyLines: 1
++AllowAllParametersOfDeclarationOnNextLine: true
++AllowShortBlocksOnASingleLine: Empty
++AllowShortCaseLabelsOnASingleLine: false
++AllowShortFunctionsOnASingleLine: Empty
++AllowShortIfStatementsOnASingleLine: Never
++AllowShortLambdasOnASingleLine: true
++AllowShortLoopsOnASingleLine: false
++AlwaysBreakBeforeMultilineStrings: false
++BinPackArguments: true
++BinPackParameters: true
++BitFieldColonSpacing: None
++BraceWrapping:
++  AfterCaseLabel:  true
++  AfterClass:      true
++  AfterControlStatement: true
++  AfterEnum:       true
++  AfterExternBlock: true
++  AfterFunction:   true
++  AfterNamespace:  true
++  AfterObjCDeclaration: true
++  AfterStruct:     true
++  AfterUnion:      true
++  BeforeCatch:     true
++  BeforeElse:      true
++  BeforeLambdaBody: false
++  BeforeWhile:     false
++  IndentBraces:    false
++  SplitEmptyFunction:   false
++  SplitEmptyRecord:     false
++  SplitEmptyNamespace:  false
++BreakAfterAttributes: Never
++BreakAfterReturnType: Automatic
++BreakBeforeBinaryOperators: None
++BreakBeforeBraces: Custom
++BreakBeforeTernaryOperators: true
++BreakConstructorInitializers: AfterColon
++BreakInheritanceList: AfterColon
++BreakStringLiterals: false
++BreakTemplateDeclarations: Yes
++ColumnLimit:     80
++CommentPragmas:  '^ IWYU pragma:'
++CompactNamespaces: false
++ConstructorInitializerIndentWidth: 4
++ContinuationIndentWidth: 4
++Cpp11BracedListStyle: true
++DerivePointerAlignment: false
++DisableFormat:   false
++FixNamespaceComments: true
++ForEachMacros:
++  - foreach
++  - Q_FOREACH
++  - BOOST_FOREACH
++IncludeBlocks: Regroup
++IncludeCategories:
++  - Regex:           '^[<"](gtest|gmock)'
++    Priority:        7
++  - Regex:           '^"config.h"'
++    Priority:        -1
++  - Regex:           '^".*\.h"'
++    Priority:        1
++  - Regex:           '^".*\.hpp"'
++    Priority:        2
++  - Regex:           '^<.*\.h>'
++    Priority:        3
++  - Regex:           '^<.*\.hpp>'
++    Priority:        4
++  - Regex:           '^<.*'
++    Priority:        5
++  - Regex:           '.*'
++    Priority:        6
++IndentCaseLabels: true
++IndentExternBlock: NoIndent
++IndentRequiresClause: true
++IndentWidth:     4
++IndentWrappedFunctionNames: true
++InsertNewlineAtEOF: true
++KeepEmptyLinesAtTheStartOfBlocks: false
++LambdaBodyIndentation: Signature
++LineEnding: LF
++MacroBlockBegin: ''
++MacroBlockEnd:   ''
++MaxEmptyLinesToKeep: 1
++NamespaceIndentation: None
++ObjCBlockIndentWidth: 2
++ObjCSpaceAfterProperty: false
++ObjCSpaceBeforeProtocolList: true
++PackConstructorInitializers: BinPack
++PenaltyBreakAssignment: 25
++PenaltyBreakBeforeFirstCallParameter: 50
++PenaltyBreakComment: 300
++PenaltyBreakFirstLessLess: 120
++PenaltyBreakString: 1000
++PenaltyBreakTemplateDeclaration: 10
++PenaltyExcessCharacter: 1000000
++PenaltyReturnTypeOnItsOwnLine: 150
++PenaltyIndentedWhitespace: 1
++PointerAlignment: Left
++QualifierAlignment: Left
++ReferenceAlignment: Left
++ReflowComments:  true
++RequiresClausePosition: OwnLine
++RequiresExpressionIndentation: Keyword
++SortIncludes: CaseSensitive
++SortUsingDeclarations: true
++SpaceAfterCStyleCast: false
++SpaceAfterTemplateKeyword: true
++SpaceBeforeAssignmentOperators: true
++SpaceBeforeCpp11BracedList: false
++SpaceBeforeCtorInitializerColon: true
++SpaceBeforeInheritanceColon: true
++SpaceBeforeParens: ControlStatements
++SpaceBeforeRangeBasedForLoopColon: true
++SpaceInEmptyParentheses: false
++SpacesBeforeTrailingComments: 1
++SpacesInAngles: Never
++SpacesInContainerLiterals: true
++SpacesInCStyleCastParentheses: false
++SpacesInParentheses: false
++SpacesInSquareBrackets: false
++Standard:        Latest
++TabWidth:        4
++UseTab:          Never
++...
++
+diff --git a/bindings/cxx/include/libcper.hpp b/bindings/cxx/include/libcper.hpp
+new file mode 100644
+index 0000000..80f2481
+--- /dev/null
++++ b/bindings/cxx/include/libcper.hpp
+@@ -0,0 +1,47 @@
++#pragma once
++
++#include <nlohmann/json.hpp>
++
++#include <cstdint>
++#include <span>
++
++/**
++ * @file libcper.hpp
++ * @brief C++ bindings for libcper
++ *
++ * These bindings produce nlohmann::json representations of CPER data instead
++ * of the json-c format used in the C-bindings.
++ *
++ * An unparseable or invalid record is represented as a null nlohmann::json
++ * value, mirroring the existing C API which returns NULL.
++ */
++
++namespace libcper
++{
++
++/** Functions that generate libcper Intermediate Representation */
++namespace ir
++{
++/**
++ * @brief Parses a full CPER record into its libcper IR representation.
++ *
++ * @param[in] cperData The CPER record data.
++ *
++ * @return The IR representation as nlohmann::json, or a null json value if
++ *         the input is not a valid CPER record.
++ */
++auto parseCPER(std::span<const std::uint8_t> cperData) -> nlohmann::json;
++
++/**
++ * @brief Parses a single CPER section into its libcper IR representation.
++ *
++ * @param[in] cperData The CPER section data, including its section
++ *                     descriptor.
++ *
++ * @return The IR representation as nlohmann::json, or a null json value on
++ *         failure.
++ */
++auto parseCPERSection(std::span<const std::uint8_t> cperData) -> nlohmann::json;
++} // namespace ir
++
++} // namespace libcper
+diff --git a/bindings/cxx/meson.build b/bindings/cxx/meson.build
+new file mode 100644
+index 0000000..4512a63
+--- /dev/null
++++ b/bindings/cxx/meson.build
+@@ -0,0 +1,30 @@
++cxx_inc = include_directories('include')
++cxx_src = ['src/ir.cpp']
++
++libcper_cxx = library(
++    'cper-cxx',
++    cxx_src,
++    version: meson.project_version(),
++    include_directories: [cxx_inc, libcper_include_dir],
++    dependencies: [json_c.as_system(), nlohmann_json_dep, libcper_parse_dep],
++    install: install,
++)
++libcper_cxx_dep = declare_dependency(
++    include_directories: cxx_inc,
++    link_with: libcper_cxx,
++    dependencies: [libcper_parse_dep, json_c.as_system(), nlohmann_json_dep],
++)
++
++install_headers(
++    'include/libcper.hpp',
++)
++
++if get_option('pkgconfig').allowed()
++    import('pkgconfig').generate(
++        libcper_cxx,
++        name: 'libcper-cxx',
++        version: meson.project_version(),
++        description: 'C++ (nlohmann::json) bindings for parsing CPER',
++        requires: ['libcper'],
++    )
++endif
+diff --git a/bindings/cxx/src/ir.cpp b/bindings/cxx/src/ir.cpp
+new file mode 100644
+index 0000000..2500962
+--- /dev/null
++++ b/bindings/cxx/src/ir.cpp
+@@ -0,0 +1,83 @@
++/**
++ * SPDX-License-Identifier: Apache-2.0
++ * SPDX-FileCopyrightText: Copyright OpenBMC Authors
++ *
++ * C++ (nlohmann::json) bindings for libcper.
++ *
++ * These functions parse CPER records using the existing json-c based C
++ * parser and expose the result as nlohmann::json. Parsing the serialized
++ * json-c string guarantees the output is byte-identical to the IR produced
++ * by the native C library, since json-c remains the single source of truth.
++ **/
++
++#include <json.h>
++#include <libcper/cper-parse.h>
++
++#include <libcper.hpp>
++
++#include <cstdint>
++#include <exception>
++#include <memory>
++#include <span>
++
++namespace libcper
++{
++
++namespace
++{
++
++// Releases a json-c object with json_object_put() on destruction, so the C
++// allocation is freed even if the IR conversion below throws.
++struct JsonObjectDeleter
++{
++    void operator()(json_object* obj) const noexcept
++    {
++        json_object_put(obj);
++    }
++};
++
++using JsonObjectPtr = std::unique_ptr<json_object, JsonObjectDeleter>;
++
++// Converts a json-c IR object to nlohmann::json. Does not take ownership;
++// callers must keep the json_object alive for the duration of the call.
++auto irToJson(json_object* ir) -> nlohmann::json
++{
++    if (ir == nullptr)
++    {
++        return nullptr;
++    }
++
++    try
++    {
++        return nlohmann::json::parse(json_object_to_json_string(ir));
++    }
++    catch (const std::exception&)
++    {
++        return nullptr;
++    }
++}
++
++} // namespace
++
++namespace ir
++{
++
++auto parseCPER(std::span<const std::uint8_t> cperData) -> nlohmann::json
++{
++    JsonObjectPtr ir(
++        cper_buf_to_ir(reinterpret_cast<const unsigned char*>(cperData.data()),
++                       cperData.size()));
++    return irToJson(ir.get());
++}
++
++auto parseCPERSection(std::span<const std::uint8_t> cperData) -> nlohmann::json
++{
++    JsonObjectPtr ir(cper_buf_single_section_to_ir(
++        reinterpret_cast<const unsigned char*>(cperData.data()),
++        cperData.size()));
++    return irToJson(ir.get());
++}
++
++} // namespace ir
++
++} // namespace libcper
+diff --git a/bindings/meson.build b/bindings/meson.build
+new file mode 100644
+index 0000000..1b68d6c
+--- /dev/null
++++ b/bindings/meson.build
+@@ -0,0 +1,3 @@
++if opt_bindings_cxx.allowed()
++    subdir('cxx')
++endif
+diff --git a/meson.build b/meson.build
+index 6316995..10082c5 100644
+--- a/meson.build
++++ b/meson.build
+@@ -5,6 +5,7 @@ project(
+     meson_version: '>=1.2.0',
+     default_options: [
+         'c_std=c18',
++        'cpp_std=c++23',
+         'tests=' + (meson.is_subproject() ? 'disabled' : 'enabled'),
+         'warning_level=2',
+         'werror=true',
+@@ -25,6 +26,19 @@ add_project_arguments(
+ 
+ library_is_share = get_option('default_library') == 'shared'
+ 
++opt_bindings_cxx = get_option('bindings-cxx')
++
++if opt_bindings_cxx.allowed()
++    add_languages('cpp')
++    add_project_arguments(
++        [
++            '-DLIBCPER_EXAMPLES="' + example_dir + '"',
++            '-DLIBCPER_JSON_SPEC="' + spec_dir + '"',
++        ],
++        language: 'cpp',
++    )
++endif
++
+ if get_option('output-all-properties').enabled()
+     add_project_arguments('-DOUTPUT_ALL_PROPERTIES', language: 'c')
+ endif
+@@ -79,6 +93,9 @@ json_c_dep = declare_dependency(
+     include_directories: include_directories('subprojects'),
+     dependencies: json_c,
+ )
++if opt_bindings_cxx.allowed()
++    nlohmann_json_dep = dependency('nlohmann_json', include_type: 'system')
++endif
+ libcper_include = ['include']
+ libcper_include_dir = include_directories(libcper_include, is_system: true)
+ 
+@@ -129,6 +146,10 @@ libcper_generate_dep = declare_dependency(
+     link_with: libcper_generate,
+ )
+ 
++if opt_bindings_cxx.allowed()
++    subdir('bindings')
++endif
++
+ if get_option('pkgconfig').allowed()
+     import('pkgconfig').generate(
+         libcper_parse,
+diff --git a/meson.options b/meson.options
+index ffd7c74..bb838bc 100644
+--- a/meson.options
++++ b/meson.options
+@@ -18,6 +18,11 @@ option(
+     description: 'Build python extensions',
+ )
+ option('install', type: 'feature', value: 'enabled', description: 'Install')
++option(
++    'bindings-cxx',
++    type: 'feature',
++    description: 'Build C++ (nlohmann::json) bindings',
++)
+ option(
+     'pkgconfig',
+     type: 'feature',
+diff --git a/subprojects/nlohmann_json.wrap b/subprojects/nlohmann_json.wrap
+new file mode 100644
+index 0000000..fbd938d
+--- /dev/null
++++ b/subprojects/nlohmann_json.wrap
+@@ -0,0 +1,6 @@
++[wrap-git]
++revision = HEAD
++url = https://github.com/nlohmann/json.git
++
++[provide]
++nlohmann_json = nlohmann_json_dep
+\ No newline at end of file
+diff --git a/tests/cper-example-sections.h b/tests/cper-example-sections.h
+new file mode 100644
+index 0000000..90fe031
+--- /dev/null
++++ b/tests/cper-example-sections.h
+@@ -0,0 +1,44 @@
++#ifndef CPER_EXAMPLE_SECTIONS_H
++#define CPER_EXAMPLE_SECTIONS_H
++
++/*
++ * List of CPER example sections that have a fixed binary file
++ * (examples/<name>.cperhex) and a golden JSON representation
++ * (examples/<name>.json).
++ *
++ * This is the single source of truth shared by the C test suite
++ * (tests/ir-tests.c) and the C++ bindings test suite
++ * (tests/cxx/ir.cpp). It expands to the comma-separated
++ * contents of an initializer list, so it can be used to build either a C
++ * array or a C++ std::array.
++ *
++ * Keep this in sync with the examples/ directory.
++ */
++// clang-format off
++#define CPER_EXAMPLE_SECTIONS                                    \
++    "arm",                                                       \
++    "arm-ras",                                                   \
++    "ccixper",                                                   \
++    "cxlcomponent-media",                                        \
++    "cxlprotocol",                                               \
++    "dmargeneric",                                               \
++    "dmariommu",                                                 \
++    "dmarvtd",                                                   \
++    "firmware",                                                  \
++    "generic",                                                   \
++    "ia32x64",                                                   \
++    "memory",                                                    \
++    "memory-validation-bits",                                    \
++    "memory2",                                                   \
++    "nvidia",                                                    \
++    "nvidia_cmet_info",                                          \
++    "nvidia_event_all_types",                                    \
++    "nvidia_event_gpu_init",                                     \
++    "nvidia_event_gpu_uce_ecc",                                  \
++    "pcibus",                                                    \
++    "pcidev",                                                    \
++    "pcie",                                                      \
++    "unknown"
++// clang-format on
++
++#endif // CPER_EXAMPLE_SECTIONS_H
+diff --git a/tests/cxx/.clang-format b/tests/cxx/.clang-format
+new file mode 100644
+index 0000000..e5530e6
+--- /dev/null
++++ b/tests/cxx/.clang-format
+@@ -0,0 +1,136 @@
++---
++Language:        Cpp
++# BasedOnStyle:  LLVM
++AccessModifierOffset: -2
++AlignAfterOpenBracket: Align
++AlignConsecutiveAssignments: false
++AlignConsecutiveDeclarations: false
++AlignEscapedNewlines: Right
++AlignOperands:  Align
++AlignTrailingComments:
++  Kind: Always
++  OverEmptyLines: 1
++AllowAllParametersOfDeclarationOnNextLine: true
++AllowShortBlocksOnASingleLine: Empty
++AllowShortCaseLabelsOnASingleLine: false
++AllowShortFunctionsOnASingleLine: Empty
++AllowShortIfStatementsOnASingleLine: Never
++AllowShortLambdasOnASingleLine: true
++AllowShortLoopsOnASingleLine: false
++AlwaysBreakBeforeMultilineStrings: false
++BinPackArguments: true
++BinPackParameters: true
++BitFieldColonSpacing: None
++BraceWrapping:
++  AfterCaseLabel:  true
++  AfterClass:      true
++  AfterControlStatement: true
++  AfterEnum:       true
++  AfterExternBlock: true
++  AfterFunction:   true
++  AfterNamespace:  true
++  AfterObjCDeclaration: true
++  AfterStruct:     true
++  AfterUnion:      true
++  BeforeCatch:     true
++  BeforeElse:      true
++  BeforeLambdaBody: false
++  BeforeWhile:     false
++  IndentBraces:    false
++  SplitEmptyFunction:   false
++  SplitEmptyRecord:     false
++  SplitEmptyNamespace:  false
++BreakAfterAttributes: Never
++BreakAfterReturnType: Automatic
++BreakBeforeBinaryOperators: None
++BreakBeforeBraces: Custom
++BreakBeforeTernaryOperators: true
++BreakConstructorInitializers: AfterColon
++BreakInheritanceList: AfterColon
++BreakStringLiterals: false
++BreakTemplateDeclarations: Yes
++ColumnLimit:     80
++CommentPragmas:  '^ IWYU pragma:'
++CompactNamespaces: false
++ConstructorInitializerIndentWidth: 4
++ContinuationIndentWidth: 4
++Cpp11BracedListStyle: true
++DerivePointerAlignment: false
++DisableFormat:   false
++FixNamespaceComments: true
++ForEachMacros:
++  - foreach
++  - Q_FOREACH
++  - BOOST_FOREACH
++IncludeBlocks: Regroup
++IncludeCategories:
++  - Regex:           '^[<"](gtest|gmock)'
++    Priority:        7
++  - Regex:           '^"config.h"'
++    Priority:        -1
++  - Regex:           '^".*\.h"'
++    Priority:        1
++  - Regex:           '^".*\.hpp"'
++    Priority:        2
++  - Regex:           '^<.*\.h>'
++    Priority:        3
++  - Regex:           '^<.*\.hpp>'
++    Priority:        4
++  - Regex:           '^<.*'
++    Priority:        5
++  - Regex:           '.*'
++    Priority:        6
++IndentCaseLabels: true
++IndentExternBlock: NoIndent
++IndentRequiresClause: true
++IndentWidth:     4
++IndentWrappedFunctionNames: true
++InsertNewlineAtEOF: true
++KeepEmptyLinesAtTheStartOfBlocks: false
++LambdaBodyIndentation: Signature
++LineEnding: LF
++MacroBlockBegin: ''
++MacroBlockEnd:   ''
++MaxEmptyLinesToKeep: 1
++NamespaceIndentation: None
++ObjCBlockIndentWidth: 2
++ObjCSpaceAfterProperty: false
++ObjCSpaceBeforeProtocolList: true
++PackConstructorInitializers: BinPack
++PenaltyBreakAssignment: 25
++PenaltyBreakBeforeFirstCallParameter: 50
++PenaltyBreakComment: 300
++PenaltyBreakFirstLessLess: 120
++PenaltyBreakString: 1000
++PenaltyBreakTemplateDeclaration: 10
++PenaltyExcessCharacter: 1000000
++PenaltyReturnTypeOnItsOwnLine: 150
++PenaltyIndentedWhitespace: 1
++PointerAlignment: Left
++QualifierAlignment: Left
++ReferenceAlignment: Left
++ReflowComments:  true
++RequiresClausePosition: OwnLine
++RequiresExpressionIndentation: Keyword
++SortIncludes: CaseSensitive
++SortUsingDeclarations: true
++SpaceAfterCStyleCast: false
++SpaceAfterTemplateKeyword: true
++SpaceBeforeAssignmentOperators: true
++SpaceBeforeCpp11BracedList: false
++SpaceBeforeCtorInitializerColon: true
++SpaceBeforeInheritanceColon: true
++SpaceBeforeParens: ControlStatements
++SpaceBeforeRangeBasedForLoopColon: true
++SpaceInEmptyParentheses: false
++SpacesBeforeTrailingComments: 1
++SpacesInAngles: Never
++SpacesInContainerLiterals: true
++SpacesInCStyleCastParentheses: false
++SpacesInParentheses: false
++SpacesInSquareBrackets: false
++Standard:        Latest
++TabWidth:        4
++UseTab:          Never
++...
++
+diff --git a/tests/cxx/examples.cpp b/tests/cxx/examples.cpp
+new file mode 100644
+index 0000000..22d17da
+--- /dev/null
++++ b/tests/cxx/examples.cpp
+@@ -0,0 +1,125 @@
++/**
++ * SPDX-License-Identifier: Apache-2.0
++ * SPDX-FileCopyrightText: Copyright OpenBMC Authors
++ *
++ * Compares the C++ (nlohmann::json) bindings output against the fixed golden
++ * CPER examples (examples/<name>.cperhex) and their expected JSON
++ * representations (examples/<name>.json), shared with tests/ir-tests.c.
++ **/
++
++#include "cper-example-sections.h"
++
++#include <libcper.hpp>
++#include <nlohmann/json.hpp>
++
++#include <array>
++#include <cctype>
++#include <cstdint>
++#include <filesystem>
++#include <fstream>
++#include <iterator>
++#include <string>
++#include <vector>
++
++#include <gtest/gtest.h>
++
++namespace
++{
++
++// The fixed CPER examples (binary + golden JSON) shared with tests/ir-tests.c.
++constexpr std::array kExampleSections{CPER_EXAMPLE_SECTIONS};
++
++// Returns the value of a single hex digit, or -1 if the character is not hex.
++auto nibbleValue(char c) -> int
++{
++    if (c >= '0' && c <= '9')
++    {
++        return c - '0';
++    }
++    if (c >= 'a' && c <= 'f')
++    {
++        return c - 'a' + 10;
++    }
++    if (c >= 'A' && c <= 'F')
++    {
++        return c - 'A' + 10;
++    }
++    return -1;
++}
++
++// Reads an examples/<name>.cperhex file (hex digits, whitespace ignored) into
++// raw bytes.
++auto loadBinary(const std::filesystem::path& path) -> std::vector<std::uint8_t>
++{
++    std::ifstream file(path);
++    if (!file)
++    {
++        return {};
++    }
++
++    std::string hex(std::istreambuf_iterator<char>(file), {});
++
++    std::vector<std::uint8_t> bytes;
++    int high = -1;
++    for (char c : hex)
++    {
++        if (std::isspace(static_cast<unsigned char>(c)))
++        {
++            continue;
++        }
++        int nibble = nibbleValue(c);
++        if (nibble < 0)
++        {
++            return {};
++        }
++        if (high < 0)
++        {
++            high = nibble;
++        }
++        else
++        {
++            bytes.push_back(static_cast<std::uint8_t>((high << 4) | nibble));
++            high = -1;
++        }
++    }
++    if (high >= 0)
++    {
++        return {};
++    }
++    return bytes;
++}
++
++// Reads an examples/<name>.json file into a nlohmann::json value.
++auto load(const std::filesystem::path& path) -> nlohmann::json
++{
++    std::ifstream file(path);
++    return nlohmann::json::parse(file);
++}
++
++} // namespace
++
++// Every fixed example binary must, when parsed through the C++ bindings,
++// produce JSON structurally identical to the golden examples/<name>.json.
++class ParseExamples : public ::testing::TestWithParam<const char*>
++{};
++
++TEST_P(ParseExamples, MatchesGoldenJson)
++{
++    std::string name = GetParam();
++
++    std::vector<std::uint8_t> binary = loadBinary(
++        std::filesystem::path(LIBCPER_EXAMPLES) / (name + ".cperhex"));
++    ASSERT_FALSE(binary.empty());
++
++    nlohmann::json expected =
++        load(std::filesystem::path(LIBCPER_EXAMPLES) / (name + ".json"));
++
++    nlohmann::json actual = libcper::ir::parseCPER(binary);
++    ASSERT_FALSE(actual.is_null());
++
++    EXPECT_EQ(actual, expected);
++}
++
++INSTANTIATE_TEST_SUITE_P(Golden, ParseExamples,
++                         ::testing::ValuesIn(kExampleSections.begin(),
++                                             kExampleSections.end()));
+diff --git a/tests/cxx/ir.cpp b/tests/cxx/ir.cpp
+new file mode 100644
+index 0000000..c1b7e48
+--- /dev/null
++++ b/tests/cxx/ir.cpp
+@@ -0,0 +1,115 @@
++/**
++ * SPDX-License-Identifier: Apache-2.0
++ * SPDX-FileCopyrightText: Copyright OpenBMC Authors
++ *
++ * Tests for the C++ (nlohmann::json) bindings.
++ **/
++
++#include <libcper/cper-parse-str.h>
++#include <libcper/generator/cper-generate.h>
++
++#include <libcper.hpp>
++#include <nlohmann/json.hpp>
++
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <memory>
++#include <vector>
++
++#include <gtest/gtest.h>
++
++namespace
++{
++
++constexpr GEN_VALID_BITS_TEST_TYPE kBits = ALL_VALID;
++
++// Generates a CPER record (or single section) into a byte buffer.
++auto generate(bool single_section) -> std::vector<std::uint8_t>
++{
++    char* buf = nullptr;
++    size_t size = 0;
++    FILE* stream = open_memstream(&buf, &size);
++    if (stream == nullptr)
++    {
++        return {};
++    }
++
++    char type[] = "generic";
++    if (single_section)
++    {
++        generate_single_section_record(type, stream, kBits);
++    }
++    else
++    {
++        char* types[] = {type};
++        generate_cper_record(types, 1, stream, kBits);
++    }
++    fclose(stream);
++
++    std::unique_ptr<char[], decltype(&std::free)> owned(buf, &std::free);
++    return {owned.get(), owned.get() + size};
++}
++
++} // namespace
++
++// The parsed IR of a generated record should have the expected shape.
++TEST(ParseIr, FullRecordShape)
++{
++    std::vector<std::uint8_t> bytes = generate(false);
++    ASSERT_FALSE(bytes.empty());
++
++    nlohmann::json result = libcper::ir::parseCPER(bytes);
++    ASSERT_FALSE(result.is_null());
++    EXPECT_TRUE(result.contains("header"));
++    EXPECT_TRUE(result.contains("sectionDescriptors"));
++    EXPECT_TRUE(result.contains("sections"));
++    EXPECT_EQ(result["header"]["sectionCount"], 1);
++    EXPECT_EQ(result["sections"].size(), 1);
++    EXPECT_NO_THROW(
++        (void)result["header"]["severity"]["name"].get<std::string>());
++}
++
++// The IR parsed through the bindings should match the one produced by the
++// native C string API.
++TEST(ParseIr, MatchesCStringIr)
++{
++    std::vector<std::uint8_t> bytes = generate(false);
++    ASSERT_FALSE(bytes.empty());
++
++    nlohmann::json result = libcper::ir::parseCPER(bytes);
++    ASSERT_FALSE(result.is_null());
++
++    std::unique_ptr<char, decltype(&std::free)> str(
++        cperbuf_to_str_ir(bytes.data(), bytes.size()), &std::free);
++    ASSERT_NE(str.get(), nullptr);
++    nlohmann::json cApi = nlohmann::json::parse(str.get());
++
++    EXPECT_EQ(result, cApi);
++}
++
++// Invalid or truncated input must yield a null JSON value, mirroring the C
++// API's NULL return value.
++TEST(ParseIr, InvalidInputReturnsNull)
++{
++    std::vector<std::uint8_t> empty;
++    EXPECT_TRUE(libcper::ir::parseCPER(empty).is_null());
++
++    std::vector<std::uint8_t> truncated(64, 0xFF);
++    EXPECT_TRUE(libcper::ir::parseCPER(truncated).is_null());
++}
++
++// A single section (with descriptor) should expose sectionDescriptor and the
++// parsed section payload.
++TEST(ParseIr, SingleSectionShape)
++{
++    std::vector<std::uint8_t> bytes = generate(true);
++    ASSERT_FALSE(bytes.empty());
++
++    nlohmann::json result = libcper::ir::parseCPERSection(bytes);
++    ASSERT_FALSE(result.is_null());
++    EXPECT_TRUE(result.contains("sectionDescriptor"));
++    EXPECT_TRUE(result.contains("section"));
++    EXPECT_NO_THROW((void)result["sectionDescriptor"]["severity"]["name"]
++                        .get<std::string>());
++}
+diff --git a/tests/cxx/meson.build b/tests/cxx/meson.build
+new file mode 100644
+index 0000000..5276d6f
+--- /dev/null
++++ b/tests/cxx/meson.build
+@@ -0,0 +1,42 @@
++gtest_dep = dependency('gtest', main: true, disabler: true, required: false)
++if not gtest_dep.found()
++    gtest_proj = import('cmake').subproject('googletest', required: false)
++    if gtest_proj.found()
++        gtest_dep = declare_dependency(
++            dependencies: [
++                dependency('threads'),
++                gtest_proj.dependency('gtest'),
++                gtest_proj.dependency('gtest_main'),
++            ],
++        )
++    else
++        assert(
++            not get_option('tests').enabled(),
++            'Googletest is required if tests and bindings-cxx are enabled',
++        )
++    endif
++endif
++
++cper_cxx_ir_tests = executable(
++    'cper-cxx-ir-tests',
++    'ir.cpp',
++    include_directories: include_directories('..'),
++    dependencies: [
++        gtest_dep,
++        libcper_cxx_dep,
++        libcper_generate_dep,
++    ],
++)
++test('test-cper-cxx-ir-tests', cper_cxx_ir_tests)
++
++cper_cxx_examples_tests = executable(
++    'cper-cxx-examples-tests',
++    'examples.cpp',
++    include_directories: include_directories('..'),
++    dependencies: [
++        gtest_dep,
++        libcper_cxx_dep,
++        libcper_generate_dep,
++    ],
++)
++test('test-cper-cxx-examples-tests', cper_cxx_examples_tests)
+diff --git a/tests/ir-tests.c b/tests/ir-tests.c
+index ad4ae3b..22b7b7d 100644
+--- a/tests/ir-tests.c
++++ b/tests/ir-tests.c
+@@ -16,6 +16,8 @@
+ #include <libcper/sections/cper-section.h>
+ 
+ #include "base64_test.h"
++#include "cper-example-sections.h"
++#include "hex_test.h"
+ 
+ /*
+ * Test templates.
+@@ -27,6 +29,11 @@ static const int GEN_EXAMPLES = 0;
+ static const char *cper_ext = "cperhex";
+ static const char *json_ext = "json";
+ 
++//Fixed CPER examples (binary + golden JSON) shared with the C++ test suite.
++static const char *const example_sections[] = { CPER_EXAMPLE_SECTIONS };
++static const size_t example_sections_len =
++	sizeof(example_sections) / sizeof(example_sections[0]);
++
+ struct file_info {
+ 	char *cper_out;
+ 	char *json_out;
+@@ -438,9 +445,6 @@ void cper_log_section_dual_ir_test(const char *section_name)
+ 	// Test with buffer based APIs
+ 	cper_buf_log_section_ir_test(section_name, 0, allValidbitsSet);
+ 	cper_buf_log_section_ir_test(section_name, 1, allValidbitsSet);
+-
+-	//Validate against examples
+-	cper_example_section_ir_test(section_name);
+ }
+ 
+ //Tests randomly generated CPER sections for binary compatibility of a given type, in both single section mode and full CPER log mode.
+@@ -722,6 +726,12 @@ int main(void)
+ 	CompileTimeAssertions_TwoWayConversion();
+ 	CompileTimeAssertions_ShortcodeNoSpaces();
+ 
++	//Validate the fixed examples (binary + golden JSON) shared with the
++	//C++ bindings test suite.
++	for (size_t i = 0; i < example_sections_len; i++) {
++		cper_example_section_ir_test(example_sections[i]);
++	}
++
+ 	printf("\n\nTest completed successfully.\n");
+ 
+ 	return 0;
+diff --git a/tests/meson.build b/tests/meson.build
+index f5baef2..9f10a9d 100644
+--- a/tests/meson.build
++++ b/tests/meson.build
+@@ -7,6 +7,10 @@ test_sources = files('base64_test.c', 'test-utils.c')
+ 
+ test_include_dirs = ['.', '../include']
+ 
++if opt_bindings_cxx.allowed()
++    subdir('cxx')
++endif
++
+ cper_tests = executable(
+     'cper-tests',
+     'ir-tests.c',
+-- 
+2.43.0
+

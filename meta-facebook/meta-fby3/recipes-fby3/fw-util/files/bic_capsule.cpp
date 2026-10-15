@@ -425,32 +425,32 @@ int CapsuleComponent::print_version() {
     if (fw_comp == FW_BIOS_CAPSULE) {
       comp_name = "BIOS Staging Capsule";
       if ( get_pfr_cap_ver_str(ver, fw_comp) < 0 ) {
-        throw "Error in getting the version of " + fru_name;
+        throw runtime_error("Error in getting the version of " + fru_name);
       }
       cout << comp_name << " Version: " << ver << endl;
     } else  if (fw_comp == FW_BIOS_RCVY_CAPSULE) {
       comp_name = "BIOS Recovery Capsule";
       if ( get_pfr_cap_ver_str(ver, fw_comp) < 0 ) {
-        throw "Error in getting the version of " + fru_name;
+        throw runtime_error("Error in getting the version of " + fru_name);
       }
       cout << comp_name << " Version: " << ver << endl;
     } else if (fw_comp == FW_CPLD_CAPSULE) {
       comp_name = "SB CPLD Staging Capsule";
       if ( get_pfr_cap_ver_str(ver, fw_comp) < 0 ) {
-        throw "Error in getting the version of " + fru_name;
+        throw runtime_error("Error in getting the version of " + fru_name);
       }
       cout << comp_name << " Version: " << ver << endl;
     } else  if (fw_comp == FW_CPLD_RCVY_CAPSULE) {
       comp_name = "SB CPLD Recovery Capsule";
       if ( get_pfr_cap_ver_str(ver, fw_comp) < 0 ) {
-        throw "Error in getting the version of " + fru_name;
+        throw runtime_error("Error in getting the version of " + fru_name);
       }
       cout << comp_name << " Version: " << ver << endl;
     } else {
       return FW_STATUS_NOT_SUPPORTED;
     }
-  } catch(string& err) {
-    printf("%s Version: NA (%s)\n", comp_name.c_str(), err.c_str());
+  } catch(const std::exception& err) {
+    printf("%s Version: NA (%s)\n", comp_name.c_str(), err.what());
   }
 
   return 0;

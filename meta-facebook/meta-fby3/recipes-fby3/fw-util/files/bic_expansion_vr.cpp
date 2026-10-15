@@ -115,11 +115,11 @@ int VrExtComponent::get_version(json& j)
   try {
     //Print VR FWs
     if ( get_ver_str(ver, fw_comp) < 0 ) {
-      throw "Error in getting the version of " + board_name;
+      throw runtime_error("Error in getting the version of " + board_name);
     }
     j["VERSION"] = ver;
-  } catch(string& err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
 
   return FW_STATUS_SUCCESS;

@@ -13,6 +13,7 @@
 #include "bmc_cpld_capsule.h"
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
+#include <stdexcept>
 
 using namespace std;
 
@@ -495,26 +496,26 @@ int BmcCpldCapsuleComponent::print_version()
     if (comp == "cpld_cap") {
       comp_name = "BMC Staging Capsule";
       if ( get_bmc_stg_cap_version(ver) < 0 ) {
-        throw "Error in getting the version of Staging Capsule";
+        throw runtime_error("Error in getting the version of Staging Capsule");
       }
       cout << comp_name << " Version: " << ver << endl;
 
       comp_name = "BMC CPLD Staging Capsule";
       if ( get_pfr_recovery_ver_str(ver, comp) < 0 ) {
-        throw "Error in getting the version of Staging Capsule";
+        throw runtime_error("Error in getting the version of Staging Capsule");
       }
       cout << comp_name << " Version: " << ver << endl;
     } else if (comp == "cpld_cap_rcvy") {
       comp_name = "BMC CPLD Recovery Capsule";
       if ( get_pfr_recovery_ver_str(ver, comp) < 0 ) {
-        throw "Error in getting the version of BMC CPLD Recovery Capsule";
+        throw runtime_error("Error in getting the version of BMC CPLD Recovery Capsule");
       }
       cout << comp_name << " Version: " << ver << endl;
     } else {
       return FW_STATUS_NOT_SUPPORTED;
     }
-  } catch(string& err) {
-    printf("%s Version: NA (%s)\n", comp_name.c_str(), err.c_str());
+  } catch(const std::exception& err) {
+    printf("%s Version: NA (%s)\n", comp_name.c_str(), err.what());
   }
 
   return 0;

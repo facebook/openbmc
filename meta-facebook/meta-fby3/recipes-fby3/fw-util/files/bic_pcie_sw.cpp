@@ -206,12 +206,12 @@ int PCIESWComponent::print_version() {
     try {
       //Print PESW FWs
       if ( get_ver_str(ver, node.first, board_type) < 0 ) {
-        throw "Error in getting the version of " + board_name;
+        throw runtime_error("Error in getting the version of " + board_name);
       }
       cout << board_name << " " << pesw_vendor << " " << node.second << " Version: " << ver << endl;
-    } catch(string& err) {
+    } catch(const std::exception& err) {
       printf("%s %s %s Version: NA (%s)\n", board_name.c_str(), pesw_vendor.c_str()
-                                          , node.second.c_str(), err.c_str());
+                                          , node.second.c_str(), err.what());
     }
   }
   return FW_STATUS_SUCCESS;

@@ -1,4 +1,4 @@
-From c2ba37b4b15bf4b017c07223d8f98c528fd8d77a Mon Sep 17 00:00:00 2001
+From 2a0e851d85b2f25bbd5daf2d9ca1800e14775bb5 Mon Sep 17 00:00:00 2001
 From: Pat Lin <pat.lin.wiwynn@gmail.com>
 Date: Wed, 22 Jul 2026 03:19:20 +0000
 Subject: [PATCH] arm64: dts: aspeed: add yosemite5 variants support
@@ -24,11 +24,11 @@ Changes include:
 Note: Lowering the I2C frequency will significantly increase the PLDM
 update time for CXL devices on i2c12 in the T2 platform.
 ---
- .../aspeed-bmc-facebook-yosemite5a7.dts       | 947 +++++++++++++++++-
- 1 file changed, 935 insertions(+), 12 deletions(-)
+ .../aspeed-bmc-facebook-yosemite5a7.dts       | 967 +++++++++++++++++-
+ 1 file changed, 949 insertions(+), 18 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
-index 440a91413749..86083a3510d6 100644
+index 93a559712..fee928fad 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 @@ -5,6 +5,7 @@
@@ -80,7 +80,7 @@ index 440a91413749..86083a3510d6 100644
  	};
  
  	chosen {
-@@ -422,6 +457,44 @@ adc@1d {
+@@ -423,6 +458,50 @@ adc@1d {
  		reg = <0x1d>;
  		ti,mode = /bits/ 8 <1>;
  	};
@@ -89,6 +89,10 @@ index 440a91413749..86083a3510d6 100644
 +	paddle_io_expander0: gpio-expander@21 {
 +		compatible = "nxp,pca9535";
 +		reg = <0x21>;
++		interrupt-parent = <&pdb_io_expander0>;
++		interrupts = <14 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		gpio-line-names =
@@ -108,6 +112,8 @@ index 440a91413749..86083a3510d6 100644
 +	paddle_io_expander2: gpio-expander@23 {
 +		compatible = "nxp,pca9535";
 +		reg = <0x23>;
++		interrupt-parent = <&paddle_io_expander0>;
++		interrupts = <15 IRQ_TYPE_LEVEL_LOW>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		gpio-line-names =
@@ -125,7 +131,16 @@ index 440a91413749..86083a3510d6 100644
  
  	/* PDB IOEXP0 */
  	pdb_io_expander0: gpio-expander@24 {
-@@ -463,6 +536,25 @@ gpio-expander@25 {
+@@ -442,7 +521,7 @@ pdb_io_expander0: gpio-expander@24 {
+ 			"PRSNT_FAN0","PRSNT_FAN1",
+ 			"PRSNT_FAN2","PRSNT_FAN3",
+ 			"","",
+-			"","INT_SLOT";
++			"FM_SLOT2_IOE_ALT_N","INT_SLOT";
+ 	};
+ 
+ 	/* PDB IOEXP1 */
+@@ -464,6 +543,27 @@ gpio-expander@25 {
  			"","";
  	};
  
@@ -133,6 +148,8 @@ index 440a91413749..86083a3510d6 100644
 +	paddle_io_expander1: gpio-expander@26 {
 +		compatible = "nxp,pca9535";
 +		reg = <0x26>;
++		interrupt-parent = <&paddle_io_expander0>;
++		interrupts = <14 IRQ_TYPE_LEVEL_LOW>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		gpio-line-names =
@@ -151,7 +168,7 @@ index 440a91413749..86083a3510d6 100644
  	power-sensor@40 {
  		compatible = "ti,ina238";
  		reg = <0x40>;
-@@ -509,12 +601,6 @@ power-monitor@46 {
+@@ -510,12 +610,6 @@ power-monitor@46 {
  		reg = <0x46>;
  	};
  
@@ -164,7 +181,7 @@ index 440a91413749..86083a3510d6 100644
  	temperature-sensor@48 {
  		compatible = "ti,tmp75";
  		reg = <0x48>;
-@@ -525,10 +611,10 @@ temperature-sensor@49 {
+@@ -526,10 +620,10 @@ temperature-sensor@49 {
  		reg = <0x49>;
  	};
  
@@ -179,7 +196,7 @@ index 440a91413749..86083a3510d6 100644
  	};
  
  	/* PDB FRU */
-@@ -607,6 +693,285 @@ i2c8mux0ch1: i2c@1 {
+@@ -608,6 +702,285 @@ i2c8mux0ch1: i2c@1 {
  			reg = <1>;
  			#address-cells = <1>;
  			#size-cells = <0>;
@@ -465,7 +482,7 @@ index 440a91413749..86083a3510d6 100644
  		};
  
  		/* PWRPIC #12 (Connector to CXL BD) */
-@@ -731,8 +1096,23 @@ eeprom@56 {
+@@ -734,8 +1107,23 @@ eeprom@56 {
  
  /* MCIO 0A I2C */
  &i2c6 {
@@ -489,7 +506,7 @@ index 440a91413749..86083a3510d6 100644
  	/* E1S EB IOEXP0 */
  	gpio-expander@21 {
  		compatible = "nxp,pca9535";
-@@ -864,12 +1244,24 @@ adc@4b {
+@@ -867,12 +1255,24 @@ adc@4b {
  		reg = <0x4b>;
  	};
  
@@ -514,7 +531,7 @@ index 440a91413749..86083a3510d6 100644
  	/* I2C MUX on E1S x4 board */
  	i2c-mux@73 {
  		compatible = "nxp,pca9543";
-@@ -971,13 +1363,214 @@ &i2c8 {
+@@ -974,13 +1374,214 @@ &i2c8 {
  	multi-master;
  	i2c-scl-clk-low-timeout-us = <31744>;
  	mctp-controller;
@@ -730,7 +747,7 @@ index 440a91413749..86083a3510d6 100644
  };
  
  &i2c9 {
-@@ -1045,13 +1638,177 @@ &i2c11 {
+@@ -1048,13 +1649,177 @@ &i2c11 {
  	multi-master;
  	i2c-scl-clk-low-timeout-us = <31744>;
  	mctp-controller;
@@ -909,7 +926,7 @@ index 440a91413749..86083a3510d6 100644
  };
  
  /* MB CPLD I2C */
-@@ -1070,6 +1827,164 @@ &i2c13 {
+@@ -1073,6 +1838,164 @@ &i2c13 {
  &i2c14 {
  	status = "okay";
  	pinctrl-0 = <&pinctrl_di2c14_default>;
@@ -1074,7 +1091,7 @@ index 440a91413749..86083a3510d6 100644
  };
  
  &i2c15 {
-@@ -1117,6 +2032,14 @@ &mac0 {
+@@ -1120,6 +2043,14 @@ &mac0 {
  	status = "okay";
  };
  
@@ -1089,6 +1106,32 @@ index 440a91413749..86083a3510d6 100644
  /*
  &mdio0 {
  	status = "okay";
+@@ -1263,9 +2194,9 @@ &sgpiom0 {
+ 	"PRSNT_MCIO1A_N_FF","",
+ 	"NIC_PRSNT_N","",
+ 	"FM_CPU_BMC_RST_N","",
++	"RST_CPU_RESETL_N","",
+ 	"","",
+-	"","",
+-	"","",
++	"FM_BMC_READY_PLD_N_loopback","",
+ 	/*bit104-bit111*/
+ 	"MASTER_PWR_EN","",
+ 	"MASTER_PWR2_EN","",
+@@ -1283,10 +2214,10 @@ &sgpiom0 {
+ 	"","",
+ 	"PRSNT_BOOT_N","",
+ 	"PRSNT_MCIO1A_N","",
+-	"","",
++	"ALERT_INA230_P12V_0A_0B_R1_N","",
+ 	/*bit120-bit127*/
+-	"","",
+-	"","",
++	"PWRGD_P12V_0A_0B_R1","",
++	"FAULT_P12V_0A_0B_R1_N","",
+ 	"PRSNT_CXL_N","",
+ 	"PRSNT_MCIO3A_N","",
+ 	"PRSNT_MCIO3A_1_N","",
 -- 
 2.43.0
 

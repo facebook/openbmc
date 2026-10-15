@@ -5,6 +5,7 @@
 #include <facebook/bic.h>
 #include "vpdb_vr.h"
 #include <openbmc/kv.h>
+#include <stdexcept>
 
 extern "C" {
 extern void plat_vr_preinit(uint8_t slot, const char *name);
@@ -77,7 +78,7 @@ int VpdbVrComponent::print_version() {
 
   try {
     if (get_ver_str(vpdb_vr_name, ver) < 0) {
-      throw "Error in getting the version of " + vpdb_vr_name;
+      throw runtime_error("Error in getting the version of " + vpdb_vr_name);
     }
     cout << vpdb_vr_name << " Version: " << ver << endl;
     snprintf(ver_key, sizeof(ver_key), "%s_vr_%02xh_new_crc", fru().c_str(), VPDB_VR_ADDR);
@@ -87,8 +88,8 @@ int VpdbVrComponent::print_version() {
     } else { // no update before
       cout << vpdb_vr_name << " Version after activation: " << ver << endl;
     }
-  } catch (string& err) {
-    cout << vpdb_vr_name << " Version : NA (" << err.c_str() << ")" << endl;
+  } catch (const std::exception& err) {
+    cout << vpdb_vr_name << " Version : NA (" << err.what() << ")" << endl;
   }
 
   return FW_STATUS_SUCCESS;
@@ -99,7 +100,7 @@ int VpdbVrComponent::get_version(json& j) {
 
   try {
     if (get_ver_str(vpdb_vr_name, ver) < 0) {
-      throw "Error in getting the version of " + vpdb_vr_name;
+      throw runtime_error("Error in getting the version of " + vpdb_vr_name);
     }
     //For IFX and RNS, the str is $vendor $ver, Remaining Writes: $times
     //For TI, the str is $vendor_token1 $vendor_token2 $ver
@@ -122,8 +123,8 @@ int VpdbVrComponent::get_version(json& j) {
     tmp_str = ver.substr(start, end - start);
     transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
     j["VERSION"][vpdb_vr_name]["rmng_w"] = tmp_str;
-  } catch (string& err) {
-    if (err.find("empty") != string::npos) {
+  } catch (const std::exception& err) {
+    if (string(err.what()).find("empty") != string::npos) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

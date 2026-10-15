@@ -7,6 +7,12 @@ require conf/distro/include/fb/versioning.inc
 
 DEFAULT_TIMEZONE ?= "America/Los_Angeles"
 
+# Opt in to hardened builds with BMC_HARDENED=1. Import the environment variable
+# through BB_ENV_PASSTHROUGH_ADDITIONS (BB_ENV_EXTRAWHITE before Kirkstone):
+# BB_ENV_PASSTHROUGH_ADDITIONS="$BB_ENV_PASSTHROUGH_ADDITIONS BMC_HARDENED" \
+#     BMC_HARDENED=1 bitbake <image-target>
+DISTRO_FEATURES:append = "${@' fb-hardened' if d.getVar('BMC_HARDENED') == '1' else ''}"
+
 # By default disable interactive patch resolution (tasks will just fail instead):
 PATCHRESOLVE = "noop"
 

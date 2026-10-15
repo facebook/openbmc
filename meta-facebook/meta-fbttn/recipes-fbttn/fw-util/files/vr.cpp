@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include "server.h"
@@ -53,12 +54,12 @@ class VrComponent : public Component {
       } else {
         printf("PVCCSCSUS VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
       }
-    } catch (string err) {
-      printf("PVCCIN VR Version: NA (%s)\n", err.c_str());
-      printf("DDRAB VR Version: NA (%s)\n", err.c_str());
-      printf("P1V05 VR Version: NA (%s)\n", err.c_str());
-      printf("PVCCGBE VR Version: NA (%s)\n", err.c_str());
-      printf("PVCCSCSUS VR Version: NA (%s)\n", err.c_str());
+    } catch (const std::exception& err) {
+      printf("PVCCIN VR Version: NA (%s)\n", err.what());
+      printf("DDRAB VR Version: NA (%s)\n", err.what());
+      printf("P1V05 VR Version: NA (%s)\n", err.what());
+      printf("PVCCGBE VR Version: NA (%s)\n", err.what());
+      printf("PVCCSCSUS VR Version: NA (%s)\n", err.what());
     }
     return 0;
   }

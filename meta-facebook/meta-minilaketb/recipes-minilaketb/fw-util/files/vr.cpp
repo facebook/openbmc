@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include "server.h"
@@ -50,10 +51,10 @@ class VrComponent : public Component {
           else {
             printf("DDR423 VR Version: 0x%02x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3], ver[4]);
           }
-        } catch (string err) {
-            printf("VDD_APC_CBF VR Version: NA (%s)\n", err.c_str());
-            printf("DDR510 VR Version: NA (%s)\n", err.c_str());
-            printf("DDR423 VR Version: NA (%s)\n", err.c_str());
+        } catch (const std::exception& err) {
+            printf("VDD_APC_CBF VR Version: NA (%s)\n", err.what());
+            printf("DDR510 VR Version: NA (%s)\n", err.what());
+            printf("DDR423 VR Version: NA (%s)\n", err.what());
         }
         break;
 
@@ -107,13 +108,13 @@ class VrComponent : public Component {
           else {
             printf("DDR_BH VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
           }
-        } catch (string err) {
-            printf("VDD_CORE VR Version: NA (%s)\n", err.c_str());
-            printf("VDD_SRAM VR Version: NA (%s)\n", err.c_str());
-            printf("VDD_MEM VR Version: NA (%s)\n", err.c_str());
-            printf("VDD_SOC VR Version: NA (%s)\n", err.c_str());
-            printf("DDR_AG VR Version: NA (%s)\n", err.c_str());
-            printf("DDR_BH VR Version: NA (%s)\n", err.c_str());
+        } catch (const std::exception& err) {
+            printf("VDD_CORE VR Version: NA (%s)\n", err.what());
+            printf("VDD_SRAM VR Version: NA (%s)\n", err.what());
+            printf("VDD_MEM VR Version: NA (%s)\n", err.what());
+            printf("VDD_SOC VR Version: NA (%s)\n", err.what());
+            printf("DDR_AG VR Version: NA (%s)\n", err.what());
+            printf("DDR_BH VR Version: NA (%s)\n", err.what());
         }
         break;
 
@@ -146,12 +147,12 @@ class VrComponent : public Component {
           else {
             printf("P1V05 VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
           }
-        } catch (string err) {
-            printf("PVCCIO VR Version: NA (%s)\n", err.c_str());
-            printf("PVCCIN VR Version: NA (%s)\n", err.c_str());
-            printf("DDRAB VR Version: NA (%s)\n", err.c_str());
-            printf("PVNNPCH VR Version: NA (%s)\n", err.c_str());
-            printf("P1V05 VR Version: NA (%s)\n", err.c_str());
+        } catch (const std::exception& err) {
+            printf("PVCCIO VR Version: NA (%s)\n", err.what());
+            printf("PVCCIN VR Version: NA (%s)\n", err.what());
+            printf("DDRAB VR Version: NA (%s)\n", err.what());
+            printf("PVNNPCH VR Version: NA (%s)\n", err.what());
+            printf("P1V05 VR Version: NA (%s)\n", err.what());
         }
         break;
     }
@@ -182,11 +183,11 @@ class VrComponent : public Component {
       else {
         printf("P1V05 VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
       }
-    } catch (string err) {
-        printf("PVCCIN VR Version: NA (%s)\n", err.c_str());
-        printf("DDRAB VR Version: NA (%s)\n", err.c_str());
-        printf("PVNNPCH VR Version: NA (%s)\n", err.c_str());
-        printf("P1V05 VR Version: NA (%s)\n", err.c_str());
+    } catch (const std::exception& err) {
+        printf("PVCCIN VR Version: NA (%s)\n", err.what());
+        printf("DDRAB VR Version: NA (%s)\n", err.what());
+        printf("PVNNPCH VR Version: NA (%s)\n", err.what());
+        printf("P1V05 VR Version: NA (%s)\n", err.what());
     }
 #endif
     return 0;
@@ -197,7 +198,7 @@ class VrComponent : public Component {
     try {
       server.ready();
       ret = bic_update_fw(slot_id, UPDATE_VR, (char *)image.c_str());
-    } catch(string err) {
+    } catch(const std::exception& err) {
       ret = FW_STATUS_NOT_SUPPORTED;
     }
     return ret;

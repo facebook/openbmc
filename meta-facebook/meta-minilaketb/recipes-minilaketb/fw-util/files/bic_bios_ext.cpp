@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -49,7 +50,7 @@ int BiosExtComponent::update(const string& image) {
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(5);
     pal_set_server_power(slot_id, SERVER_POWER_ON);
-  } catch(string err) {
+  } catch(const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -85,7 +86,7 @@ int BiosExtComponent::dump(const string& image) {
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(5);
     pal_set_server_power(slot_id, SERVER_POWER_ON);
-  } catch(string err) {
+  } catch(const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

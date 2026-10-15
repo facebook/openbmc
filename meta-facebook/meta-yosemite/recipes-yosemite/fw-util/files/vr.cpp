@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include "server.h"
@@ -59,14 +60,14 @@ class VrComponent : public Component {
         printf("PVCCSCSUS VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
       }
 
-    } catch (string err) {
-        printf("PVCCIO VR Version: NA (%s)\n", err.c_str());
-        printf("PVCCIN VR Version: NA (%s)\n", err.c_str());
-        printf("PVCCSA VR Version: NA (%s)\n", err.c_str());
-        printf("DDRAB VR Version: NA (%s)\n", err.c_str());
-        printf("DDRDE VR Version: NA (%s)\n", err.c_str());
-        printf("PVNNPCH VR Version: NA (%s)\n", err.c_str());
-        printf("P1V05 VR Version: NA (%s)\n", err.c_str());
+    } catch (const std::exception& err) {
+        printf("PVCCIO VR Version: NA (%s)\n", err.what());
+        printf("PVCCIN VR Version: NA (%s)\n", err.what());
+        printf("PVCCSA VR Version: NA (%s)\n", err.what());
+        printf("DDRAB VR Version: NA (%s)\n", err.what());
+        printf("DDRDE VR Version: NA (%s)\n", err.what());
+        printf("PVNNPCH VR Version: NA (%s)\n", err.what());
+        printf("P1V05 VR Version: NA (%s)\n", err.what());
     }
     return 0;
   }

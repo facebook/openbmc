@@ -308,6 +308,11 @@ int PldmComponent::print_version() {
     if (get_version(j)) {
       throw runtime_error("Error in getting the version of " + component_name);
     }
+    if (j.contains("PRETTY_VERSION")) {
+      cout << component_name << " Version: "
+           << j["PRETTY_VERSION"].get<string>() << endl;
+      return FW_STATUS_SUCCESS;
+    }
     auto activeVersion = kv::get(activeVersionKey, kv::region::temp);
     auto pendingVersion = kv::get(pendingVersionKey, kv::region::temp);
     transform(activeVersion.begin(), activeVersion.end(),

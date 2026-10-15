@@ -132,8 +132,14 @@ int PldmRetimerComponent::update_internal(const string& image, bool force) {
 int PldmRetimerComponent::get_version(json& j) {
   try {
     server.ready();
-  } catch(const string& e) {
-    throw runtime_error(e);
+  } catch (const std::exception& err) {
+    if (string(err.what()).find("empty") != string::npos) {
+      j[VERSION] = "not_present";
+    } else {
+      j[VERSION] = "error_returned";
+    }
+    j["PRETTY_VERSION"] = "NA (" + string(err.what()) + ")";
+    return FW_STATUS_SUCCESS;
   }
 
   if (PldmComponent::get_version(j)) {

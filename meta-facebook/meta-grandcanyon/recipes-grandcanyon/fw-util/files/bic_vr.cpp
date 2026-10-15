@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <cstdio>
 #include <cstring>
@@ -62,7 +63,7 @@ int VrComponent::get_version(json& j) {
       server.ready();
       addr = vr.first;
       if (get_ver_str(addr, str) < 0) {
-        throw "Error in getting the version of " + vr.second;
+        throw runtime_error("Error in getting the version of " + vr.second);
       }
       //For IFX and RNS, the str is $vendor $ver, Remaining Writes: $times
       //For TI, the str is $vendor_token1 $vendor_token2 $ver
@@ -101,8 +102,8 @@ int VrComponent::get_version(json& j) {
       tmp_str = str.substr(start, end - start);
       transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
       j["VERSION"][vr.second]["rmng_w"] = tmp_str;
-    } catch (string& err) {
-      if (err.find("empty") != string::npos) {
+    } catch (const std::exception& err) {
+      if (string(err.what()).find("empty") != string::npos) {
         j["VERSION"][vr.second]["version"] = "not_present";
       } else {
         j["VERSION"][vr.second]["version"] = "error_returned";
@@ -122,11 +123,11 @@ int VrComponent::print_version() {
       server.ready();
       addr = vr.first;
       if (get_ver_str(addr, ver) < 0) {
-        throw "Error in getting the version of " + vr.second;
+        throw runtime_error("Error in getting the version of " + vr.second);
       }
       cout << vr.second << " Version : " << ver << endl;
-    } catch (string err) {
-      printf("%s Version : NA (%s)\n", vr.second.c_str(), err.c_str());
+    } catch (const std::exception& err) {
+      printf("%s Version : NA (%s)\n", vr.second.c_str(), err.what());
     }
   }
 
@@ -143,8 +144,8 @@ int VrComponent::update(const string& image) {
     if (ret < 0) {
       return -1;
     }
-  } catch (string err) {
-    printf("%s\n", err.c_str());
+  } catch (const std::exception& err) {
+    printf("%s\n", err.what());
     return FW_STATUS_NOT_SUPPORTED;
   }
 
@@ -162,8 +163,8 @@ int VrComponent::fupdate(const string& image) {
     if (ret < 0) {
       return -1;
     }
-  } catch (string err) {
-    printf("%s\n", err.c_str());
+  } catch (const std::exception& err) {
+    printf("%s\n", err.what());
     return FW_STATUS_NOT_SUPPORTED;
   }
 

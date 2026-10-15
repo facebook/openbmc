@@ -1,5 +1,6 @@
 #include "bic_bios.h"
 #include <sstream>
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include <syslog.h>
@@ -209,7 +210,7 @@ int BiosComponent::_update(const string& image, uint8_t opt) {
     pal_set_server_power(FRU_SERVER, SERVER_12V_CYCLE);
     sleep(PWR_ON_DELAY);
     pal_set_server_power(FRU_SERVER, SERVER_POWER_ON);
-  } catch(string &err) {
+  } catch(const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
@@ -258,11 +259,11 @@ int BiosComponent::print_version() {
   try {
     server.ready();
     if (get_ver_str(ver) < 0) {
-      throw string("Error in getting the version of BIOS");
+      throw runtime_error("Error in getting the version of BIOS");
     }
     cout << "BIOS Version: " << ver << endl;
-  } catch(string& err) {
-    printf("BIOS Version: NA (%s)\n", err.c_str());
+  } catch(const std::exception& err) {
+    printf("BIOS Version: NA (%s)\n", err.what());
   }
 
   return FW_STATUS_SUCCESS;
@@ -275,11 +276,11 @@ int BiosComponent::get_version(json& j) {
   try {
     server.ready();
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the version of BIOS";
+      throw runtime_error("Error in getting the version of BIOS");
     }
     j["VERSION"] = ver;
-  } catch(string& err) {
-    if (err.find("empty") != string::npos) {
+  } catch(const std::exception& err) {
+    if (string(err.what()).find("empty") != string::npos) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

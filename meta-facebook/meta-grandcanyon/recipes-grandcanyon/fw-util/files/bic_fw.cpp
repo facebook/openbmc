@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <stdexcept>
 #include <fw-util.h>
 #include <facebook/bic.h>
 #include <facebook/bic_fwupdate.h>
@@ -97,8 +98,8 @@ int BicFwComponent::update_internal(string image, bool force) {
       }
       return FW_STATUS_FAILURE;
     }
-  } catch (string err) {
-    printf("%s\n", err.c_str());
+  } catch (const std::exception& err) {
+    printf("%s\n", err.what());
     return FW_STATUS_NOT_SUPPORTED;
   }
 
@@ -160,11 +161,11 @@ int BicFwComponent::print_version() {
     server.ready();
     // Print Bridge-IC Version
     if ( get_ver_str(ver) < 0 ) {
-      throw string("Error in getting the version of server BIC");
+      throw runtime_error("Error in getting the version of server BIC");
     }
     cout << "Bridge-IC Version: " << ver << endl;
-  } catch (string err) {
-    printf("Bridge-IC Version: NA (%s)\n", err.c_str());
+  } catch (const std::exception& err) {
+    printf("Bridge-IC Version: NA (%s)\n", err.what());
   }
 
   return FW_STATUS_SUCCESS;
@@ -176,12 +177,12 @@ int BicFwComponent::get_version(json& j) {
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of server BIC";
+      throw runtime_error("Error in getting the version of server BIC");
     } else {
       j["VERSION"] = ver;
     }
-  } catch(string err) {
-    if ( err.find("empty") != string::npos ) {
+  } catch(const std::exception& err) {
+    if ( string(err.what()).find("empty") != string::npos ) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";
@@ -213,8 +214,8 @@ int BicFwBlComponent::update_internal(string image, bool force) {
       }
       return FW_STATUS_FAILURE;
     }
-  } catch(string err) {
-    printf("%s\n", err.c_str());
+  } catch(const std::exception& err) {
+    printf("%s\n", err.what());
     return FW_STATUS_NOT_SUPPORTED;
   }
 
@@ -250,11 +251,11 @@ int BicFwBlComponent::print_version() {
 
     // Print Bridge-IC Bootloader Version
     if (get_ver_str(ver) < 0) {
-      throw string("Error in getting the version of server BIC Bootloader");
+      throw runtime_error("Error in getting the version of server BIC Bootloader");
     }
     cout << "Bridge-IC Bootloader Version: " << ver << endl;
-  } catch (string err) {
-    printf("Bridge-IC Bootloader Version: NA (%s)\n", err.c_str());
+  } catch (const std::exception& err) {
+    printf("Bridge-IC Bootloader Version: NA (%s)\n", err.what());
   }
 
   return FW_STATUS_SUCCESS;
@@ -266,11 +267,11 @@ int BicFwBlComponent::get_version(json& j) {
   try {
     server.ready();
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the version of server BIC Bootloader";
+      throw runtime_error("Error in getting the version of server BIC Bootloader");
     }
     j["VERSION"] = ver;
-  } catch(string err) {
-    if ( err.find("empty") != string::npos ) {
+  } catch(const std::exception& err) {
+    if ( string(err.what()).find("empty") != string::npos ) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

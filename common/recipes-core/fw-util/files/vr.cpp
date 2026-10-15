@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include "server.h"
 #include <openbmc/pal.h>
 #include <syslog.h>
@@ -36,8 +37,8 @@ class VrComponent : public Component {
           << ", 0x" << +ver[2] << +ver[3];
         j["VERSION"] = ss.str();
       }
-    } catch (string err) {
-      j["VERSION"] = "NA (" + err + ")";
+    } catch (const std::exception& err) {
+      j["VERSION"] = "NA (" + string(err.what()) + ")";
     }
     return 0;
   }
@@ -48,7 +49,7 @@ class VrComponent : public Component {
     try {
       server.ready();
       ret = bic_update_fw(slot_id, UPDATE_VR, (char *)image.c_str());
-    } catch(string err) {
+    } catch(const std::exception& err) {
       ret = FW_STATUS_NOT_SUPPORTED;
     }
     return ret;

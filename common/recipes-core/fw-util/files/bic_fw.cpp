@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <sstream>
 #include <iomanip>
 #include "server.h"
@@ -14,7 +15,7 @@ int BicFwComponent::update(const std::string& image) {
   try {
     server.ready();
     ret = bic_update_fw(slot_id, UPDATE_BIC, (char *)image.c_str());
-  } catch (string err) {
+  } catch (const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -25,7 +26,7 @@ int BicFwComponent::fupdate(const string& image) {
   try {
     server.ready();
     ret = pal_force_update_bic_fw(slot_id, UPDATE_BIC, (char *)image.c_str());
-  } catch (string err) {
+  } catch (const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -45,8 +46,8 @@ int BicFwComponent::get_version(json& j) {
       ss << std::hex << std::setfill('0') << std::setw(2) << +ver[1];
       j["VERSION"] = ss.str();
     }
-  } catch(string err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
   return 0;
 }
@@ -56,7 +57,7 @@ int BicFwBlComponent::update(const std::string& image) {
   try {
     server.ready();
     ret = bic_update_fw(slot_id, UPDATE_BIC_BOOTLOADER, (char *)image.c_str());
-  } catch(string err) {
+  } catch(const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -74,7 +75,7 @@ int BicFwBlComponent::get_version(json& j) {
 
   ret = bic_get_server_type(slot_id, &server_type);
   if (ret) {
-    throw "BIC get server type failed";
+    throw std::runtime_error("BIC get server type failed");
   }
 
   switch (server_type) {
@@ -99,8 +100,8 @@ int BicFwBlComponent::get_version(json& j) {
       ss << std::hex << std::setfill('0') << std::setw(2) << +ver[1];
       j["VERSION"] = ss.str();
     }
-  } catch(string err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
   return 0;
 }

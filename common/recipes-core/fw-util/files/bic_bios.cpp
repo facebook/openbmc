@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <string>
 #include <unistd.h>
 #include "bic_bios.h"
@@ -40,7 +41,7 @@ int BiosComponent::update(const string& image) {
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(5);
     pal_set_server_power(slot_id, SERVER_POWER_ON);
-  } catch(string err) {
+  } catch(const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -63,8 +64,8 @@ int BiosComponent::get_version(json& j) {
       string sver((const char *)(ver + 3), size_t(ver[2]));
       j["VERSION"] = sver;
     }
-  } catch (string err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch (const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
   return 0;
 }

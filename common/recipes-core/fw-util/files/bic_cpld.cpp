@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <sstream>
 #include <iomanip>
 #include <stdlib.h>
@@ -27,8 +28,8 @@ int CpldComponent::get_version(json& j) {
         << setw(2) << +ver[3];
       j["VERSION"] = ss.str();
     }
-  } catch(string err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
   return 0;
 }
@@ -37,7 +38,7 @@ int CpldComponent::update(const string& image) {
   try {
     server.ready();
     ret = bic_update_fw(slot_id, UPDATE_CPLD, (char *)image.c_str());
-  } catch(string err) {
+  } catch(const std::exception& err) {
     ret = FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

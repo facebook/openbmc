@@ -1,27 +1,13 @@
 #include <iostream>
 #include <cstdio>
 #include <cstring>
+#include <stdexcept>
 #include <openbmc/pal.h>
 #include "server.h"
 
 using namespace std;
 
 void Server::ready()
-{
-  ready_legacy();
-}
-
-//Legacy: for platforms sitll catching string
-void Server::ready_legacy()
-{
-  try {
-    ready_except();
-  } catch(const std::exception& err) {
-    throw string(err.what());
-  }
-}
-
-void Server::ready_except()
 {
   int ret;
   uint8_t status;

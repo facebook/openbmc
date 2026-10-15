@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <sstream>
 #include <iomanip>
 #include "bic_me.h"
@@ -36,8 +37,8 @@ int MeComponent::get_version(json& j) {
         j["VERSION"] = ss.str();
       }
     }
-  } catch(string err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
   return 0;
 }

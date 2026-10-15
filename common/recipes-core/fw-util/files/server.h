@@ -10,11 +10,7 @@ class Server {
     std::string fru_name{};
   public:
     Server(uint8_t slot_id, const std::string& fru) : _slot_id(slot_id), fru_name(fru) {}
-    //Throws string if not
-    void ready_legacy();
-    // Throws exception if not
-    void ready_except();
-
+    // Throws std::exception if not
     void ready();
 };
 

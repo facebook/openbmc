@@ -8,6 +8,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/kv.h>
+#include <stdexcept>
 #include "bmc_cpld.h"
 
 using namespace std;
@@ -110,12 +111,12 @@ int BmcCpldComponent::print_version()
     transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
 
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + fru_name;
+      throw runtime_error("Error in getting the version of " + fru_name);
     } else {
       cout << fru_name << " CPLD Version: " << ver << endl;
     }
-  } catch(string& err) {
-    printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.c_str());
+  } catch(const std::exception& err) {
+    printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.what());
   }
   return ret;
 }
@@ -125,11 +126,11 @@ int BmcCpldComponent::get_version(json& ver_json) {
   const string& fru_name = fru();
   try {
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + fru_name;
+      throw runtime_error("Error in getting the version of " + fru_name);
     }
     ver_json["VERSION"] = ver;
-  } catch(string& err) {
-    if ( err.find("empty") != string::npos ) {
+  } catch(const std::exception& err) {
+    if ( string(err.what()).find("empty") != string::npos ) {
       ver_json["VERSION"] = "not_present";
     } else {
       ver_json["VERSION"] = "error_returned";

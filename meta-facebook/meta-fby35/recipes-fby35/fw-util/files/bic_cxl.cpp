@@ -34,7 +34,7 @@ int CxlComponent::update_internal(const std::string& image, int fd, bool force) 
 
   try {
     cerr << "Checking if the server is ready..." << endl;
-    server.ready_except();
+    server.ready();
     expansion.ready();
   } catch(const std::exception& err) {
     cout << err.what() << endl;
@@ -104,13 +104,13 @@ int CxlComponent::get_ver_str(string& s) {
 int CxlComponent::print_version() {
   string ver("");
   try {
-    server.ready_except();
+    server.ready();
     expansion.ready();
     if ( get_ver_str(ver) < 0 ) {
       throw runtime_error("Error in getting the version of CXL");
     }
     cout << "CXL Version: " << ver << endl;
-  } catch(const runtime_error& err) {
+  } catch(const std::exception& err) {
     cout << "CXL Version: NA (" << err.what() << ")" << endl;
   }
 
@@ -120,13 +120,13 @@ int CxlComponent::print_version() {
 int CxlComponent::get_version(json& j) {
   string ver("");
   try {
-    server.ready_except();
+    server.ready();
     expansion.ready();
     if ( get_ver_str(ver) < 0 ) {
       throw runtime_error("Error in getting the version of CXL");
     }
     j["VERSION"] = ver;
-  } catch(const runtime_error& err) {
+  } catch(const std::exception& err) {
     if ( string(err.what()).find("empty") != string::npos )
       j["VERSION"] = "not_present";
     else

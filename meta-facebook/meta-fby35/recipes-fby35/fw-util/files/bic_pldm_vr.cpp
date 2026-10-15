@@ -44,8 +44,8 @@ int PldmVrComponent::update_internal(const string& image, bool force) {
 
   try {
     server.ready();
-  } catch (const string& e) {
-    cerr << e << endl;
+  } catch (const std::exception& e) {
+    cerr << e.what() << endl;
     return FW_STATUS_FAILURE;
   }
 

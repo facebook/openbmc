@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
 #include <fcntl.h>
 #include <syslog.h>
 #include <unistd.h>
@@ -36,7 +37,7 @@ int RetimerFwComponent::update_internal(const std::string& image, bool force) {
 
   try {
     cout << "Checking if the server is ready..." << endl;
-    server.ready_except();
+    server.ready();
     expansion.ready();
   } catch(const std::exception& err) {
     cout << err.what() << endl;
@@ -148,11 +149,11 @@ int RetimerFwComponent::print_version() {
     server.ready();
     expansion.ready();
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the retimer version of " + board_name;
+      throw runtime_error("Error in getting the retimer version of " + board_name);
     }
     cout << board_name << " Retimer Version: " << ver << endl;
-  } catch (string& err) {
-    cout << board_name + " Retimer Version: NA (" + err + ")" << endl;
+  } catch (const std::exception& err) {
+    cout << board_name + " Retimer Version: NA (" + err.what() + ")" << endl;
   }
 
   return FW_STATUS_SUCCESS;
@@ -170,11 +171,11 @@ int RetimerFwComponent::get_version(json& j) {
     server.ready();
     expansion.ready();
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the retimer version of " + board_name;
+      throw runtime_error("Error in getting the retimer version of " + board_name);
     }
     j["VERSION"] = ver;
-  } catch (string& err) {
-    if (err.find("empty") != string::npos) {
+  } catch (const std::exception& err) {
+    if (string(err.what()).find("empty") != string::npos) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

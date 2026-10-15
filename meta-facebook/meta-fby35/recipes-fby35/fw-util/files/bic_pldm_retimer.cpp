@@ -113,16 +113,16 @@ int PldmRetimerComponent::update_internal(const string& image, bool force) {
     server.ready();
     uint8_t status;
     if (pal_get_server_power(slot_id, &status)) {
-      throw string("Failed to get server power");
+      throw runtime_error("Failed to get server power");
     }
     if (status != SERVER_POWER_ON) {
-      throw string("The server power is not turned on");
+      throw runtime_error("The server power is not turned on");
     }
     if (!is_server_post_complete(slot_id)) {
-      throw string("The server must POST complete before updating the retimer");
+      throw runtime_error("The server must POST complete before updating the retimer");
     }
-  } catch (const string& e) {
-    cerr << e << endl;
+  } catch (const std::exception& e) {
+    cerr << e.what() << endl;
     return FW_STATUS_FAILURE;
   }
 

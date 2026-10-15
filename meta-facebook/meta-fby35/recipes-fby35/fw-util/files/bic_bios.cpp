@@ -132,7 +132,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   try {
     cerr << "Checking if the server is ready..." << endl;
     server.ready();
-  } catch(string& err) {
+  } catch(const std::exception& err) {
     cerr << "Server is not ready." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
@@ -276,7 +276,7 @@ int BiosComponent::dump(const string& image) {
 
   try {
     cerr << "Checking if the server is ready..." << endl;
-    server.ready_except();
+    server.ready();
   } catch(const std::exception& err) {
     cerr << "Server is not ready." << endl;
     return FW_STATUS_NOT_SUPPORTED;
@@ -371,8 +371,8 @@ int BiosComponent::print_version() {
     } else { // no update before
       cout << "BIOS Version after activation: " << ver << endl;
     }
-  } catch(string& err) {
-    printf("BIOS Version: NA (%s)\n", err.c_str());
+  } catch(const std::exception& err) {
+    printf("BIOS Version: NA (%s)\n", err.what());
   }
 
   return FW_STATUS_SUCCESS;
@@ -390,11 +390,11 @@ int BiosComponent::get_version(json& j) {
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {
-      throw string("Error in getting the version of BIOS");
+      throw std::runtime_error("Error in getting the version of BIOS");
     }
     j["VERSION"] = ver;
-  } catch(string& err) {
-    if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
+  } catch(const std::exception& err) {
+    if ( string(err.what()).find("empty") != string::npos ) j["VERSION"] = "not_present";
     else j["VERSION"] = "error_returned";
   }
   return FW_STATUS_SUCCESS;

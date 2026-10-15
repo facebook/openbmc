@@ -40,7 +40,7 @@ int ProtComponent::update_internal(const std::string& image, int fd, bool force)
 
   try {
     cerr << "Checking if the server is ready..." << endl;
-    server.ready_except();
+    server.ready();
   } catch(const std::exception& err) {
     cout << err.what() << endl;
     return FW_STATUS_NOT_SUPPORTED;
@@ -170,12 +170,12 @@ int ProtComponent::get_ver_str(string& s) {
 int ProtComponent::print_version() {
   string ver("");
   try {
-    server.ready_except();
+    server.ready();
     if ( get_ver_str(ver) < 0 ) {
       throw runtime_error("Error in getting the version of PRoT");
     }
     cout << "PRoT Version: " << ver << endl;
-  } catch(const runtime_error& err) {
+  } catch(const std::exception& err) {
     cout << "PRoT Version: NA (" << err.what() << ")" << endl;
   }
 
@@ -185,12 +185,12 @@ int ProtComponent::print_version() {
 int ProtComponent::get_version(json& j) {
   string ver("");
   try {
-    server.ready_except();
+    server.ready();
     if ( get_ver_str(ver) < 0 ) {
       throw runtime_error("Error in getting the version of PRoT");
     }
     j["VERSION"] = ver;
-  } catch(const runtime_error& err) {
+  } catch(const std::exception& err) {
     if ( string(err.what()).find("empty") != string::npos )
       j["VERSION"] = "not_present";
     else

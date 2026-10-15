@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <stdexcept>
 #include <fcntl.h>
 #include <syslog.h>
 #include <unistd.h>
@@ -113,8 +114,8 @@ int CpldComponent::update_cpld(const string& image, bool force) {
     try {
       server.ready();
       expansion.ready();
-    } catch (string& err) {
-      printf("%s\n", err.c_str());
+    } catch (const std::exception& err) {
+      printf("%s\n", err.what());
       return FW_STATUS_NOT_SUPPORTED;
     }
   }
@@ -262,7 +263,7 @@ int CpldComponent::print_version() {
     server.ready();
     expansion.ready();
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the version of " + board_name;
+      throw std::runtime_error("Error in getting the version of " + board_name);
     }
     cout << board_name << " CPLD Version: " << ver << endl;
     snprintf(ver_key, sizeof(ver_key), FRU_STR_COMPONENT_NEW_VER_KEY, fru().c_str(), component().c_str());
@@ -272,8 +273,8 @@ int CpldComponent::print_version() {
     } else {  // no update before
       cout << board_name << " CPLD Version after activation: " << ver << endl;
     }
-  } catch (string& err) {
-    printf("%s CPLD Version: NA (%s)\n", board_name.c_str(), err.c_str());
+  } catch (const std::exception& err) {
+    printf("%s CPLD Version: NA (%s)\n", board_name.c_str(), err.what());
   }
 
   return FW_STATUS_SUCCESS;
@@ -288,11 +289,11 @@ int CpldComponent::get_version(json& j) {
     server.ready();
     expansion.ready();
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the version of " + board_name;
+      throw std::runtime_error("Error in getting the version of " + board_name);
     }
     j["VERSION"] = ver;
-  } catch (string& err) {
-    if (err.find("empty") != string::npos) {
+  } catch (const std::exception& err) {
+    if (string(err.what()).find("empty") != string::npos) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

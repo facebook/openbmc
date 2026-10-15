@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
 #include <fcntl.h>
 #include <syslog.h>
 #include <unistd.h>
@@ -127,8 +128,8 @@ int BicFwComponent::update_internal(const string& image, bool force) {
       server.ready();
       expansion.ready();
     }
-  } catch (string& err) {
-    cerr << err << endl;
+  } catch (const std::exception& err) {
+    cerr << err.what() << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
 
@@ -215,11 +216,11 @@ int BicFwComponent::print_version() {
     server.ready();
     expansion.ready();
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the version of " + board_name;
+      throw runtime_error("Error in getting the version of " + board_name);
     }
     cout << board_name << " Bridge-IC Version: " << ver << endl;
-  } catch (string& err) {
-    cout << board_name + " Bridge-IC Version: NA (" + err + ")" << endl;
+  } catch (const std::exception& err) {
+    cout << board_name + " Bridge-IC Version: NA (" + err.what() + ")" << endl;
   }
 
   return FW_STATUS_SUCCESS;
@@ -237,11 +238,11 @@ int BicFwComponent::get_version(json& j) {
     server.ready();
     expansion.ready();
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the version of " + board_name;
+      throw runtime_error("Error in getting the version of " + board_name);
     }
     j["VERSION"] = ver;
-  } catch (string& err) {
-    if (err.find("empty") != string::npos) {
+  } catch (const std::exception& err) {
+    if (string(err.what()).find("empty") != string::npos) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <stdexcept>
 #include <openbmc/kv.hpp>
 #include <fmt/format.h>
 #include <syslog.h>
@@ -85,8 +86,8 @@ int VrComponent::update_internal(const string& image, bool force) {
 
   try {
     server.ready();
-  } catch (string& err) {
-    cerr << err << endl;
+  } catch (const std::exception& err) {
+    cerr << err.what() << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
 
@@ -199,7 +200,7 @@ int VrComponent::print_version() {
     try {
       server.ready();
       if (get_ver_str(iter->first, vr->second, ver) < 0) {
-        throw "Error in getting the version of " + vr->second;
+        throw runtime_error("Error in getting the version of " + vr->second);
       }
       cout << vr->second << " Version: " << ver << endl;
 
@@ -211,8 +212,8 @@ int VrComponent::print_version() {
       } catch (const std::exception& e) { // no update before
         cout << vr->second << " Version after activation: " << ver << endl;
       }
-    } catch (string& err) {
-      cout << fmt::format("{} Version : NA ({})",vr->second, err)  << endl;
+    } catch (const std::exception& err) {
+      cout << fmt::format("{} Version : NA ({})",vr->second, err.what())  << endl;
     }
     if (fw_comp != FW_VR && fw_comp != FW_1OU_VR) {
       break;
@@ -233,7 +234,7 @@ int VrComponent::get_version(json& j) {
     try {
       server.ready();
       if (get_ver_str(iter->first, vr->second, ver) < 0) {
-        throw "Error in getting the version of " + vr->second;
+        throw runtime_error("Error in getting the version of " + vr->second);
       }
       //For IFX and RNS, the str is $vendor $ver, Remaining Writes: $times
       //For TI, the str is $vendor_token1 $vendor_token2 $ver
@@ -266,8 +267,8 @@ int VrComponent::get_version(json& j) {
       tmp_str = ver.substr(start, end - start);
       transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
       j["VERSION"][vr->second]["rmng_w"] = tmp_str;
-    } catch (string& err) {
-      if (err.find("empty") != string::npos) {
+    } catch (const std::exception& err) {
+      if (string(err.what()).find("empty") != string::npos) {
         j["VERSION"][vr->second]["version"] = "not_present";
       } else {
         j["VERSION"][vr->second]["version"] = "error_returned";

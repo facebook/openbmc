@@ -2580,10 +2580,49 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int local_sensor_list_gen = 0;
+
+// Called by the process that loads sensor drivers (sensord): rebuild its own
+// sensor list, then bump the generation so other processes (ipmid...) rebuild theirs
+static void
+sensors_reinit_and_publish(void) {
+  char value[MAX_VALUE_LEN] = {0};
+  int gen = 0;
+
+  sensors_reinit();
+  if (kv_get(KEY_SENSOR_LIST_GEN, value, NULL, 0) == 0) {
+    gen = atoi(value);
+  }
+  gen++;
+  snprintf(value, sizeof(value), "%d", gen);
+  kv_set(KEY_SENSOR_LIST_GEN, value, 0, 0); // not persistent, reset after BMC reboot
+  local_sensor_list_gen = gen;
+}
+
+// Rebuild this process's sensor list if sensord has reloaded drivers since last sync
+static void
+sensors_list_sync(void) {
+  char value[MAX_VALUE_LEN] = {0};
+  int gen = 0;
+
+  if (kv_get(KEY_SENSOR_LIST_GEN, value, NULL, 0) == 0) {
+    gen = atoi(value);
+  }
+  if (gen != local_sensor_list_gen) {
+    sensors_reinit();
+    local_sensor_list_gen = gen;
+  }
+}
+#endif
+
 static int
 sensors_read_wrapper(const char *chip, const char *label, float *value) {
   int ret = 0;
 
+#ifdef CONFIG_GRANDCANYON2
+  sensors_list_sync();
+#endif
   ret = sensors_read(chip, label, value);
   if (ret == -1) ret = ERR_FAILURE; // normalize the error code
   return ret;
@@ -4327,7 +4366,11 @@ int pal_sensor_monitor_initial(void) {
   // get current dpb source and load corresponding driver
   run_command("/usr/local/bin/check_2nd_source.sh dpb > /dev/NULL 2>&1");
   // reload sensor map
+#ifdef CONFIG_GRANDCANYON2
+  sensors_reinit_and_publish();
+#else
   sensors_reinit();
+#endif
   return 0;
 }
 
@@ -4513,7 +4556,11 @@ reload_iocm_sensors() {
     }
   }
   // reload sensor map
+#ifdef CONFIG_GRANDCANYON2
+  sensors_reinit_and_publish();
+#else
   sensors_reinit();
+#endif
   set_iocm_snr_ready_flag(true);
 }
 

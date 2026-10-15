@@ -89,6 +89,8 @@
 #define SQ52205_R_SHUNT         0.002   // 2mΩ
 #define SQ52205_SHUNT_LSB       0.0000025f  // 2.5uV
 
+#define KEY_SENSOR_LIST_GEN          "sensor_list_gen"
+
 #endif
 
 typedef struct {

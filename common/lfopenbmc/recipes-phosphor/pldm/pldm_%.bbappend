@@ -39,6 +39,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0031-requester-complete-queued-requests-on-endpoint-cance.patch \
     file://0032-platform-mc-drop-stale-discovery-work-on-endpoint-re.patch \
     file://0033-platform-mc-cper-submit-events-for-processing.patch \
+    file://0034-fw-update-report-Software.Update-events.patch \
 "
 
 # Must apply after common/lfopenbmc pldm patches.

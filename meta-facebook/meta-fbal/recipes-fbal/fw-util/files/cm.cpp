@@ -4,6 +4,7 @@
 #include <openbmc/mcu.h>
 #include "mcu_fw.h"
 #include <math.h>
+#include <stdexcept>
 
 using namespace std;
 
@@ -49,8 +50,8 @@ int CmComponent::print_version() {
     else {
       printf("CM Version: v%x.%02x\n", ver[0], ver[1]);
     }
-  } catch(string &err) {
-    printf("CM Version: NA (%s)\n", err.c_str());
+  } catch(const std::exception& err) {
+    printf("CM Version: NA (%s)\n", err.what());
   }
   return 0;
 }
@@ -65,8 +66,8 @@ int CmBlComponent::print_version() {
     else {
       printf("CM Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
     }
-  } catch(string &err) {
-    printf("CM Bootloader Version: NA (%s)\n", err.c_str());
+  } catch(const std::exception& err) {
+    printf("CM Bootloader Version: NA (%s)\n", err.what());
   }
   return 0;
 }

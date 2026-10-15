@@ -19,7 +19,6 @@
 #
 
 import subprocess
-import time
 import unittest
 
 from utils.cit_logger import Logger
@@ -105,28 +104,6 @@ class BaseWedgePowerTest(unittest.TestCase):
             )
             return "error"
         return output.strip()
-
-    def wait_for_pltrst_high(self, timeout: int):
-        """
-        Polls RST_PLTRST_L until it reads 1 or the timeout elapses.
-
-        Returns:
-            bool: True if RST_PLTRST_L went high within the timeout, else False.
-        """
-        cmd = "source /usr/local/bin/gpio-utils.sh && gpio_get_value RST_PLTRST_L"
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            result = subprocess.run(
-                cmd,
-                shell=True,
-                executable="/bin/bash",
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode == 0 and result.stdout.strip() == "1":
-                return True
-            time.sleep(1)
-        return False
 
     def run_power_cmd_test(self, cmd):
         """
@@ -256,10 +233,6 @@ class WedgePowerTest(BaseWedgePowerTest):
         This means the platform reset pin must be ready within 30 seconds.
         """
         Logger.log_testname(name=self._testMethodName)
-        # x86 power sequencing may still be in progress from the previous test.
-        # Wait for RST_PLTRST_L to go high before triggering the reset.
-        if not self.wait_for_pltrst_high(timeout=10):
-            Logger.warn("RST_PLTRST_L did not go high within 10s. But trigger reset anyways")
         self.assertEqual(
             self.run_power_cmd_test_with_retry("reset"), 0, "Power reset test failed"
         )

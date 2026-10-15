@@ -37,12 +37,10 @@ class CHASSISEepromTest(EepromV5Test, unittest.TestCase):
             "MINIPACK3BA",
             "WEDGE800BACT",
             "WEDGE800CACT",
-            "WEDGE800BNHP",
-            "WEDGE800CNHP",
         ]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ["MCB", "MCB"]
+        self.location_on_fabric = ["FCB", "MCB"]
 
     """
     Chassis EEPROM have only BMC and ASIC switch need to ignore x86

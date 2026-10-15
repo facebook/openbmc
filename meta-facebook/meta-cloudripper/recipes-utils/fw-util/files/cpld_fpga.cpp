@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstring>
 #include <openbmc/pal.h>
+#include <stdexcept>
 
 using namespace std;
 
@@ -52,8 +53,8 @@ class CpldFpgaComponent : public Component {
       } else {
         printf("%u.%u\n", ver[0], ver[1]);
       }
-    } catch (string err) {
-      printf("NA (%s)\n", err.c_str());
+    } catch (const std::exception& err) {
+      printf("NA (%s)\n", err.what());
     }
     return 0;
   }

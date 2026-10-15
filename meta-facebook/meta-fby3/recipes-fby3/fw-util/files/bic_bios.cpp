@@ -1,5 +1,6 @@
 #include "bic_bios.h"
 #include <sstream>
+#include <stdexcept>
 #include <syslog.h>
 #include <unistd.h>
 #include <openbmc/pal.h>
@@ -23,7 +24,7 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   try {
     cerr << "Checking if the server is ready..." << endl;
     server.ready();
-  } catch(string &err) {
+  } catch(const std::exception& err) {
     cerr << "Server is not ready." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
@@ -145,12 +146,12 @@ int BiosComponent::get_version(json& j) {
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of BIOS";
+      throw runtime_error("Error in getting the version of BIOS");
     }
     j["VERSION"] = ver;
-  } catch(string& err) {
-    j["PRETTY_VERSION"] = "NA (" + err + ")";
-    if ( err.find("empty") != string::npos ) {
+  } catch(const std::exception& err) {
+    j["PRETTY_VERSION"] = "NA (" + string(err.what()) + ")";
+    if ( string(err.what()).find("empty") != string::npos ) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <stdexcept>
 #include <unistd.h>
 #include <fcntl.h>
 #include <algorithm>
@@ -104,8 +105,8 @@ int M2DevComponent::get_version(json& j)
     } else {
       ret = get_single(j, idx);
     }
-  } catch(string& err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
   if ( idx+1 == MAX_DEVICE_NUM ) {
     isScaned[slot_id] = false;
@@ -202,7 +203,7 @@ int M2DevComponent::update_internal(const string& image, bool /*force*/) {
     // get BMC location
     ret = fby3_common_get_bmc_location(&bmc_location);
     if ( ret < 0 ) {
-      throw string("Failed to get BMC's location");
+      throw runtime_error("Failed to get BMC's location");
     }
 
     pal_set_delay_after_fw_update_ongoing();
@@ -214,14 +215,14 @@ int M2DevComponent::update_internal(const string& image, bool /*force*/) {
     // need to make sure M2 exists
     ret = pal_get_dev_info(fru, idx, &nvme_ready ,&status, &type);
     if ( ret < 0 ) {
-      throw string("Error in getting the m2 device info");
+      throw runtime_error("Error in getting the m2 device info");
     }
 
     syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, idx - 1, status, nvme_ready, type);
 
     // 0 means the device is not detected, we should return
     if ( status == 0 ) {
-      throw string("The m2 device is not present");
+      throw runtime_error("The m2 device is not present");
     }
 
     // nvme type - SPH/BRCM
@@ -232,24 +233,24 @@ int M2DevComponent::update_internal(const string& image, bool /*force*/) {
       // BRCM VK recovery update
       cerr << "BRCM VK Recovery Update" << endl;
       ret = bic_disable_brcm_parity_init(slot_id, fw_comp);
-      if ( ret < 0 ) throw string("Failed to disable BRCM parity init");
+      if ( ret < 0 ) throw runtime_error("Failed to disable BRCM parity init");
     }
 
     // no matter which one is used, bic_update_fw will be called in the end
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "update: Slot%u Dev%d failed", slot_id, idx - 1);
-      throw string("Failed to access the device");
+      throw runtime_error("Failed to access the device");
     }
 
     // run dev power cycle for BRCM VK
     if ( bmc_location != NIC_BMC ) {
       ret = pal_set_device_power(slot_id, DEV_ID0_2OU + idx - 1, SERVER_POWER_CYCLE);
-      if ( ret < 0 ) throw string("Failed to do dev power cycle");
+      if ( ret < 0 ) throw runtime_error("Failed to do dev power cycle");
     }
-  } catch (string& err) {
+  } catch (const std::exception& err) {
     ret = FW_STATUS_FAILURE;
-    cout << "Failed reason: " << err << std::endl;
+    cout << "Failed reason: " << err.what() << std::endl;
   }
 
   return ret;

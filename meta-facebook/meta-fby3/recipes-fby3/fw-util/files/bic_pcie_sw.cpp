@@ -1,6 +1,7 @@
 #include "fw-util.h"
 #include <cstdio>
 #include <cstring>
+#include <stdexcept>
 #include "server.h"
 #include <openbmc/pal.h>
 #include "bic_pcie_sw.h"
@@ -88,8 +89,8 @@ int PCIESWComponent::update_internal(const string& image, bool force) {
       pal_set_server_power(slot_id, SERVER_POWER_ON);
     }
 
-  } catch (string& err) {
-    cout << "Failed Reason: " << err << endl;
+  } catch (const std::exception& err) {
+    cout << "Failed Reason: " << err.what() << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -190,9 +191,9 @@ int PCIESWComponent::print_version() {
     expansion.ready();
     // if 2OU is present and it's ready, get its type
     fby3_common_get_2ou_board_type(slot_id, &board_type);
-  } catch(string& err) {
+  } catch(const std::exception& err) {
     // if we failed to get its version, we print FW_2OU_PESW_FW_VER
-    printf("%s %s Version: NA (%s)\n", board_name.c_str(), list[FW_2OU_PESW_FW_VER].c_str(), err.c_str());
+    printf("%s %s Version: NA (%s)\n", board_name.c_str(), list[FW_2OU_PESW_FW_VER].c_str(), err.what());
     return FW_STATUS_SUCCESS;
   }
 

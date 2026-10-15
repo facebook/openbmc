@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -93,9 +94,9 @@ int VrExtComponent::get_version(json& j)
       server.ready();
       expansion.ready();
       vr_status = VR_STATUS::VR_OK;
-    } catch(string& err) {
+    } catch(const std::exception& err) {
       vr_status = VR_STATUS::VR_ERR;
-      err_str = err;
+      err_str = err.what();
     }
   }
   fby3_common_get_2ou_board_type(slot_id, &board_type);
@@ -132,8 +133,8 @@ int VrExtComponent::update(const string& image)
     server.ready();
     expansion.ready();
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
-  } catch(string& err) {
-    cout << "Failed Reason: " << err << endl;
+  } catch(const std::exception& err) {
+    cout << "Failed Reason: " << err.what() << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

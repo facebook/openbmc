@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstring>
+#include <stdexcept>
 #include <openbmc/pal.h>
 #include "expansion.h"
 #ifdef BIC_SUPPORT
@@ -37,7 +38,7 @@ void ExpansionBoard::ready()
 
   ret = bic_is_m2_exp_prsnt(slot_id);
   if ( ret < 0 ) {
-    throw "Failed to get the config from " + fru + ":" + board_name;
+    throw runtime_error("Failed to get the config from " + fru + ":" + board_name);
   }
 
   config_status = (uint8_t) ret;
@@ -53,9 +54,9 @@ void ExpansionBoard::ready()
       } else {
         uint8_t type = 0xff;
         if (bic_get_1ou_type(slot_id, &type)){
-          throw string("Failed to get 1OU board type");
+          throw runtime_error("Failed to get 1OU board type");
         } else if (type == EDSFF_1U) {
-          throw string("Not present");
+          throw runtime_error("Not present");
         }
       }
       break;
@@ -63,7 +64,7 @@ void ExpansionBoard::ready()
     case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
       if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
-        throw string("Failed to get 2OU board type");
+        throw runtime_error("Failed to get 2OU board type");
       }
       if ( (config_status & PRESENT_2OU) != PRESENT_2OU || type_2ou == DP_RISER_BOARD)
         is_present = false;
@@ -82,9 +83,9 @@ void ExpansionBoard::ready()
       } else {
         uint8_t type = 0xff;
         if ( fby3_common_get_2ou_board_type(slot_id, &type) < 0 ) {
-          throw string("Failed to get 2OU board type");
+          throw runtime_error("Failed to get 2OU board type");
         } else if ( type != GPV3_MCHP_BOARD && type != GPV3_BRCM_BOARD && type != CWC_MCHP_BOARD ) {
-          throw string("Not present");
+          throw runtime_error("Not present");
         }
       }
 
@@ -94,7 +95,7 @@ void ExpansionBoard::ready()
         uint8_t pwr_sts = 0x0;
         ret = pal_get_server_power(slot_id, &pwr_sts);
         if ( ret < 0 || pwr_sts == 0 )
-          throw string("DC-off");
+          throw runtime_error("DC-off");
       }
       break;
     case FW_CWC_BIC:
@@ -113,7 +114,7 @@ void ExpansionBoard::ready()
     case FW_GPV3_TOP_PESW_VR:
     case FW_GPV3_BOT_PESW_VR:
       if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
-        throw string("Failed to get 2OU board type");
+        throw runtime_error("Failed to get 2OU board type");
       }
       if ((config_status & PRESENT_2OU) != PRESENT_2OU || type_2ou != CWC_MCHP_BOARD) {
         is_present = false;
@@ -133,7 +134,7 @@ void ExpansionBoard::ready()
       case FW_GPV3_TOP_PESW:
       case FW_GPV3_TOP_PESW_VR:
         if ((exp_present & PRESENT_2U_TOP) == 0) {
-          throw board_name + " is empty";
+          throw runtime_error(board_name + " is empty");
         }
         break;
       case FW_GPV3_BOT_BIC:
@@ -142,13 +143,13 @@ void ExpansionBoard::ready()
       case FW_GPV3_BOT_PESW:
       case FW_GPV3_BOT_PESW_VR:
         if ((exp_present & PRESENT_2U_BOT) == 0) {
-          throw board_name + " is empty";
+          throw runtime_error(board_name + " is empty");
         }
         break;
     }
   }
 
   if ( is_present == false )
-    throw board_name + " is empty";
+    throw runtime_error(board_name + " is empty");
 }
 #endif

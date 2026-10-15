@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -247,12 +248,12 @@ int BmcCpldComponent::get_version(json& j) {
       server.ready();
     }
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + fru_name;
+      throw runtime_error("Error in getting the version of " + fru_name);
     }
     j["VERSION"] = ver;
-  } catch(string& err) {
-    j["PRETTY_VERSION"] = "NA (" + err + ")";
-    if ( err.find("empty") != string::npos ) {
+  } catch(const std::exception& err) {
+    j["PRETTY_VERSION"] = "NA (" + string(err.what()) + ")";
+    if ( string(err.what()).find("empty") != string::npos ) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";
@@ -292,8 +293,8 @@ int BmcCpldComponent::update_cpld(string image)
       uint8_t slot_id = fru_name.at(4) - '0';
       Server server(slot_id, fru_name);
       server.ready();
-    } catch(string& err) {
-      printf("%s\n", err.c_str());
+    } catch(const std::exception& err) {
+      printf("%s\n", err.what());
       return FW_STATUS_NOT_SUPPORTED;
     }
   }

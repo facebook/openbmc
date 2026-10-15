@@ -5,6 +5,7 @@
 #include <openbmc/pal.h>
 #include "bic_fw_ext.h"
 #include <iomanip>
+#include <stdexcept>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
@@ -32,8 +33,8 @@ int BicFwExtComponent::update_internal(const string& image, bool force) {
       }
       return FW_STATUS_FAILURE;
     }
-  } catch (string& err) {
-    printf("%s\n", err.c_str());
+  } catch (const std::exception& err) {
+    printf("%s\n", err.what());
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -87,13 +88,13 @@ int BicFwExtComponent::get_version(json& j) {
     server.ready();
     expansion.ready();
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + component();
+      throw runtime_error("Error in getting the version of " + component());
     } else {
       j["VERSION"] = ver;
     }
-  } catch(string err) {
-    j["PRETTY_VERSION"] = "NA (" + err + ")";
-    if ( err.find("empty") != string::npos ) {
+  } catch(const std::exception& err) {
+    j["PRETTY_VERSION"] = "NA (" + string(err.what()) + ")";
+    if ( string(err.what()).find("empty") != string::npos ) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";
@@ -124,8 +125,8 @@ int BicFwExtBlComponent::update_internal(string image, bool force) {
       }
       return FW_STATUS_FAILURE;
     }
-  } catch(string err) {
-    printf("%s\n", err.c_str());
+  } catch(const std::exception& err) {
+    printf("%s\n", err.what());
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -159,12 +160,12 @@ int BicFwExtBlComponent::get_version(json& j) {
     server.ready();
     expansion.ready();
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + component();
+      throw runtime_error("Error in getting the version of " + component());
     }
     j["VERSION"] = ver;
-  } catch(string err) {
-    j["PRETTY_VERSION"] = "NA (" + err + ")";
-    if ( err.find("empty") != string::npos ) {
+  } catch(const std::exception& err) {
+    j["PRETTY_VERSION"] = "NA (" + string(err.what()) + ")";
+    if ( string(err.what()).find("empty") != string::npos ) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

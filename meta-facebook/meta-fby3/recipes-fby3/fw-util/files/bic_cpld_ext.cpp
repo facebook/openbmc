@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <syslog.h>
+#include <stdexcept>
 #include "server.h"
 #include <openbmc/pal.h>
 #include "bic_cpld_ext.h"
@@ -25,7 +26,7 @@ int CpldExtComponent::update_internal(const string& image, bool force) {
       intf = REXP_BIC_INTF;
       m2_prsnt = bic_is_m2_exp_prsnt(slot_id);
       if (m2_prsnt < 0) {
-        throw "Failed to get 1ou & 2OU present status\n";
+        throw runtime_error("Failed to get 1ou & 2OU present status\n");
       }
       if ( (m2_prsnt & PRESENT_2OU) == PRESENT_2OU ) {
         if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
@@ -43,8 +44,8 @@ int CpldExtComponent::update_internal(const string& image, bool force) {
       bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
     }
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), (force ? FORCE_UPDATE_SET : FORCE_UPDATE_UNSET));
-  } catch (string& err) {
-    syslog(LOG_WARNING, "%s(): %s", __func__, err.c_str());
+  } catch (const std::exception& err) {
+    syslog(LOG_WARNING, "%s(): %s", __func__, err.what());
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -68,11 +69,11 @@ int CpldExtComponent::get_version(json& j) {
     server.ready();
     expansion.ready();
     if ( fw_comp == FW_BB_CPLD && bic_is_crit_act_ongoing(slot_id) == true ) {
-      throw string("A critical activity is ongoing on the sled");
+      throw runtime_error("A critical activity is ongoing on the sled");
     }
     stringstream ss;
     if (bic_get_fw_ver(slot_id, fw_comp, ver) < 0) {
-      throw "Error in getting the version of " + name;
+      throw runtime_error("Error in getting the version of " + name);
     }
     ss << std::hex << std::uppercase << setfill('0')
        << setw(2) << +ver[0]
@@ -80,9 +81,9 @@ int CpldExtComponent::get_version(json& j) {
        << setw(2) << +ver[2]
        << setw(2) << +ver[3];
     j["VERSION"] = ss.str();
-  } catch(string& err) {
-    j["PRETTY_VERSION"] = "NA (" + err + ")";
-    if ( err.find("empty") != string::npos ) {
+  } catch(const std::exception& err) {
+    j["PRETTY_VERSION"] = "NA (" + string(err.what()) + ")";
+    if ( string(err.what()).find("empty") != string::npos ) {
       j["VERSION"] = "not_present";
     } else {
       j["VERSION"] = "error_returned";

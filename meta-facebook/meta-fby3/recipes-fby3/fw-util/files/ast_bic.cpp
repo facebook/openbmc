@@ -1,6 +1,7 @@
 #include "fw-util.h"
 #include <cstdio>
 #include <cstring>
+#include <stdexcept>
 #include <syslog.h>
 #include "server.h"
 #include <openbmc/pal.h>
@@ -147,8 +148,8 @@ int AstBicFwRecoveryComponent::ast_bic_recovery(string image, bool /*force*/) {
       return -1;
     }
 
-  } catch (string& err) {
-    printf("%s \n", err.c_str());
+  } catch (const std::exception& err) {
+    printf("%s \n", err.what());
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

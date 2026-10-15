@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <chrono>
+#include <stdexcept>
 #include <sys/stat.h>
 #include "bic_capsule.h"
 #include <openbmc/pal.h>
@@ -349,7 +350,7 @@ int CapsuleComponent::bic_update_capsule(string image) {
 
     set_pfr_cap_ver_str(image, fw_comp);
 
-  } catch(string err) {
+  } catch(const std::exception& err) {
     if ( i2cfd > 0 ) close(i2cfd);
     return FW_STATUS_NOT_SUPPORTED;
   }

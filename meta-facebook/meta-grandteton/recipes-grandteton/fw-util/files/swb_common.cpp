@@ -17,6 +17,7 @@
 #include <termios.h>
 #include <algorithm>
 #include <fmt/format.h>
+#include <stdexcept>
 #include "swb_common.hpp"
 
 #define PexImageCount 4
@@ -301,8 +302,8 @@ int fw_update_proc (const string& image, bool /*force*/,
       goto error_exit;
     }
 
-  } catch (string& err) {
-    cerr << err << endl;
+  } catch (const std::exception& err) {
+    cerr << err.what() << endl;
     ret = FW_STATUS_NOT_SUPPORTED;
     goto error_exit;
   }
@@ -669,8 +670,8 @@ int SwbPexFwComponent::update(const string& image) {
       ret = FW_STATUS_FAILURE;
     }
 
-  } catch (string& err) {
-    printf("%s\n", err.c_str());
+  } catch (const std::exception& err) {
+    printf("%s\n", err.what());
     ret = FW_STATUS_NOT_SUPPORTED;
   }
 

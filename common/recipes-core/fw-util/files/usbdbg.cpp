@@ -6,6 +6,7 @@
 #include <openbmc/mcu.h>
 #include <openbmc/misc-utils.h>
 #include <sstream>
+#include <stdexcept>
 #include "usbdbg.h"
 
 
@@ -26,8 +27,8 @@ int UsbDbgComponent::get_version(json& j) {
         << std::setw(2) << std::setfill('0') << +ver[1];
       j["VERSION"] = ss.str();
     }
-  } catch(string err) {
-    j["VERSION"] = string("NA (") + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = string("NA (") + err.what() + ")";
   }
   return 0;
 }
@@ -46,8 +47,8 @@ int UsbDbgBlComponent::get_version(json& j) {
         << std::setw(2) << std::setfill('0') << +ver[1];
       j["VERSION"] = ss.str();
     }
-  } catch(string err) {
-    j["VERSION"] = string("NA (") + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = string("NA (") + err.what() + ")";
   }
   return 0;
 }

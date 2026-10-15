@@ -3,6 +3,7 @@
 #include <syslog.h>
 #include <openbmc/vr.h>
 #include <openbmc/kv.h>
+#include <stdexcept>
 #include "vr_fw.h"
 
 using namespace std;
@@ -22,7 +23,7 @@ int VrComponent::get_version(json& j) {
 
   try {
     if (vr_probe() || vr_fw_full_version(-1, dev_name.c_str(), ver, active_key)) {
-      throw "Error in getting the version of " + dev_name;
+      throw runtime_error("Error in getting the version of " + dev_name);
     }
     vr_remove();
 
@@ -73,7 +74,7 @@ int VrComponent::get_version(json& j) {
     } else {
       j["VERSION_ACTIVE"] = string(j["VERSION"]);
     }
-  } catch (string& err) {
+  } catch (const std::exception& err) {
     j["VERSION"] = "NA";
   }
 

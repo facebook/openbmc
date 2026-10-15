@@ -1,6 +1,7 @@
 #include "fw-util.h"
 #include <cstdio>
 #include <cstring>
+#include <stdexcept>
 #include <unistd.h>
 #include "server.h"
 #include <openbmc/pal.h>
@@ -236,7 +237,7 @@ int M2_DevComponent::_update(const string& image, uint8_t force) {
       printf("Device%d status is unknown.\n", dev_id);
       ret = FW_STATUS_FAILURE;
     }
-  } catch(string err) {
+  } catch(const std::exception& err) {
     ret = FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

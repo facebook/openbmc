@@ -1,6 +1,7 @@
 #include "fw-util.h"
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
 #include <stdlib.h>
 #include "bic_cpld.h"
 #include <openbmc/pal.h>
@@ -35,8 +36,8 @@ int CpldExtComponent::get_version(json& j) {
         << +ver[0];
       j["VERSION"] = ss.str();
     }
-  } catch(string err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch(const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
   return 0;
 }

@@ -3,6 +3,7 @@
 #include <syslog.h>
 #include <cstdio>
 #include <cstring>
+#include <stdexcept>
 #include "fw-util.h"
 #include "server.h"
 
@@ -42,9 +43,9 @@ class VrComponent : public Component {
         } else {
           printf("0V92 VR Version: 0x%02x\n", ver[0]);
         }
-      } catch (const string& err) {
-        printf("3V3 VR Version: NA (%s)\n", err.c_str());
-        printf("0V92 VR Version: NA (%s)\n", err.c_str());
+      } catch (const std::exception& err) {
+        printf("3V3 VR Version: NA (%s)\n", err.what());
+        printf("0V92 VR Version: NA (%s)\n", err.what());
       }
       return 0;
     }
@@ -91,11 +92,11 @@ class VrComponent : public Component {
                 "PVDDIO_EFGH VR Version: %02X%02X%02X%02X, Remaining Writes: %u\n",
                 ver[3], ver[2], ver[1], ver[0], ver[4]);
           }
-        } catch (const string& err) {
-          printf("PVDDCR_CPU VR Version: NA (%s)\n", err.c_str());
-          printf("PVDDCR_SOC VR Version: NA (%s)\n", err.c_str());
-          printf("PVDDIO_ABCD VR Version: NA (%s)\n", err.c_str());
-          printf("PVDDIO_EFGH VR Version: NA (%s)\n", err.c_str());
+        } catch (const std::exception& err) {
+          printf("PVDDCR_CPU VR Version: NA (%s)\n", err.what());
+          printf("PVDDCR_SOC VR Version: NA (%s)\n", err.what());
+          printf("PVDDIO_ABCD VR Version: NA (%s)\n", err.what());
+          printf("PVDDIO_EFGH VR Version: NA (%s)\n", err.what());
         }
         break;
 
@@ -186,14 +187,14 @@ class VrComponent : public Component {
                 ver[2],
                 ver[3]);
           }
-        } catch (const string& err) {
-          printf("PVCCIO VR Version: NA (%s)\n", err.c_str());
-          printf("PVCCIN VR Version: NA (%s)\n", err.c_str());
-          printf("PVCCSA VR Version: NA (%s)\n", err.c_str());
-          printf("DDRAB VR Version: NA (%s)\n", err.c_str());
-          printf("DDRDE VR Version: NA (%s)\n", err.c_str());
-          printf("PVNNPCH VR Version: NA (%s)\n", err.c_str());
-          printf("P1V05 VR Version: NA (%s)\n", err.c_str());
+        } catch (const std::exception& err) {
+          printf("PVCCIO VR Version: NA (%s)\n", err.what());
+          printf("PVCCIN VR Version: NA (%s)\n", err.what());
+          printf("PVCCSA VR Version: NA (%s)\n", err.what());
+          printf("DDRAB VR Version: NA (%s)\n", err.what());
+          printf("DDRDE VR Version: NA (%s)\n", err.what());
+          printf("PVNNPCH VR Version: NA (%s)\n", err.what());
+          printf("P1V05 VR Version: NA (%s)\n", err.what());
         }
         break;
     }
@@ -207,7 +208,7 @@ class VrComponent : public Component {
     try {
       server.ready();
       ret = bic_update_fw(slot_id, UPDATE_VR, (char*)image.c_str());
-    } catch (const string& err) {
+    } catch (const std::exception& err) {
       ret = FW_STATUS_NOT_SUPPORTED;
     }
     return ret;
@@ -260,13 +261,13 @@ void VrComponent::get_version_gpv2(json& j)
     try {
       server.ready();
       if (bic_get_fw_ver(slot_id, vr.first, buf)) {
-        throw "Error in getting the version of " + vr.second;
+        throw runtime_error("Error in getting the version of " + vr.second);
       }
 
       snprintf(ver_str, sizeof(ver_str), "0x%02x", buf[0]);
       j["VERSION"][vr.second]["version"] = std::string(ver_str);
-    } catch (const string& err) {
-      if ( err.find("empty") != string::npos )
+    } catch (const std::exception& err) {
+      if ( string(err.what()).find("empty") != string::npos )
         j["VERSION"][vr.second]["version"] = "not_present";
       else
         j["VERSION"][vr.second]["version"] = "error_returned";
@@ -293,13 +294,13 @@ void VrComponent::get_version_server(json& j)
     try {
       server.ready();
       if (bic_get_fw_ver(slot_id, vr.first, buf)) {
-        throw "Error in getting the version of " + vr.second;
+        throw runtime_error("Error in getting the version of " + vr.second);
       }
 
       snprintf(ver_str, sizeof(ver_str), "0x%02x%02x, 0x%02x%02x", buf[0], buf[1], buf[2], buf[3]);
       j["VERSION"][vr.second]["version"] = std::string(ver_str);
-    } catch (const string& err) {
-      if (err.find("empty") != string::npos)
+    } catch (const std::exception& err) {
+      if (string(err.what()).find("empty") != string::npos)
         j["VERSION"][vr.second]["version"] = "not_present";
       else
         j["VERSION"][vr.second]["version"] = "error_returned";
@@ -324,15 +325,15 @@ void VrComponent::get_version_server_nd(json& j)
     try {
       server.ready();
       if (bic_get_fw_ver(slot_id, vr.first, buf)) {
-        throw "Error in getting the version of " + vr.second;
+        throw runtime_error("Error in getting the version of " + vr.second);
       }
 
       snprintf(ver_str, sizeof(ver_str), "%02x%02x%02x%02x", buf[3], buf[2], buf[1], buf[0]);
       snprintf(rmng_w_str, sizeof(rmng_w_str), "%u", buf[4]);
       j["VERSION"][vr.second]["version"] = std::string(ver_str);
       j["VERSION"][vr.second]["rmng_w"] = std::string(rmng_w_str);
-    } catch (const string& err) {
-      if ( err.find("empty") != string::npos )
+    } catch (const std::exception& err) {
+      if ( string(err.what()).find("empty") != string::npos )
         j["VERSION"][vr.second]["version"] = "not_present";
       else
         j["VERSION"][vr.second]["version"] = "error_returned";

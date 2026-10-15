@@ -1,6 +1,7 @@
 #include "fw-util.h"
 #include <cstdio>
 #include <cstring>
+#include <stdexcept>
 #include "server.h"
 #include <openbmc/pal.h>
 #include <syslog.h>
@@ -68,7 +69,7 @@ class PcieSwitchComponent : public Component {
     try {
       server.ready();
       ret = bic_update_fw(slot_id, UPDATE_PCIE_SWITCH, (char *)image.c_str());
-    } catch(string err) {
+    } catch(const std::exception& err) {
       ret = FW_STATUS_NOT_SUPPORTED;
     }
     return ret;

@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <unistd.h>
 #include "bic_bios.h"
 #include <openbmc/pal.h>
@@ -37,7 +38,7 @@ int BiosComponent::update(const string& image) {
     ret = bic_update_fw(slot_id, UPDATE_BIOS, (char *)image.c_str());
     sleep(1);
     pal_set_server_power(slot_id, SERVER_GRACEFUL_POWER_ON);
-  } catch(string err) {
+  } catch(const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -60,8 +61,8 @@ int BiosComponent::get_version(json& j) {
       string sver((const char *)(ver + 3), size_t(ver[2]));
       j["VERSION"] = sver;
     }
-  } catch (string err) {
-    j["VERSION"] = "NA (" + err + ")";
+  } catch (const std::exception& err) {
+    j["VERSION"] = "NA (" + string(err.what()) + ")";
   }
   return 0;
 }

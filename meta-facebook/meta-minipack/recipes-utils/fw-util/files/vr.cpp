@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include "server.h"
@@ -44,10 +45,10 @@ class VrComponent : public Component {
         printf("P1V05 VR Version: 0x%02x%02x, 0x%02x%02x\n",
                ver[0], ver[1], ver[2], ver[3]);
       }
-    } catch (string err) {
-        printf("PVCCIN VR Version: NA (%s)\n", err.c_str());
-        printf("DDRAB VR Version: NA (%s)\n", err.c_str());
-        printf("P1V05 VR Version: NA (%s)\n", err.c_str());
+    } catch (const std::exception& err) {
+        printf("PVCCIN VR Version: NA (%s)\n", err.what());
+        printf("DDRAB VR Version: NA (%s)\n", err.what());
+        printf("P1V05 VR Version: NA (%s)\n", err.what());
     }
     return 0;
   }
@@ -58,7 +59,7 @@ class VrComponent : public Component {
     try {
       server.ready();
       ret = bic_update_fw(slot_id, UPDATE_VR, (char *)image.c_str());
-    } catch(string err) {
+    } catch(const std::exception& err) {
       ret = FW_STATUS_NOT_SUPPORTED;
     }
     return ret;

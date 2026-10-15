@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -49,7 +50,7 @@ int BiosExtComponent::update(const string& image) {
     pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
     sleep(5);
     me_recovery(slot_id, RESTORE_FACTORY_DEFAULT);
-  } catch(string err) {
+  } catch(const std::exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

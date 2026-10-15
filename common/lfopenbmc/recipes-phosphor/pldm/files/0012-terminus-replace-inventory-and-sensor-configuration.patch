@@ -1,4 +1,4 @@
-From baee243c49eb43352f87f2922603abf3c1bc4d28 Mon Sep 17 00:00:00 2001
+From 4b587da667cad5fe0599dc8163ecf00b33bbec96 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
@@ -31,16 +31,16 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  common/types.hpp                              |   7 +-
  fw-update/inventory_manager.cpp               |   2 +-
  .../test/firmware_inventory_manager_test.cpp  |   5 +-
- platform-mc/terminus.cpp                      | 147 +++++++++++++-
+ platform-mc/terminus.cpp                      | 147 ++++++++++++-
  platform-mc/terminus.hpp                      |  26 +++
- platform-mc/terminus_manager.cpp              |  54 +++++-
+ platform-mc/terminus_manager.cpp              |  54 ++++-
  platform-mc/test/event_manager_test.cpp       |  12 +-
  platform-mc/test/platform_manager_test.cpp    |  24 +--
  platform-mc/test/terminus_manager_test.cpp    |  32 +--
- requester/mctp_endpoint_discovery.cpp         | 183 +++++++++++++-----
- requester/mctp_endpoint_discovery.hpp         |  11 ++
+ requester/mctp_endpoint_discovery.cpp         | 195 ++++++++++++++----
+ requester/mctp_endpoint_discovery.hpp         |  11 +
  .../test/mctp_endpoint_discovery_test.cpp     |  50 ++---
- 12 files changed, 445 insertions(+), 108 deletions(-)
+ 12 files changed, 457 insertions(+), 108 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index 4e76ac0..d8b925a 100644
@@ -636,7 +636,7 @@ index 3b0173d..4bb39b4 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 74b435d..e4a0a74 100644
+index 74b435d..f6fba8f 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -91,9 +91,9 @@ void MctpDiscovery::getMctpInfos(
@@ -673,7 +673,7 @@ index 74b435d..e4a0a74 100644
              searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
              if (availability)
              {
-@@ -459,71 +460,165 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
+@@ -459,71 +460,177 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
             "/endpoints/" + std::to_string(eid) + "/configured_by";
  }
  
@@ -853,6 +853,18 @@ index 74b435d..e4a0a74 100644
 +                    {
 +                        const MctpInfosWithPath addedInfo(
 +                            1, {matchPath, mctpInfo});
++                        // The endpoint is normally tracked already, with the
++                        // MctpInfo from before the association resolved, and
++                        // addToExistingMctpInfos keeps that old entry. Replace
++                        // it so the stored MctpInfo matches the one handlers
++                        // get, because Connectivity updates use the stored one.
++                        auto tracked = std::ranges::find(
++                            this->existingMctpInfos, matchPath,
++                            &MctpInfoWithPath::first);
++                        if (tracked != this->existingMctpInfos.end())
++                        {
++                            tracked->second = mctpInfo;
++                        }
 +                        this->addToExistingMctpInfos(addedInfo);
 +                        this->handleMctpEndpoints(addedInfo);
 +                    }

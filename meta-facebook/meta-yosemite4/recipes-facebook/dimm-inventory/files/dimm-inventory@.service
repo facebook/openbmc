@@ -1,6 +1,7 @@
 [Unit]
 Description=DIMM Inventory Population for Slot %i
-After=xyz.openbmc_project.Settings.service
+Requires=xyz.openbmc_project.Inventory.Manager.service
+After=xyz.openbmc_project.Inventory.Manager.service
 After=host-poweron@%i.service
 Before=obmc-host-start@%i.target
 

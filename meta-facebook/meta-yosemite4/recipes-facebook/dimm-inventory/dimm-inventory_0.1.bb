@@ -19,6 +19,7 @@ RDEPENDS:${PN}:append = " \
     bash \
     dimm-util \
     jq \
+    phosphor-inventory-manager \
 "
 
 FILES:${PN}:append = " \

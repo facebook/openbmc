@@ -5,9 +5,13 @@ SRC_URI:append = " \
     file://0101-Up-the-max-connections-from-200-to-1000.patch \
     file://0102-parsing-add-parseTrustedStringAsJson-for-internal-pa.patch \
     file://0103-parsing-increase-maxValues-to-5000-for-telemetry.patch \
+    file://0104-Add-option-to-disable-password-authentication.patch \
 "
 
 EXTRA_OEMESON:append = " -Dredfish-updateservice-use-dbus=enabled"
+
+# Disable password authentication in hardened builds.
+EXTRA_OEMESON:append = "${@bb.utils.contains('DISTRO_FEATURES', 'fb-hardened', ' -Dpassword-auth=disabled', '', d)}"
 
 # S546922: Disable HTTP2 as it's not working with cert auth
 EXTRA_OEMESON:append = " -Dhttp2=disabled"

@@ -28,5 +28,5 @@ from utils.test_utils import qemu_check
 class RestModbusCmdTest(common.base_rest_modbus_cmd.RestModbusCmdTest):
     @classmethod
     def setUpClass(cls):
-        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT"])
+        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT", "WEDGE800BNHP", "WEDGE800CNHP"])
         super().setUpClass()

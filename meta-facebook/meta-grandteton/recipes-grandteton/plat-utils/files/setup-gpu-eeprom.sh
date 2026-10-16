@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 #
@@ -137,10 +137,16 @@ setup_gpu_eeprom () {
 LOCK_FILE="/tmp/gpu_fpga.lock"
 if [ -e "$LOCK_FILE" ]; then
   exit 1
-else
-  touch "$LOCK_FILE"
-
-  setup_gpu_eeprom
-
-  rm "$LOCK_FILE"
 fi
+
+if ! touch "$LOCK_FILE"; then
+  exit 1
+fi
+
+cleanup() {
+  rm -f "$LOCK_FILE"
+}
+
+trap cleanup EXIT INT TERM
+
+setup_gpu_eeprom

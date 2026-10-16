@@ -713,7 +713,21 @@ void syncTime() {
   }
 
   json data = json::object({{"DateTime", hgx::time::now()}});
-  hgx.patch(url, data.dump());
+  constexpr int maxRetries = 10;
+  for (int retry = 0; retry <= maxRetries; ++retry) {
+    try {
+      hgx.patch(url, data.dump());
+      return;
+    } catch (const std::exception& e) {
+      if (retry == maxRetries) {
+        throw;
+      }
+      std::cerr << "Failed to sync GPU time (attempt " << (retry + 1)
+                << "/" << (maxRetries + 1) << "): " << e.what()
+                << ", retrying..." << std::endl;
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+  }
 }
 
 std::string sensorRaw(const std::string& component, const std::string& name) {

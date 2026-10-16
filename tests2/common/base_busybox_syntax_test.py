@@ -222,6 +222,7 @@ KNOWN_USAGE_STRINGS = {
         "less [-EMmNh~] [FILE]...",  # noqa: B950
         "less [-EIMmNh~] [FILE]...",  # BusyBox 1.30.1
         "less [-EFIMmNRh~] [FILE]...",  # BusyBox 1.31.0
+        "less [-EFIMmNSRh~] [FILE]...",  # BusyBox 1.38.0, FEATURE_LESS_TRUNCATE
     ],
     "ln": [
         "ln [OPTIONS] TARGET... LINK|DIR",

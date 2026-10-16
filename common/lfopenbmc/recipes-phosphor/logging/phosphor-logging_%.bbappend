@@ -2,13 +2,11 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:append = " \
     file://0001-lg2-commit-Allow-users-to-provide-additional-data.patch \
-    file://0002-amd-event-log-add-runtime-AFID-integration.patch \
-    file://0003-amd-event-log-add-Redfish-projection-support.patch \
-    file://0004-cper-add-trivial-processing-daemon.patch \ 
-    file://0005-cper-read-CPER-binary.patch \
-    file://0006-cper-decode-add-libcper-decoding.patch \
-    file://0007-cper-add-OEM-registration-API.patch \
-    file://0008-cper-implement-oem-parser-registry.patch \
+    file://0002-cper-add-trivial-processing-daemon.patch \
+    file://0003-cper-read-CPER-binary.patch \
+    file://0004-cper-decode-add-libcper-decoding.patch \
+    file://0005-cper-add-OEM-registration-API.patch \
+    file://0006-cper-implement-oem-parser-registry.patch \
 "
 
 DEPENDS:append = " \

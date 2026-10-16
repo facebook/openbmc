@@ -1,4 +1,4 @@
-From 77ac33fd7763482fb265dc402839950c3b4511c2 Mon Sep 17 00:00:00 2001
+From 18f78a2600f417c466beb2a01d1225f4c45bc6a5 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH] Map DBus event to RF MessageID and parse args
@@ -108,10 +108,10 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
 
 diff --git a/config/meson.build b/config/meson.build
-index ac14660c..cb8cba76 100644
+index a0452a8e..e8a3584b 100644
 --- a/config/meson.build
 +++ b/config/meson.build
-@@ -27,6 +27,7 @@ feature_options = [
+@@ -28,6 +28,7 @@ feature_options = [
      'redfish-allow-deprecated-indicatorled',
      'redfish-allow-deprecated-power-thermal',
      'redfish-allow-rotational-fans',
@@ -142,10 +142,10 @@ index fd8c0f96..4dd7fbc1 100644
  
  // clang-format on
 diff --git a/meson.build b/meson.build
-index be74cf31..b317198c 100644
+index a2ddcd48..48c3d1e5 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -452,6 +452,7 @@ srcfiles_bmcweb = files(
+@@ -480,6 +480,7 @@ srcfiles_bmcweb = files(
      'redfish-core/src/subscription.cpp',
      'redfish-core/src/task_messages.cpp',
      'redfish-core/src/update_messages.cpp',
@@ -154,10 +154,10 @@ index be74cf31..b317198c 100644
      'redfish-core/src/utils/json_utils.cpp',
      'redfish-core/src/utils/time_utils.cpp',
 diff --git a/meson.options b/meson.options
-index c0831ed5..669b6c1b 100644
+index b0d07304..5d667f13 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -371,6 +371,21 @@ option(
+@@ -381,6 +381,21 @@ option(
                      option will be removed by June 2027.''',
  )
  
@@ -823,10 +823,10 @@ index 00000000..5d41f2f1
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/test/meson.build b/test/meson.build
-index 47addaf2..c50b0679 100644
+index 7fc65910..913d5c72 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -58,6 +58,7 @@ srcfiles_unittest = files(
+@@ -59,6 +59,7 @@ srcfiles_unittest = files(
      'redfish-core/lib/chassis_test.cpp',
      'redfish-core/lib/ethernet_test.cpp',
      'redfish-core/lib/fabric_test.cpp',

@@ -1,4 +1,4 @@
-From 4994520ad0d64c974e97a1dada04b80b465606a1 Mon Sep 17 00:00:00 2001
+From 9cb74b05bd5eb9eeb81f28e0044225f05df6027e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 1 Sep 2026 12:00:00 +0200
 Subject: [PATCH] slirp: pin the guest address with a static DHCP lease

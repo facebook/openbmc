@@ -28,7 +28,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
 # This is normally updated by the daily yocto sync job when
 # --refresh-patches is enabled
-QEMU_REF ?= "602e4f2da10ef642581cfcd5caf5d1534808caa2"
+QEMU_REF ?= "5acdfee7f068d88813c989c52f76bb64a06121ca"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
@@ -185,9 +185,9 @@ SRC_URI:append = " \
            file://0691-hw-i2c-aspeed_i2c-only-clear-target-status-the-ISR-h.patch \
            file://0692-hw-i2c-aspeed_i2c-model-AST2700-I2CC_SIRQ_LOG-target.patch \
            file://0693-hw-i2c-aspeed_i2c-fix-AST2700-target-buffer-mode-rec.patch \
-           file://0695-hw-arm-bletchley-take-the-FRU-MAC-from-the-configure.patch \
-           file://0696-slirp-pin-the-guest-address-with-a-static-DHCP-lease.patch \
-           file://0697-hw-i2c-aspeed_i2c-hold-the-target-RX-ACK-until-the-I.patch \
+           file://0694-hw-arm-bletchley-take-the-FRU-MAC-from-the-configure.patch \
+           file://0695-slirp-pin-the-guest-address-with-a-static-DHCP-lease.patch \
+           file://0696-hw-i2c-aspeed_i2c-hold-the-target-RX-ACK-until-the-I.patch \
            "
 
 # slirp is a subproject: its patches need a patchdir, or they hit QEMU's tree.

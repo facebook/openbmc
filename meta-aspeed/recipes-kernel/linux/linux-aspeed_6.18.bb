@@ -23,7 +23,7 @@ KBRANCH = "dev-6.18"
 KSRC ?= "git://github.com/openbmc/linux;protocol=https;branch=${KBRANCH}"
 SRC_URI += "${KSRC}"
 
-SRCREV = "62243c86b5d2f9bd247ad48e38abedce8dbb891b"
+SRCREV = "9da7a3f89a6c8cdefcc3749face13084319cae1a"
 LINUX_VERSION ?= "6.18.55"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
 PR = "r1"

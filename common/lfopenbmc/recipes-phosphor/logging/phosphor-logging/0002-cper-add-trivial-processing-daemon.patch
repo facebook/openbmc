@@ -1,4 +1,4 @@
-From 720791058744bc1e3497e1d1bfbeb43a6ef4cb58 Mon Sep 17 00:00:00 2001
+From 194809b90b97ac24cea8c7ed57e0260e6cd9b6fa Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Fri, 18 Sep 2026 18:35:37 -0400
 Subject: [PATCH] cper: add trivial processing daemon
@@ -194,12 +194,12 @@ index 705d831..eb5a513 100644
  
  if get_option('tests').allowed()
 diff --git a/meson.options b/meson.options
-index dd6f6d8..6880ae3 100644
+index 3d3f4a7..a37634b 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -82,3 +82,9 @@ option(
-     value: '',
-     description: 'Enable runtime extension enrichment using the specified interface',
+@@ -88,3 +88,9 @@ option(
+     value: true,
+     description: 'Persist entries in the legacy Cereal format',
  )
 +
 +option(
@@ -221,5 +221,5 @@ index 0000000..51e2000
 +libcper = libcper_parse_dep
 +libcper-cxx = libcper_cxx_dep
 -- 
-2.43.0
+2.53.0-Meta
 

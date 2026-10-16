@@ -1,7 +1,7 @@
-From f1ffa0c1c40e99f7264ffa11401aa2557264443e Mon Sep 17 00:00:00 2001
+From 5b279088dc6ccfbf3bf4cfcab2b1b1ad14642273 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Tue, 22 Sep 2026 15:25:51 -0400
-Subject: [PATCH 14/17] cper: read CPER binary
+Subject: [PATCH] cper: read CPER binary
 
 Read the CPER binary from the file given via dbus.
 
@@ -90,5 +90,5 @@ index 8413114..6bfe3f6 100644
 +
  } // namespace phosphor::logging::cper
 -- 
-2.43.0
+2.53.0-Meta
 

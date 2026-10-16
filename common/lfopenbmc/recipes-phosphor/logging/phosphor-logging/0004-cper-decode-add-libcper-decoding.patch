@@ -1,7 +1,7 @@
-From f1222fd1c6e87d2bc9d88dbac698c500d25d41fa Mon Sep 17 00:00:00 2001
+From e46408db53036231423f9d8704cf484075f83c10 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 23 Sep 2026 00:13:47 -0400
-Subject: [PATCH 15/17] cper: decode: add libcper decoding
+Subject: [PATCH] cper: decode: add libcper decoding
 
 Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
 Change-Id: I195dfd10a55439f15fc5b9a8b8af31da27112dd5
@@ -712,5 +712,5 @@ index 2ce27bc..516fca1 100644
      'elog_quiesce_test',
      'elog_update_ts_test',
 -- 
-2.43.0
+2.53.0-Meta
 

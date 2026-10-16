@@ -1,7 +1,7 @@
-From 43c851cbf0ecc079ebc1583cb6bf15d27076697d Mon Sep 17 00:00:00 2001
+From a8e504dd594e4f63d64c07dc185c46671759fff9 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 23 Sep 2026 15:43:11 -0400
-Subject: [PATCH 17/17] cper: implement oem parser registry
+Subject: [PATCH] cper: implement oem parser registry
 
 Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
 Change-Id: Id67fb1877b1f2a09db09bd099238c9387b40967d
@@ -1064,5 +1064,5 @@ index 516fca1..18adb36 100644
  
  tests_non_parallel = [
 -- 
-2.43.0
+2.53.0-Meta
 

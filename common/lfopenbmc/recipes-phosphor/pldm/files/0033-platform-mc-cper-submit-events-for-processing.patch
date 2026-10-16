@@ -1,4 +1,4 @@
-From ccc385020310df6125fd958b552a821f74b74105 Mon Sep 17 00:00:00 2001
+From 88b7ac3e8cf028bbe547af7059d6351731b62c96 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Tue, 15 Sep 2026 01:46:19 -0500
 Subject: [PATCH] platform-mc:cper: submit events for processing
@@ -23,7 +23,7 @@ Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
  3 files changed, 92 insertions(+)
 
 diff --git a/platform-mc/event_manager.cpp b/platform-mc/event_manager.cpp
-index d752830..f3c32f2 100644
+index 5f58c73..27575a7 100644
 --- a/platform-mc/event_manager.cpp
 +++ b/platform-mc/event_manager.cpp
 @@ -7,6 +7,7 @@
@@ -135,10 +135,10 @@ index 1256786..05683b1 100644
      TerminusManager& terminusManager;
  
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 008240a..5c2becc 100644
+index ae50b0d..00ce5f2 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
-@@ -196,6 +196,21 @@ class Terminus
+@@ -205,6 +205,21 @@ class Terminus
       */
      int fetchEntityManagerConfiguration();
  
@@ -161,5 +161,5 @@ index 008240a..5c2becc 100644
      /** @brief Find the Terminus Name from the Entity Auxiliary name list
       *         The Entity Auxiliary name list is entityAuxiliaryNamesTbl.
 -- 
-2.43.0
+2.53.0-Meta
 

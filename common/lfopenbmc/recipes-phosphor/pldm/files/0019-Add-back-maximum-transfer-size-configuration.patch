@@ -1,4 +1,4 @@
-From 6f1ecee4537492d3b9db8ac066fdacd314b9a9b3 Mon Sep 17 00:00:00 2001
+From c1be56d4ac84952c078dd59d3d33efda675c0a8c Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
 Subject: [PATCH] Add back maximum transfer size configuration
@@ -19,10 +19,10 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  4 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 8eded1e..966378a 100644
+index b4a3e0c..9ed3719 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
-@@ -83,7 +83,6 @@ bool ItemUpdateManager::processPackage()
+@@ -79,7 +79,6 @@ bool ItemUpdateManager::processPackage()
  
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();
@@ -31,7 +31,7 @@ index 8eded1e..966378a 100644
      auto packageSpan = packageMap->getChars();
      packageDataStream =
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index 61efd39..170dac3 100644
+index d7f78c8..4446dee 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
 @@ -186,7 +186,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)

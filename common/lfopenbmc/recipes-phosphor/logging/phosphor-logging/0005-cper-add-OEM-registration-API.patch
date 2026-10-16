@@ -1,7 +1,7 @@
-From 02ba5385d8078cc43e1b83f1da760b7f51664e00 Mon Sep 17 00:00:00 2001
+From e111c00a8e7483d8f2b78b4b26b44cea92562444 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 23 Sep 2026 00:42:18 -0400
-Subject: [PATCH 16/17] cper: add OEM registration API
+Subject: [PATCH] cper: add OEM registration API
 
 Provide the v1 API for OEM CPER processing so that vendors can create
 custom cper parsing libraries outside of libcper.
@@ -141,5 +141,5 @@ index af25aae..cf76b24 100644
 +
  install_headers('test/sdjournal_mock.hpp', subdir: 'phosphor-logging/test')
 -- 
-2.43.0
+2.53.0-Meta
 

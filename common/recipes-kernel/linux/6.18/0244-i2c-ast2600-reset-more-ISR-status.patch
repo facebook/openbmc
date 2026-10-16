@@ -1,4 +1,4 @@
-From d80112709a7bae0572fefcef2030a0236a9e2214 Mon Sep 17 00:00:00 2001
+From 94de91b2e1575395ea9ebb92e344ab705be3df2e Mon Sep 17 00:00:00 2001
 From: Tommy Huang <tommy_huang@aspeedtech.com>
 Date: Fri, 11 Sep 2026 10:37:17 +0800
 Subject: [PATCH] i2c: ast2600: reset more ISR status
@@ -15,10 +15,10 @@ Change-Id: Id731974c1fbf3d5c385d62d952208a0fa8e6cf67
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
-index d624638e721d..354a43d478a7 100644
+index da7ab72e428e..f01ae816ef0c 100644
 --- a/drivers/i2c/busses/i2c-ast2600.c
 +++ b/drivers/i2c/busses/i2c-ast2600.c
-@@ -2693,7 +2693,7 @@ static int ast2600_i2c_init(struct ast2600_i2c_bus *i2c_bus)
+@@ -2741,7 +2741,7 @@ static int ast2600_i2c_init(struct ast2600_i2c_bus *i2c_bus)
  	}
  
  	/* Clear Interrupt */
@@ -27,7 +27,7 @@ index d624638e721d..354a43d478a7 100644
  
  #if IS_ENABLED(CONFIG_I2C_SLAVE)
  	/* for memory buffer initial */
-@@ -2705,7 +2705,7 @@ static int ast2600_i2c_init(struct ast2600_i2c_bus *i2c_bus)
+@@ -2753,7 +2753,7 @@ static int ast2600_i2c_init(struct ast2600_i2c_bus *i2c_bus)
  			return -ENOMEM;
  	}
  
@@ -37,5 +37,5 @@ index d624638e721d..354a43d478a7 100644
  	if (i2c_bus->mode == BYTE_MODE)
  		writel(GENMASK(15, 0), i2c_bus->reg_base + AST2600_I2CS_IER);
 -- 
-2.34.1
+2.53.0-Meta
 

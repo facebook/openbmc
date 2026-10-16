@@ -1,4 +1,4 @@
-From f33b7e56041a818fa937128098e1115a05e478e2 Mon Sep 17 00:00:00 2001
+From 4863940a7b27573a975c63562f16d2a1439bb688 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Wed, 12 Aug 2026 10:49:25 +0800
 Subject: [PATCH] i2c-vr: add support for TI TPS544X27 VR firmware update
@@ -973,7 +973,7 @@ index 0000000..184746f
 +} // namespace phosphor::software::VR
 diff --git a/i2c-vr/tps544x27/tps544x27.cpp b/i2c-vr/tps544x27/tps544x27.cpp
 new file mode 100644
-index 0000000..c9f78e0
+index 0000000..149c294
 --- /dev/null
 +++ b/i2c-vr/tps544x27/tps544x27.cpp
 @@ -0,0 +1,952 @@
@@ -2561,14 +2561,17 @@ index 0000000..2feafb1
 +    ),
 +)
 diff --git a/test/meson.build b/test/meson.build
-index 14735cb..2ca813c 100644
+index 5e5c634..30d8b9a 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -3,3 +3,4 @@ subdir('create_package')
+@@ -3,6 +3,7 @@ subdir('create_package')
  gtest_main = dependency('gtest_main', main: true, required: true)
  
  subdir('common')
 +subdir('i2c-vr')
+ 
+ if get_option('cpld-software-update').allowed()
+     subdir('cpld')
 -- 
-2.52.0
+2.53.0-Meta
 

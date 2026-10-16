@@ -1,4 +1,4 @@
-From 6cc22f82acdcc0dccdfef73261e8c830955e11a0 Mon Sep 17 00:00:00 2001
+From 0e16b2d4e7b96253e3750b60f3d84a9e1e1434b8 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Wed, 12 Aug 2026 10:48:23 +0800
 Subject: [PATCH] i2c-vr: add support for MPS MP2940x VR firmware update
@@ -284,7 +284,7 @@ index bf5395e..45b938a 100644
      'mps/mp5998.cpp',
 diff --git a/i2c-vr/mps/mp2940x.cpp b/i2c-vr/mps/mp2940x.cpp
 new file mode 100644
-index 0000000..bc3c729
+index 0000000..4ba0f1e
 --- /dev/null
 +++ b/i2c-vr/mps/mp2940x.cpp
 @@ -0,0 +1,741 @@
@@ -1123,5 +1123,5 @@ index 77a3fbd..5124551 100644
      MP5998,
      MP994X,
 -- 
-2.52.0
+2.53.0-Meta
 

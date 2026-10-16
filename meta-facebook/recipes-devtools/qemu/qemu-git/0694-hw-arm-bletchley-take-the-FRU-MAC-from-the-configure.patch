@@ -1,4 +1,4 @@
-From 41d1b06e939e02ef40b48cc88442188bd5b1104a Mon Sep 17 00:00:00 2001
+From 4f9c6aa654bdf5ed695a8dc105ab4eacc7b0a691 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 1 Sep 2026 12:00:00 +0200
 Subject: [PATCH] hw/arm: bletchley: take the FRU MAC from the configured NIC
@@ -21,7 +21,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 80 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index 6439859504..9c5b58bb0c 100644
+index 5eb0340c9e..9d910d3104 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
 @@ -20,6 +20,7 @@
@@ -153,5 +153,5 @@ index 6439859504..9c5b58bb0c 100644
      /* Bus 9 */
      i2c_slave_create_simple(i2c[9], TYPE_TMP421, 0x4f);
 -- 
-2.54.0
+2.53.0-Meta
 

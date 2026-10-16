@@ -97,7 +97,7 @@ index 2ae280a..c8b1bd8 100644
  
      Event event(sdeventplus::Event::get_default());
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 86d9e72..fbbafa4 100644
+index 744eb9b..5b83433 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -2,6 +2,7 @@
@@ -147,7 +147,7 @@ index 86d9e72..fbbafa4 100644
      }
  
      addNextSensorFromPDRs();
-@@ -841,5 +860,127 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
+@@ -847,5 +866,127 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
      return sensorNames;
  }
  
@@ -276,7 +276,7 @@ index 86d9e72..fbbafa4 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 4addf82..008240a 100644
+index 7e85a87..ae50b0d 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -119,6 +119,23 @@ class Terminus
@@ -303,7 +303,7 @@ index 4addf82..008240a 100644
      /** @brief Parse record data from FRU table
       *
       *  @param[in] fruData - pointer to FRU record table
-@@ -173,6 +190,12 @@ class Terminus
+@@ -182,6 +199,12 @@ class Terminus
       */
      std::shared_ptr<NumericSensor> getSensorObject(SensorID id);
  
@@ -316,9 +316,9 @@ index 4addf82..008240a 100644
    private:
      /** @brief Find the Terminus Name from the Entity Auxiliary name list
       *         The Entity Auxiliary name list is entityAuxiliaryNamesTbl.
-@@ -304,6 +327,9 @@ class Terminus
-     /* @brief The pointer of inventory D-Bus interface for the terminus */
-     std::unique_ptr<pldm::dbus_api::PldmEntityBase> inventoryItemInft = nullptr;
+@@ -317,6 +340,9 @@ class Terminus
+     std::unique_ptr<pldm::dbus_api::PldmFruDecorators> fruDecoratorsIntf =
+         nullptr;
  
 +    /** @brief associated path */
 +    EntityName associatedPath{};
@@ -406,7 +406,7 @@ index 3749458..1c31d22 100644
  }
  
 diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
-index e4c6cc0..10c803f 100644
+index 91926c3..74e1de5 100644
 --- a/platform-mc/test/event_manager_test.cpp
 +++ b/platform-mc/test/event_manager_test.cpp
 @@ -171,8 +171,8 @@ TEST_F(EventManagerTest, processNumericSensorEventTest)
@@ -450,7 +450,7 @@ index e4c6cc0..10c803f 100644
      EXPECT_CALL(eventManager, processCperEvent(_, _, _, _))
          .Times(1)
 diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
-index 76a4f27..8b8dc99 100644
+index 3f22795..4253766 100644
 --- a/platform-mc/test/platform_manager_test.cpp
 +++ b/platform-mc/test/platform_manager_test.cpp
 @@ -33,8 +33,8 @@ class PlatformManagerTest : public testing::Test
@@ -527,7 +527,7 @@ index 76a4f27..8b8dc99 100644
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
          tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index 3b0173d..4bb39b4 100644
+index 94ae6fe..41a0eca 100644
 --- a/platform-mc/test/terminus_manager_test.cpp
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -51,7 +51,7 @@ class TerminusManagerTest : public testing::Test

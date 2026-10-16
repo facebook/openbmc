@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <unistd.h>
 #include <chrono>
 #include <thread>
@@ -194,13 +195,14 @@ class RetimerComponent : public Component {
     }
 
     int get_version(json& j) {
-      int slaveaddr = 24;
       std::stringstream pathStream;
-      pathStream << "/sys/kernel/debug/pt5161l/" << _bus
+      pathStream << "/sys/kernel/debug/i2c/i2c-" << _bus
+                                                 << "/"
+                                                 << _bus
                                                  << "-"
                                                  << std::setw(4)
                                                  << std::setfill('0')
-                                                 << slaveaddr << "/fw_ver";
+                                                 << std::hex << addr << "/fw_ver";
       std::string filePath = pathStream.str();
     //  std::cout << "File Path: " << filePath << std::endl;
 

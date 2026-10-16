@@ -1,0 +1,87 @@
+From c0d679f46815c3c4039ef9ea8d524669adf858b0 Mon Sep 17 00:00:00 2001
+From: Colin Huang <colin.huang2@amd.com>
+Date: Thu, 15 Oct 2026 14:08:00 +0800
+Subject: [PATCH] entity_manager: skip rewriting unchanged system.json
+
+ConfigCache::writeJsonFiles() is called after every scan and on every
+D-Bus property change, and it truncates and rewrites
+/var/configuration/system.json each time, even when the configuration
+has not changed. On systems where this directory is backed by flash
+(e.g. JFFS2), each rewrite of a few hundred KB can block for
+hundreds of milliseconds to seconds because the write is synchronous
+on the io_context thread.
+
+During boot, when many scans run back to back, the io thread was
+blocked for over a minute in total. While blocked, entity-manager does
+not answer D-Bus calls, so clients such as the code-update daemons
+time out on Properties.Get (NoReply) and drop the device, leaving
+CPLD/VR firmware versions missing from the Redfish FirmwareInventory.
+
+Remember the last content written and return early when the new
+serialized configuration is identical. Also treat a failed write as an
+error and do not cache its content, so it is retried on the next call.
+
+Gerrit:  https://gerrit.openbmc.org/c/openbmc/entity-manager/+/95909
+
+Tested: On the target system, repeated BMC reboots no longer show
+the io thread stalls caused by system.json rewrites.
+
+Change-Id: Id0eb20a1978ccf86cbfbd233d25db58dcdb9cae4
+Signed-off-by: Colin Huang <colin.huang2@amd.com>
+---
+ src/entity_manager/config_cache.cpp | 13 ++++++++++++-
+ src/entity_manager/config_cache.hpp |  5 +++++
+ 2 files changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/src/entity_manager/config_cache.cpp b/src/entity_manager/config_cache.cpp
+index ce06ef9..ef6a10b 100644
+--- a/src/entity_manager/config_cache.cpp
++++ b/src/entity_manager/config_cache.cpp
+@@ -21,6 +21,12 @@ bool ConfigCache::writeJsonFiles(const nlohmann::json& systemConfiguration)
+         return false;
+     }
+ 
++    std::string content = systemConfiguration.dump(4);
++    if (content == lastWritten)
++    {
++        return true;
++    }
++
+     lg2::debug("writing system configuration to {PATH}", "PATH",
+                currentConfiguration);
+ 
+@@ -29,7 +35,12 @@ bool ConfigCache::writeJsonFiles(const nlohmann::json& systemConfiguration)
+     {
+         return false;
+     }
+-    output << systemConfiguration.dump(4);
++    output << content;
+     output.close();
++    if (output.fail())
++    {
++        return false;
++    }
++    lastWritten = std::move(content);
+     return true;
+ }
+diff --git a/src/entity_manager/config_cache.hpp b/src/entity_manager/config_cache.hpp
+index c92113f..f9b657e 100644
+--- a/src/entity_manager/config_cache.hpp
++++ b/src/entity_manager/config_cache.hpp
+@@ -6,6 +6,7 @@
+ #include <nlohmann/json.hpp>
+ 
+ #include <filesystem>
++#include <string>
+ 
+ class ConfigCache
+ {
+@@ -22,4 +23,8 @@ class ConfigCache
+     const std::filesystem::path configurationOutDir;
+     const std::filesystem::path currentConfiguration;
+     const std::filesystem::path versionHashFile;
++
++  private:
++    // Last content written to currentConfiguration.
++    std::string lastWritten;
+ };

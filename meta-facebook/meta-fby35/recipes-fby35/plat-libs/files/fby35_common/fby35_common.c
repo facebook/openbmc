@@ -422,7 +422,7 @@ fby35_common_get_slot_type(uint8_t fru) {
   char value[MAX_VALUE_LEN] = {0};
 
   snprintf(key, sizeof(key), "fru%u_sb_type", fru);
-  if (kv_get(key, value, NULL, 0) == 0) {
+  if (kv_get(key, value, NULL, KV_FPERSIST) == 0) {
     ret = value[0];
     return ret;
   }
@@ -432,7 +432,7 @@ fby35_common_get_slot_type(uint8_t fru) {
   }
 
   ret = value[0];
-  if (kv_set(key, value, 1, KV_FCREATE)) {
+  if (kv_set(key, value, 1, KV_FCREATE | KV_FPERSIST)) {
     syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
   }
 
@@ -446,7 +446,7 @@ fby35_common_get_sb_rev(uint8_t fru) {
   char value[MAX_VALUE_LEN] = {0};
 
   snprintf(key, sizeof(key), "fru%u_sb_rev_id", fru);
-  if (kv_get(key, value, NULL, 0) == 0) {
+  if (kv_get(key, value, NULL, KV_FPERSIST) == 0) {
     ret = value[0];
     return ret;
   }
@@ -456,7 +456,7 @@ fby35_common_get_sb_rev(uint8_t fru) {
   }
 
   ret = value[0];
-  if (kv_set(key, value, 1, KV_FCREATE)) {
+  if (kv_set(key, value, 1, KV_FCREATE | KV_FPERSIST)) {
     syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
   }
 

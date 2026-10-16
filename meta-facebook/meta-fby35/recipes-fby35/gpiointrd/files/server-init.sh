@@ -89,8 +89,8 @@ if [ "$(is_server_prsnt "$slot_num")" = "0" ]; then
   $KV_CMD del "slot${slot_num}_get_1ou_type"
   $KV_CMD del "slot${slot_num}_vr_device_id"
   $KV_CMD del "fru${slot_num}_2ou_board_type"
-  $KV_CMD del "fru${slot_num}_sb_type"
-  $KV_CMD del "fru${slot_num}_sb_rev_id"
+  $KV_CMD del "fru${slot_num}_sb_type" persistent
+  $KV_CMD del "fru${slot_num}_sb_rev_id" persistent
   $KV_CMD del "fru${slot_num}_is_prot_prsnt"
   clear_all_vr_cache
   clear_all_pldm_comp_cache

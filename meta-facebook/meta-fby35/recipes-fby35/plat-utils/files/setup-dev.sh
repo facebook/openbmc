@@ -219,7 +219,20 @@ function init_adc_upper_bound() {
   done
 }
 
+function clear_sb_cache() {
+  # Server board type/rev are cached persistently; drop them for absent
+  # slots so a board swapped while the BMC was off is re-read from CPLD.
+  for i in {1..4}; do
+    if [ "$(is_server_prsnt "$i")" == "0" ]; then
+      $KV_CMD del "fru${i}_sb_type" persistent
+      $KV_CMD del "fru${i}_sb_rev_id" persistent
+    fi
+  done
+}
+
 echo "Setup devs for fby35..."
+
+clear_sb_cache
 
 #create the device of mezz card
 i2c_device_add 8 0x1f tmp421

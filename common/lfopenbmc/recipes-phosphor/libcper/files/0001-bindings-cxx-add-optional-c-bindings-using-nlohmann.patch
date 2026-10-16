@@ -13,66 +13,27 @@ match the same IR JSON content as the C-only bindings.
 Change-Id: I80565a6331321d967e0c080dd9193dff4e90ed1c
 Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
 ---
- .gitignore                       |   2 +-
- README.md                        |   4 +
- bindings/cxx/.clang-format       | 136 +++++++++++++++++++++++++++++++
- bindings/cxx/include/libcper.hpp |  47 +++++++++++
- bindings/cxx/meson.build         |  30 +++++++
- bindings/cxx/src/ir.cpp          |  83 +++++++++++++++++++
- bindings/meson.build             |   3 +
- meson.build                      |  21 +++++
- meson.options                    |   5 ++
- subprojects/nlohmann_json.wrap   |   6 ++
- tests/cper-example-sections.h    |  44 ++++++++++
- tests/cxx/.clang-format          | 136 +++++++++++++++++++++++++++++++
- tests/cxx/examples.cpp           | 125 ++++++++++++++++++++++++++++
- tests/cxx/ir.cpp                 | 115 ++++++++++++++++++++++++++
- tests/cxx/meson.build            |  42 ++++++++++
- tests/ir-tests.c                 |  16 +++-
- tests/meson.build                |   4 +
- 17 files changed, 815 insertions(+), 4 deletions(-)
- create mode 100644 bindings/cxx/.clang-format
- create mode 100644 bindings/cxx/include/libcper.hpp
- create mode 100644 bindings/cxx/meson.build
- create mode 100644 bindings/cxx/src/ir.cpp
- create mode 100644 bindings/meson.build
- create mode 100644 subprojects/nlohmann_json.wrap
- create mode 100644 tests/cper-example-sections.h
- create mode 100644 tests/cxx/.clang-format
- create mode 100644 tests/cxx/examples.cpp
- create mode 100644 tests/cxx/ir.cpp
- create mode 100644 tests/cxx/meson.build
+ bindings/cxx/.clang-format       |  136 ++++++++++++++++++++++++++++++++++++++
+ bindings/cxx/include/libcper.hpp |   47 +++++++++++++
+ bindings/cxx/meson.build         |   30 ++++++++
+ bindings/cxx/src/ir.cpp          |   83 +++++++++++++++++++++++
+ bindings/meson.build             |    3 +
+ .gitignore                       |    2 -
+ meson.build                      |   21 ++++++
+ meson.options                    |    5 +
+ README.md                        |    4 +
+ subprojects/nlohmann_json.wrap   |    6 ++
+ tests/cper-example-sections.h    |   44 ++++++++++++
+ tests/cxx/.clang-format          |  136 ++++++++++++++++++++++++++++++++++++++
+ tests/cxx/examples.cpp           |  125 +++++++++++++++++++++++++++++++++++
+ tests/cxx/ir.cpp                 |  115 ++++++++++++++++++++++++++++++++
+ tests/cxx/meson.build            |   42 ++++++++++++
+ tests/ir-tests.c                 |   15 +++-
+ tests/meson.build                |    4 +
+ 17 files changed, 814 insertions(+), 4 deletions(-)
 
-diff --git a/.gitignore b/.gitignore
-index 873c957..9eddefe 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -23,4 +23,4 @@ specification/document/*.*gz
- specification/document/*aux
- 
- subprojects/*
---subprojects/*.wrap
-\ No newline at end of file
-+!subprojects/*.wrap
-\ No newline at end of file
-diff --git a/README.md b/README.md
-index e9048f3..d16182d 100644
---- a/README.md
-+++ b/README.md
-@@ -51,6 +51,10 @@ json_object* cper_to_ir(FILE* cper_file);
- void ir_to_cper(json_object* ir, FILE* out);
- ```
- 
-+There is also a C++ binding (`libcper-cxx`) that returns the IR as
-+`nlohmann::json` via `<libcper.hpp>`. It builds by default; pass
-+`-Dbindings-cxx=disabled` to omit it.
-+
- ## Specification
- 
- The specification for this project's CPER-JSON format can be found in
 diff --git a/bindings/cxx/.clang-format b/bindings/cxx/.clang-format
 new file mode 100644
-index 0000000..e5530e6
 --- /dev/null
 +++ b/bindings/cxx/.clang-format
 @@ -0,0 +1,136 @@
@@ -214,7 +175,6 @@ index 0000000..e5530e6
 +
 diff --git a/bindings/cxx/include/libcper.hpp b/bindings/cxx/include/libcper.hpp
 new file mode 100644
-index 0000000..80f2481
 --- /dev/null
 +++ b/bindings/cxx/include/libcper.hpp
 @@ -0,0 +1,47 @@
@@ -267,7 +227,6 @@ index 0000000..80f2481
 +} // namespace libcper
 diff --git a/bindings/cxx/meson.build b/bindings/cxx/meson.build
 new file mode 100644
-index 0000000..4512a63
 --- /dev/null
 +++ b/bindings/cxx/meson.build
 @@ -0,0 +1,30 @@
@@ -303,7 +262,6 @@ index 0000000..4512a63
 +endif
 diff --git a/bindings/cxx/src/ir.cpp b/bindings/cxx/src/ir.cpp
 new file mode 100644
-index 0000000..2500962
 --- /dev/null
 +++ b/bindings/cxx/src/ir.cpp
 @@ -0,0 +1,83 @@
@@ -392,18 +350,27 @@ index 0000000..2500962
 +} // namespace libcper
 diff --git a/bindings/meson.build b/bindings/meson.build
 new file mode 100644
-index 0000000..1b68d6c
 --- /dev/null
 +++ b/bindings/meson.build
 @@ -0,0 +1,3 @@
 +if opt_bindings_cxx.allowed()
 +    subdir('cxx')
 +endif
+diff --git a/.gitignore b/.gitignore
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,4 +23,4 @@
+ specification/document/*aux
+ 
+ subprojects/*
+--subprojects/*.wrap
+\ No newline at end of file
++!subprojects/*.wrap
+\ No newline at end of file
 diff --git a/meson.build b/meson.build
-index 6316995..10082c5 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -5,6 +5,7 @@ project(
+@@ -5,6 +5,7 @@
      meson_version: '>=1.2.0',
      default_options: [
          'c_std=c18',
@@ -411,7 +378,7 @@ index 6316995..10082c5 100644
          'tests=' + (meson.is_subproject() ? 'disabled' : 'enabled'),
          'warning_level=2',
          'werror=true',
-@@ -25,6 +26,19 @@ add_project_arguments(
+@@ -26,6 +27,19 @@
  
  library_is_share = get_option('default_library') == 'shared'
  
@@ -431,7 +398,7 @@ index 6316995..10082c5 100644
  if get_option('output-all-properties').enabled()
      add_project_arguments('-DOUTPUT_ALL_PROPERTIES', language: 'c')
  endif
-@@ -79,6 +93,9 @@ json_c_dep = declare_dependency(
+@@ -84,6 +98,9 @@
      include_directories: include_directories('subprojects'),
      dependencies: json_c,
  )
@@ -441,7 +408,7 @@ index 6316995..10082c5 100644
  libcper_include = ['include']
  libcper_include_dir = include_directories(libcper_include, is_system: true)
  
-@@ -129,6 +146,10 @@ libcper_generate_dep = declare_dependency(
+@@ -134,6 +151,10 @@
      link_with: libcper_generate,
  )
  
@@ -453,24 +420,36 @@ index 6316995..10082c5 100644
      import('pkgconfig').generate(
          libcper_parse,
 diff --git a/meson.options b/meson.options
-index ffd7c74..bb838bc 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -18,6 +18,11 @@ option(
-     description: 'Build python extensions',
+@@ -19,6 +19,11 @@
  )
  option('install', type: 'feature', value: 'enabled', description: 'Install')
-+option(
+ option(
 +    'bindings-cxx',
 +    type: 'feature',
 +    description: 'Build C++ (nlohmann::json) bindings',
 +)
- option(
++option(
      'pkgconfig',
      type: 'feature',
+     value: 'enabled',
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -51,6 +51,10 @@
+ void ir_to_cper(json_object* ir, FILE* out);
+ ```
+ 
++There is also a C++ binding (`libcper-cxx`) that returns the IR as
++`nlohmann::json` via `<libcper.hpp>`. It builds by default; pass
++`-Dbindings-cxx=disabled` to omit it.
++
+ ## Specification
+ 
+ The specification for this project's CPER-JSON format can be found in
 diff --git a/subprojects/nlohmann_json.wrap b/subprojects/nlohmann_json.wrap
 new file mode 100644
-index 0000000..fbd938d
 --- /dev/null
 +++ b/subprojects/nlohmann_json.wrap
 @@ -0,0 +1,6 @@
@@ -483,7 +462,6 @@ index 0000000..fbd938d
 \ No newline at end of file
 diff --git a/tests/cper-example-sections.h b/tests/cper-example-sections.h
 new file mode 100644
-index 0000000..90fe031
 --- /dev/null
 +++ b/tests/cper-example-sections.h
 @@ -0,0 +1,44 @@
@@ -533,7 +511,6 @@ index 0000000..90fe031
 +#endif // CPER_EXAMPLE_SECTIONS_H
 diff --git a/tests/cxx/.clang-format b/tests/cxx/.clang-format
 new file mode 100644
-index 0000000..e5530e6
 --- /dev/null
 +++ b/tests/cxx/.clang-format
 @@ -0,0 +1,136 @@
@@ -675,7 +652,6 @@ index 0000000..e5530e6
 +
 diff --git a/tests/cxx/examples.cpp b/tests/cxx/examples.cpp
 new file mode 100644
-index 0000000..22d17da
 --- /dev/null
 +++ b/tests/cxx/examples.cpp
 @@ -0,0 +1,125 @@
@@ -806,7 +782,6 @@ index 0000000..22d17da
 +                                             kExampleSections.end()));
 diff --git a/tests/cxx/ir.cpp b/tests/cxx/ir.cpp
 new file mode 100644
-index 0000000..c1b7e48
 --- /dev/null
 +++ b/tests/cxx/ir.cpp
 @@ -0,0 +1,115 @@
@@ -927,7 +902,6 @@ index 0000000..c1b7e48
 +}
 diff --git a/tests/cxx/meson.build b/tests/cxx/meson.build
 new file mode 100644
-index 0000000..5276d6f
 --- /dev/null
 +++ b/tests/cxx/meson.build
 @@ -0,0 +1,42 @@
@@ -974,19 +948,17 @@ index 0000000..5276d6f
 +)
 +test('test-cper-cxx-examples-tests', cper_cxx_examples_tests)
 diff --git a/tests/ir-tests.c b/tests/ir-tests.c
-index ad4ae3b..22b7b7d 100644
 --- a/tests/ir-tests.c
 +++ b/tests/ir-tests.c
-@@ -16,6 +16,8 @@
- #include <libcper/sections/cper-section.h>
+@@ -23,6 +23,7 @@
+ #include <libcper/sections/cper-section-nvidia-events.h>
  
  #include "base64_test.h"
 +#include "cper-example-sections.h"
-+#include "hex_test.h"
+ #include "hex_test.h"
  
  /*
- * Test templates.
-@@ -27,6 +29,11 @@ static const int GEN_EXAMPLES = 0;
+@@ -35,6 +36,11 @@
  static const char *cper_ext = "cperhex";
  static const char *json_ext = "json";
  
@@ -998,7 +970,7 @@ index ad4ae3b..22b7b7d 100644
  struct file_info {
  	char *cper_out;
  	char *json_out;
-@@ -438,9 +445,6 @@ void cper_log_section_dual_ir_test(const char *section_name)
+@@ -463,9 +469,6 @@
  	// Test with buffer based APIs
  	cper_buf_log_section_ir_test(section_name, 0, allValidbitsSet);
  	cper_buf_log_section_ir_test(section_name, 1, allValidbitsSet);
@@ -1008,7 +980,7 @@ index ad4ae3b..22b7b7d 100644
  }
  
  //Tests randomly generated CPER sections for binary compatibility of a given type, in both single section mode and full CPER log mode.
-@@ -722,6 +726,12 @@ int main(void)
+@@ -989,6 +992,12 @@
  	CompileTimeAssertions_TwoWayConversion();
  	CompileTimeAssertions_ShortcodeNoSpaces();
  
@@ -1022,10 +994,9 @@ index ad4ae3b..22b7b7d 100644
  
  	return 0;
 diff --git a/tests/meson.build b/tests/meson.build
-index f5baef2..9f10a9d 100644
 --- a/tests/meson.build
 +++ b/tests/meson.build
-@@ -7,6 +7,10 @@ test_sources = files('base64_test.c', 'test-utils.c')
+@@ -4,6 +4,10 @@
  
  test_include_dirs = ['.', '../include']
  
@@ -1037,5 +1008,4 @@ index f5baef2..9f10a9d 100644
      'cper-tests',
      'ir-tests.c',
 -- 
-2.43.0
-
+2.53.0

@@ -49,9 +49,9 @@ bmc_boot_info() {
     # get watch dog2 timeout status register
     wdt2=$(devmem "$FMC_WDT2_CTRL_STATUS_REG" )
 
-    wdt1_timeout_cnt=$(( ((wdt1 & 0xff00) >> 8) ))
-    wdt2_timeout_cnt=$(( ((wdt2 & 0xff00) >> 8) ))
-    boot_code_source=$(( ((wdt2 & 0x10) >> 4) ))
+    wdt1_timeout_cnt=$(( (wdt1 & 0xff00) >> 8 ))
+    wdt2_timeout_cnt=$(( (wdt2 & 0xff00) >> 8 ))
+    boot_code_source=$(( (wdt2 & 0x10) >> 4 ))
 
     boot_source="Master Flash"
     if [ $boot_code_source -eq 1 ]
@@ -106,9 +106,18 @@ bmc_boot_from() {
     devmem "$FMC_WDT2_CTRL_STATUS_REG" 32 $boot_source
 }
 
+BIOS_DIS0_SYSFS="${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis0_n"
+BIOS_DIS1_SYSFS="${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n"
+
+# uServer BIOS master/slave selection needs the SCM CPLD BIOS-disable
+# controls, which only some platforms expose.
+bios_boot_supported() {
+    [ -n "$SCMCPLD_SYSFS_DIR" ] && [ -e "$BIOS_DIS0_SYSFS" ] && [ -e "$BIOS_DIS1_SYSFS" ]
+}
+
 bios_boot_info() {
-    master_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis0_n") ))
-    slave_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n") ))
+    master_disable=$(( $(head -n 1 < "$BIOS_DIS0_SYSFS") ))
+    slave_disable=$(( $(head -n 1 < "$BIOS_DIS1_SYSFS") ))
     boot_source="master"
     if [ $master_disable -eq 0 ]; then
         boot_source="master"
@@ -125,8 +134,8 @@ bios_boot_from() {
             echo "Current boot source is master, no need to switch."
             return 0
         fi
-        echo 0 > "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis0_n"
-        echo 0 > "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n"
+        echo 0 > "$BIOS_DIS0_SYSFS"
+        echo 0 > "$BIOS_DIS1_SYSFS"
 
         echo "uServer will boot from $1 bios at next reboot!!!!"
     elif [ "$1" = "slave" ]; then
@@ -134,8 +143,8 @@ bios_boot_from() {
             echo "Current boot source is slave, no need to switch."
             return 0
         fi
-        echo 1 > "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis0_n"
-        echo 0 > "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n"
+        echo 1 > "$BIOS_DIS0_SYSFS"
+        echo 0 > "$BIOS_DIS1_SYSFS"
 
         echo "uServer will boot from $1 bios at next reboot!!!!"
     else
@@ -169,6 +178,10 @@ case $1 in
         fi
     ;;
     "bios")
+        if ! bios_boot_supported; then
+            echo "Error: uServer BIOS boot source selection is not supported on this platform!" >&2
+            exit 1
+        fi
         if [ $# -eq 1 ]; then
             bios_boot_info
             exit 0

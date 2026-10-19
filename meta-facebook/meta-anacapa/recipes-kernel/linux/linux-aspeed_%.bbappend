@@ -33,4 +33,5 @@ SRC_URI:append = " \
     file://1028-arm-dts-anacapa-Align-Cable-and-SSD-SGPIO-pin-names.patch \
     file://1029-ARM-dts-aspeed-anacapa-Add-LPDB-fuse-monitor-GPIO-ex.patch \
     file://1030-misc-amd-apml-Add-Venice-B0-I3C-ID-and-canonical-nod.patch \
+    file://1031-jtag-increase-JTAG_MAX_XFER_DATA_LEN-to-0x1000000.patch \
 "

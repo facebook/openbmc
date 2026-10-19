@@ -1,0 +1,34 @@
+From eef2f3955a4876c34b5c2764ff2635d2e58d2970 Mon Sep 17 00:00:00 2001
+From: Naveen Krishna Chatradhi <naveenkrishna.chatradhi@amd.com>
+Date: Sun, 11 Oct 2026 10:13:46 +0530
+Subject: [PATCH] jtag: increase JTAG_MAX_XFER_DATA_LEN to 0x1000000 (2 MiB)
+
+Change JTAG_MAX_XFER_DATA_LEN from 65535 to 0x1000000 (16,777,216 bits)
+to allow larger single JTAG_IOCXFER transfers (up to 2 MiB of data),
+while staying well clear of the 32-bit DIV_ROUND_UP() overflow boundary
+(0xFFFFFFF8) and one page order below this kernel's buddy allocator
+ceiling (CONFIG_ARCH_FORCE_MAX_ORDER=10, i.e. 4 MiB max contiguous
+allocation), for better memdup_user() allocation reliability under
+memory pressure/fragmentation.
+
+Signed-off-by: Naveen Krishna Chatradhi <naveenkrishna.chatradhi@amd.com>
+---
+ include/linux/jtag.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/jtag.h b/include/linux/jtag.h
+index 6a6b53a54..e81e05597 100644
+--- a/include/linux/jtag.h
++++ b/include/linux/jtag.h
+@@ -10,7 +10,7 @@
+ #include <linux/types.h>
+ #include <uapi/linux/jtag.h>
+ 
+-#define JTAG_MAX_XFER_DATA_LEN 65535
++#define JTAG_MAX_XFER_DATA_LEN (0x1000000) /* 2 MiB of xfer data, in bits */
+ 
+ struct jtag;
+ /**
+-- 
+2.34.1
+

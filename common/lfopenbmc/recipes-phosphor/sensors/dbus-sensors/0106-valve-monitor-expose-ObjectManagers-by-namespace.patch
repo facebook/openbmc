@@ -1,0 +1,43 @@
+From 25b201d759288e6b6c5a2aab75478eedf4daff53 Mon Sep 17 00:00:00 2001
+From: Eldin Lee <eldin.lee@quantatw.com>
+Date: Thu, 8 Oct 2026 02:42:37 +0800
+Subject: [PATCH] valve-monitor: expose ObjectManagers by namespace
+
+Valve monitor exposes objects under the sensors and control
+namespaces, but its ObjectManager is currently registered at
+/xyz/openbmc_project.
+
+Register separate ObjectManagers at /xyz/openbmc_project/sensors and
+/xyz/openbmc_project/control, following the existing FanSensor and
+PSUSensor layout.
+
+Change-Id: I2bab6047baad3553d7e65294cbaa3ee729b9f786
+Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
+---
+ src/valve-monitor/ValveMonitor.cpp | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/valve-monitor/ValveMonitor.cpp b/src/valve-monitor/ValveMonitor.cpp
+index cbcc2a5..7060802 100644
+--- a/src/valve-monitor/ValveMonitor.cpp
++++ b/src/valve-monitor/ValveMonitor.cpp
+@@ -336,12 +336,13 @@ auto ValveMonitor::processAnalogConfigAddedAsync(
+ 
+ int main()
+ {
+-    constexpr auto path = "/xyz/openbmc_project";
+     constexpr auto serviceName = "xyz.openbmc_project.valvemonitor";
+     sdbusplus::async::context ctx;
+-    sdbusplus::server::manager_t manager{ctx, path};
++    sdbusplus::server::manager_t sensorManager{ctx,
++                                               "/xyz/openbmc_project/sensors"};
++    sdbusplus::server::manager_t controlManager{ctx,
++                                                "/xyz/openbmc_project/control"};
+ 
+-    info("Creating valve monitor at {PATH}", "PATH", path);
+     valve::ValveMonitor valveMonitor{ctx};
+ 
+     ctx.request_name(serviceName);
+-- 
+2.34.1
+

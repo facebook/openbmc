@@ -3,6 +3,6 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://0001-mmap-hack.patch"
 
 DEPENDS += "libtatsu"
-SRCREV = "038a49362570ac56bae330fda8a30635134fc509"
+SRCREV = "4b3e847e1d9a1210049a9e3f1d1caa38650c6617"
 
 LDFLAGS += "-lm"

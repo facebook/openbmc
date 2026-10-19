@@ -29,6 +29,7 @@ import os.path
 import re
 import subprocess
 import threading
+import time
 import typing as t
 from shlex import quote
 from uuid import getnode as get_mac
@@ -192,10 +193,10 @@ cache_uboot_version()
 
 class bmcNode(node):
     # Reads from TPM device files (e.g. /sys/class/tpm/tpm0/device/caps)
-    # can hang the event loop on unhealthy systems. Cache version values
-    # here and use _fill_tpm_ver_info() to asynchronously fill these values
+    # can hang on unhealthy systems. Cache version values here; the
+    # background thread started by start_tpm_ver_updater() fills them.
     _TPM_VER_INFO = ("NA", "NA")  # (tpm_fw_version, tpm_tcg_version)
-    _TPM_VER_INFO_ATTEMPTED = False
+    _TPM_VER_UPDATER = None
 
     def __init__(self, info=None, actions=None):
         if info is None:
@@ -207,20 +208,24 @@ class bmcNode(node):
         else:
             self.actions = actions
 
-        # Py3.14 compat: asyncio.ensure_future used to auto-create an event
-        # loop in the main thread when called from synchronous code. That
-        # auto-create was deprecated in Py3.10 and removed in Py3.12+; on
-        # Py3.14 it raises RuntimeError. bmcNode is instantiated from
-        # rest.py at module-load time, before rest.py creates the loop, so
-        # the bare ensure_future call crashes restapi at startup before it
-        # can bind port 8080. Get-or-create the loop explicitly; rest.py's
-        # later asyncio.get_event_loop() picks up the same loop and runs it.
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        loop.create_task(self._fill_tpm_ver_info_loop())
+    @classmethod
+    def start_tpm_ver_updater(cls) -> None:
+        # Start the updater once; later calls do nothing.
+        if cls._TPM_VER_UPDATER is None:
+            cls._TPM_VER_UPDATER = threading.Thread(
+                target=cls._update_tpm_ver_info, daemon=True
+            )
+            cls._TPM_VER_UPDATER.start()
+
+    @classmethod
+    def _update_tpm_ver_info(cls) -> None:
+        # Retry until all TPM version info values are filled (the TPM may
+        # not be ready yet), then exit.
+        while "NA" in cls._TPM_VER_INFO:
+            if os.path.exists("/sys/class/tpm/tpm0"):
+                cls._TPM_VER_INFO = (cls.getTpmFwVer(), cls.getTpmTcgVer())
+            if "NA" in cls._TPM_VER_INFO:
+                time.sleep(30)
 
     async def getUbootVer(self):
         UBOOT_VER_KV_KEY = "u-boot-ver"
@@ -229,31 +234,6 @@ class bmcNode(node):
         except kv.KeyOperationFailure:
             uboot_version = None
         return uboot_version
-
-    @classmethod
-    async def _fill_tpm_ver_info_loop(cls) -> None:
-        if cls._TPM_VER_INFO_ATTEMPTED:
-            # Fetch already attempted, doing nothing.
-            return
-        cls._TPM_VER_INFO_ATTEMPTED = True
-
-        # Try updating _TPM_VER_INFO until all TPM version info values
-        # are filled
-        while "NA" in cls._TPM_VER_INFO:
-            await cls._fill_tpm_ver_info()
-            await asyncio.sleep(30)
-
-    @classmethod
-    async def _fill_tpm_ver_info(cls) -> None:
-        # Fetch TPM version info in thread executors (to protect the event loop
-        # from e.g. /sys/class/tpm/tpm0/device/caps reads hanging forever)
-        loop = asyncio.get_event_loop()
-        if os.path.exists("/sys/class/tpm/tpm0"):
-            tpm_fw_version = await loop.run_in_executor(None, cls.getTpmFwVer)
-            tpm_tcg_version = await loop.run_in_executor(None, cls.getTpmTcgVer)
-
-            # Cache read values in _TPM_VER_INFO
-            cls._TPM_VER_INFO = (tpm_fw_version, tpm_tcg_version)
 
     @staticmethod
     def getTpmTcgVer():
@@ -500,6 +480,10 @@ class bmcNode(node):
         ).stdout
 
         return b"asd" in running_cmdlines or b"yaapd" in running_cmdlines
+
+
+# Read the TPM version in the background from startup, before any request.
+bmcNode.start_tpm_ver_updater()
 
 
 def get_node_bmc():

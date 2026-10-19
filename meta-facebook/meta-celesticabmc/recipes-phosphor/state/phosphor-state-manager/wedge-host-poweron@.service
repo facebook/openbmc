@@ -1,0 +1,12 @@
+[Unit]
+Description=Power on System 
+Conflicts=host-poweroff@%i.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wedge_power.sh on
+SyslogIdentifier=wedge_power.sh
+
+[Install]
+WantedBy=obmc-host-start@%i.target
+

@@ -1,0 +1,12 @@
+[Unit]
+Description=Power off System 
+Conflicts=host-poweron@%i.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wedge_power.sh off
+SyslogIdentifier=wedge_power.sh
+
+[Install]
+WantedBy=obmc-host-stop@%i.target
+

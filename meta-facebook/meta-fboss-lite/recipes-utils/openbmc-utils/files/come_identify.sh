@@ -32,7 +32,7 @@ if [ "$netlake_type" -eq 1 ]; then
     modprobe apml_common
     modprobe apml_sbrmi
     modprobe apml_sbtsi
-    modprobe apml_alertl
+    modprobe -r apml_alertl
     echo "Loading ssif modules for Netlake 2.0 on bus 5, address 0x30"
     modprobe ssif_bmc
     i2c_device_check_and_add 5 0x30 ssif-bmc

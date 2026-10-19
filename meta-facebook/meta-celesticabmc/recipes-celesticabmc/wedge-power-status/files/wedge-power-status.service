@@ -1,0 +1,14 @@
+[Unit]
+Description= wedge Power Status Monitor Service
+After=mapper-wait@-xyz-openbmc_project-state-chassis0.service
+After=xyz.openbmc_project.State.BMC.service
+StartLimitIntervalSec=2
+
+[Service]
+Restart=always
+Type=simple
+ExecStart=/usr/bin/env wedge_pwr_status_monitor.sh
+SyslogIdentifier=power-status
+
+[Install]
+WantedBy=multi-user.target

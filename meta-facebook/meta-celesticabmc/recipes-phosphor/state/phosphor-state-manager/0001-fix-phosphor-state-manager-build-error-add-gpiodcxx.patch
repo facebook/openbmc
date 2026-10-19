@@ -1,0 +1,100 @@
+From 885d761e81bcee0ddb6fffa10c0716b7df6107d9 Mon Sep 17 00:00:00 2001
+From: Henry Wu <frankwu@celestica.com>
+Date: Sun, 20 Sep 2026 13:25:19 +0800
+Subject: [PATCH] fix phosphor-state-manager build error-add gpiodcxx
+
+---
+ meson.build |  3 ++-
+ utils.cpp   | 40 +++++++++++++++++++++++++++++-----------
+ 2 files changed, 31 insertions(+), 12 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index bbc0131..0c806c1 100644
+--- a/meson.build
++++ b/meson.build
+@@ -103,6 +103,7 @@ sdbusplus = dependency('sdbusplus')
+ sdeventplus = dependency('sdeventplus')
+ phosphorlogging = dependency('phosphor-logging')
+ phosphordbusinterfaces = dependency('phosphor-dbus-interfaces')
++gpiodcxx = dependency('libgpiodcxx')
+ libgpiod = dependency(
+     'libgpiod',
+     version: '>=1.4.1',
+@@ -150,7 +151,7 @@ settings_lib = static_library(
+ utils_lib = static_library(
+     'utils',
+     'utils.cpp',
+-    dependencies: [sdbusplus, phosphorlogging, phosphordbusinterfaces, libgpiod],
++    dependencies: [sdbusplus, phosphorlogging, phosphordbusinterfaces, gpiodcxx, libgpiod],
+ )
+ 
+ sub_device_lib = static_library(
+diff --git a/utils.cpp b/utils.cpp
+index f91c8a0..ab748af 100644
+--- a/utils.cpp
++++ b/utils.cpp
+@@ -2,7 +2,7 @@
+ 
+ #include "utils.hpp"
+ 
+-#include <gpiod.h>
++#include <gpiod.hpp>
+ 
+ #include <phosphor-logging/lg2.hpp>
+ #include <xyz/openbmc_project/Dump/Create/client.hpp>
+@@ -152,24 +152,42 @@ void setProperty(sdbusplus::bus_t& bus, const std::string& path,
+ int getGpioValue(const std::string& gpioName)
+ {
+     int gpioval = -1;
+-    gpiod_line* line = gpiod_line_find(gpioName.c_str());
+ 
+-    if (nullptr != line)
++    for (const auto& entry : std::filesystem::directory_iterator("/dev"))
+     {
+-        // take ownership of gpio
+-        if (0 != gpiod_line_request_input(line, "state-manager"))
++        if (entry.path().filename().string().rfind("gpiochip", 0) != 0)
+         {
+-            error("Failed request for {GPIO_NAME} GPIO", "GPIO_NAME", gpioName);
++            continue;
+         }
+-        else
++
++        try
+         {
+-            // get gpio value
+-            gpioval = gpiod_line_get_value(line);
++            ::gpiod::chip chip(entry.path());
++            int offset = chip.get_line_offset_from_name(gpioName);
++
++            if (offset >= 0)
++            {
++                auto settings = ::gpiod::line_settings()
++                                    .set_direction(::gpiod::line::direction::INPUT);
++
++                auto line_cfg = ::gpiod::line_config();
++                line_cfg.add_line_settings(offset, settings);
+ 
+-            // release ownership of gpio
+-            gpiod_line_close_chip(line);
++                auto request = chip.prepare_request()
++                                   .set_consumer("state-manager")
++                                   .set_line_config(line_cfg)
++                                   .do_request();
++
++                auto val = request.get_value(offset);
++                return (val == ::gpiod::line::value::ACTIVE) ? 1 : 0;
++            }
++        }
++        catch (...)
++        {
++            continue;
+         }
+     }
++    error("Failed request for {GPIO_NAME} GPIO", "GPIO_NAME", gpioName);
+     return gpioval;
+ }
+ 
+-- 
+2.43.0
+

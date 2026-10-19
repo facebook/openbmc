@@ -1,0 +1,11 @@
+[Unit]
+Description=Power reset System 
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wedge_power.sh reset
+SyslogIdentifier=wedge_power.sh
+
+[Install]
+WantedBy=obmc-host-reboot@%i.target
+WantedBy=obmc-host-force-warm-reboot@%i.target

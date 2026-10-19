@@ -1,0 +1,9 @@
+[Unit]
+Description=Dummy Wait for Power Off needed by phosphor-state-manager
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+
+[Install]
+WantedBy=obmc-host-stop@%i.target

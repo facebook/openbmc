@@ -28,6 +28,8 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-openembedded/meta-networking \
   ##OEROOT##/meta-openembedded/meta-python \
   ##OEROOT##/meta-openembedded/meta-perl \
+  ##OEROOT##/meta-phosphor \
+  ##OEROOT##/meta-aspeed \
   ##OEROOT##/../.. \
   ##OEROOT##/meta-security \
   ##OEROOT##/meta-security/meta-tpm \

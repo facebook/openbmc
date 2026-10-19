@@ -24,3 +24,6 @@ MACHINE ??= "celesticabmc"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb-master"
+OBMC_CHASSIS_INSTANCES ?= "0"
+OBMC_HOST_INSTANCES ?= "0"
+OBMC_ORG_YAML_SUBDIRS ?= "xyz/openbmc_project"

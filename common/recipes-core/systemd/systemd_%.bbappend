@@ -68,16 +68,17 @@ do_install:append:openbmc-fb() {
     # A number of udev devices would unlikely be present on a BMC and have large
     # helper executables associated with them.  Delete both the helpers and the
     # rules.
+    # Perform cleanup only if the file exists, to prevent repeated deletion attempts from failing due to the file's absence.
     for f in cdrom_id dmi_memory_id fido_id iocost v4l_id; do
-        rm ${D}${libdir}/udev/${f}
-    done
-    for f in 60-cdrom_id.rules 70-memory.rules 60-fido-id.rules 90-iocost.rules 60-persistent-v4l.rules; do
-        rm ${D}${libdir}/udev/rules.d/${f}
+        [ -e ${D}${libdir}/udev/${f} ] && rm -rf ${D}${libdir}/udev/${f}
     done
 
-    # Delete a few executables we don't need in order to make more room in the image.
+    for f in 60-cdrom_id.rules 70-memory.rules 60-fido-id.rules 90-iocost.rules 60-persistent-v4l.rules; do
+        [ -e ${D}${libdir}/udev/rules.d/${f} ] && rm -rf ${D}${libdir}/udev/rules.d/${f}
+    done
+
     for f in systemd-growfs systemd-sleep; do
-        rm ${D}${libdir}/systemd/$f
+        [ -e ${D}${libdir}/systemd/$f ] && rm -rf ${D}${libdir}/systemd/$f
     done
 
 }

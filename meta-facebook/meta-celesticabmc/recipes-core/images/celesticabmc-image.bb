@@ -25,4 +25,13 @@ IMAGE_INSTALL += " \
     postcode-mond \
     fbmc-snapshot \
     ssifd \
+    phosphor-objmgr \
+    phosphor-settings-manager \
+    phosphor-state-manager \
+    phosphor-state-manager-bmc \
+    phosphor-state-manager-chassis \
+    phosphor-state-manager-host \
+    phosphor-logging \
+    wedge-power-status \
+    amd-cpu-manager \
     "

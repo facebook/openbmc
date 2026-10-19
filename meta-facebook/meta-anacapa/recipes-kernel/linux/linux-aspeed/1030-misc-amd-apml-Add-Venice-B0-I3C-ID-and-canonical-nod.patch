@@ -1,0 +1,137 @@
+From d24983b6338b11c98f6af3b6650a936d9bd88a39 Mon Sep 17 00:00:00 2001
+From: Sean Lee <Sean.Lee@amd.com>
+Date: Mon, 19 Oct 2026 11:23:43 +0800
+Subject: [PATCH] misc: amd-apml: Add Venice B0 I3C ID and canonical node
+ naming
+
+Two fixes are required to bring up AMD APML (SB-RMI / SB-TSI) over I3C
+on Anacapa with Venice B0 silicon:
+
+1. Venice B0 reports its I3C Provisioned ID with an extra-info field of
+   0x119 (Venice A0 uses 0x118), so the sbrmi_i3c and sbtsi_i3c drivers
+   fail to match and never bind on B0 parts. Add the Socket0/IOD0
+   Venice B0 ID (manuf 0x112, part 0x0, ext 0x119) to both the sbrmi
+   and sbtsi i3c_device_id tables.
+
+   Only the primary IOD0 interface (part 0x0) is matched. The secondary
+   IOD1 interface (part 0x1) is intentionally left unbound: it has no
+   independently serviceable SB-RMI mailbox, so binding it floods the
+   shared I3C bus with mailbox timeouts and starves the real IOD0
+   transactions, breaking CPU/DIMM temperature and power readings.
+
+2. The ESMI OOB user-space library opens /dev/sbrmi-<addr> and
+   /dev/sbtsi-<addr> using the fixed per-socket SB-RMI / SB-TSI
+   addresses (socket0: 0x3c / 0x4c, ...). On the I3C transport the misc
+   device was named after the DAA dynamic address, so the node name did
+   not match and apml_tool reported "module not present". Derive the
+   node suffix from the I3C part_id (socket index) through a fixed
+   address table, so the I3C nodes use the same canonical names as the
+   I2C transport (sbrmi-3c / sbtsi-4c, ...).
+
+Signed-off-by: Sean Lee <Sean.Lee@amd.com>
+---
+ drivers/misc/amd-apml/apml_sbtsi.c | 23 ++++++++++++++++++++---
+ drivers/misc/amd-apml/sbrmi.c      | 23 ++++++++++++++++++++---
+ 2 files changed, 40 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/misc/amd-apml/apml_sbtsi.c b/drivers/misc/amd-apml/apml_sbtsi.c
+index ef8465ab8..1a820a281 100644
+--- a/drivers/misc/amd-apml/apml_sbtsi.c
++++ b/drivers/misc/amd-apml/apml_sbtsi.c
+@@ -79,6 +79,16 @@ static inline int sbtsi_reg_to_mc(s32 integer, s32 decimal)
+ }
+ 
+ #define PID_TSI_GENOA_TURIN	0x22400000001ULL
++
++/*
++ * Canonical per-socket SB-TSI I2C addresses expected by userspace
++ * (esmi_oob / apml_tool). Indexed by socket number (I3C PID part id).
++ * The I3C misc device is named after these so that the fixed device
++ * node (e.g. /dev/sbtsi-4c) matches regardless of the DAA-assigned
++ * dynamic address.
++ */
++static const u8 sbtsi_sock_addr[] = { 0x4c, 0x48, 0x4e, 0x4f };
++
+ /*
+  * Inversely, given temperature in millidegree Celsius
+  *   INT = (TEMP / 125) / 8
+@@ -383,10 +393,16 @@ static int sbtsi_i3c_probe(struct i3c_device *i3cdev)
+ 	dev_set_drvdata(dev, (void *)tsi_dev);
+ 
+ 	/*
+-	 * I3C dynamic address (post-DAA); fall back to static
+-	 * if not yet assigned
++	 * Name the misc device after the canonical per-socket SB-TSI
++	 * address expected by userspace (esmi/apml_tool), derived from the
++	 * socket number (I3C PID part id), rather than the DAA-assigned
++	 * dynamic address. Fall back to the dynamic/static address for
++	 * out-of-range sockets.
+ 	 */
+-	if (i3cdev->desc->info.dyn_addr)
++	if (I3C_PID_PART_ID(i3cdev->desc->info.pid) < ARRAY_SIZE(sbtsi_sock_addr))
++		tsi_dev->dev_static_addr =
++			sbtsi_sock_addr[I3C_PID_PART_ID(i3cdev->desc->info.pid)];
++	else if (i3cdev->desc->info.dyn_addr)
+ 		tsi_dev->dev_static_addr = i3cdev->desc->info.dyn_addr;
+ 	else
+ 		tsi_dev->dev_static_addr = i3cdev->desc->info.static_addr;
+@@ -560,6 +576,7 @@ static const struct i3c_device_id sbtsi_i3c_id[] = {
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0, 0x1, NULL), /* Genoa/Turin */
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x118, NULL), /* Socket:0, IOD:0 Venice */
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0x100, 0x118, NULL), /* Socket:1 IOD:0 Venice */
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x119, NULL), /* Socket:0 IOD:0 Venice B0 */
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(i3c, sbtsi_i3c_id);
+diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
+index f68cd4111..18ea7ef4b 100644
+--- a/drivers/misc/amd-apml/sbrmi.c
++++ b/drivers/misc/amd-apml/sbrmi.c
+@@ -56,6 +56,16 @@
+ #define SBRMI_MAX_DIMMS		DIMM_CHANNELS_PER_TS
+ #define SBRMI_NUM_DIMM_CHANNELS	(DIMM_CHANNELS_PER_TS * 2) /* TS0 + TS1 */
+ #define PID_RMI_GENOA_TURIN	0x22400000002ULL
++
++/*
++ * Canonical per-socket SB-RMI I2C addresses expected by userspace
++ * (esmi_oob / apml_tool). Indexed by socket number (I3C PID part id).
++ * The I3C misc device is named after these so that the fixed device
++ * node (e.g. /dev/sbrmi-3c) matches regardless of the DAA-assigned
++ * dynamic address.
++ */
++static const u8 sbrmi_sock_addr[] = { 0x3c, 0x38, 0x3e, 0x3f };
++
+ /*
+  * DIMM_ADDR() - Encode a hwmon channel into a Mode 1 DIMM_ADDRESS byte
+  *   Bit[7]   : 1        - Mode 1
+@@ -871,10 +881,16 @@ static int sbrmi_i3c_probe(struct i3c_device *i3cdev)
+ 	dev_set_drvdata(dev, (void *)rmi_dev);
+ 
+ 	/*
+-	 * I3C dynamic address (post-DAA); fall back to static if
+-	 * not yet assigned
++	 * Name the misc device after the canonical per-socket SB-RMI
++	 * address expected by userspace (esmi/apml_tool), derived from the
++	 * socket number (I3C PID part id), rather than the DAA-assigned
++	 * dynamic address. Fall back to the dynamic/static address for
++	 * out-of-range sockets.
+ 	 */
+-	if (i3cdev->desc->info.dyn_addr)
++	if (I3C_PID_PART_ID(i3cdev->desc->info.pid) < ARRAY_SIZE(sbrmi_sock_addr))
++		rmi_dev->dev_static_addr =
++			sbrmi_sock_addr[I3C_PID_PART_ID(i3cdev->desc->info.pid)];
++	else if (i3cdev->desc->info.dyn_addr)
+ 		rmi_dev->dev_static_addr = i3cdev->desc->info.dyn_addr;
+ 	else
+ 		rmi_dev->dev_static_addr = i3cdev->desc->info.static_addr;
+@@ -1010,6 +1026,7 @@ static const struct i3c_device_id sbrmi_i3c_id[] = {
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x2, NULL), /* Genoa/Turin */
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x118, NULL), /* Socket:0, IOD:0 Venice*/
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0x100, 0x118, NULL), /* Socket:1 IOD:0 Venice */
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x119, NULL), /* Socket:0 IOD:0 Venice B0 */
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(i3c, sbrmi_i3c_id);
+-- 
+2.43.0
+

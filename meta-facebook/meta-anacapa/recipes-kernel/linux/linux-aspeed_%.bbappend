@@ -32,4 +32,5 @@ SRC_URI:append = " \
     file://1027-ARM-dts-aspeed-anacapa-add-NCT7363-fan-controllers.patch \
     file://1028-arm-dts-anacapa-Align-Cable-and-SSD-SGPIO-pin-names.patch \
     file://1029-ARM-dts-aspeed-anacapa-Add-LPDB-fuse-monitor-GPIO-ex.patch \
+    file://1030-misc-amd-apml-Add-Venice-B0-I3C-ID-and-canonical-nod.patch \
 "

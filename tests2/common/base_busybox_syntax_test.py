@@ -373,6 +373,7 @@ KNOWN_USAGE_STRINGS = {
     "top": [
         "top [-b] [-nCOUNT] [-dSECONDS]",
         "top [-b] [-n COUNT] [-d SECONDS]",  # BusyBox 1.31.0
+        "top [-bm] [-n COUNT] [-d SECONDS]",  # BusyBox 1.38.0, FEATURE_TOPMEM
     ],
     "touch": [
         "touch [-c] [-d DATE] [-t DATE] [-r FILE] FILE...",

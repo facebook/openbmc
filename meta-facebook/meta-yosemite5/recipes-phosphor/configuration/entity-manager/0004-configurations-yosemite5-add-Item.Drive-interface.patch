@@ -1,0 +1,280 @@
+From 233caffcaaef33132179c32ff13742c2199d449d Mon Sep 17 00:00:00 2001
+From: Elton Wang <elton.wang.wiwynn@gmail.com>
+Date: Thu, 1 Oct 2026 05:58:15 +0000
+Subject: [PATCH] configurations: yosemite5: add Item.Drive interface
+
+Add the Item.Drive interface to each drive on the Yosemite5 T22 Rio
+Grande storage expansion board so that the drive state manager [1]
+can control drive power.
+
+[1] https://gerrit.openbmc.org/c/openbmc/phosphor-state-manager/+/89401
+---
+ .../meta/yv5/yosemite5_rio_grande_ssd.json    | 78 ++++++++++++-------
+ 1 file changed, 52 insertions(+), 26 deletions(-)
+
+diff --git a/configurations/meta/yv5/yosemite5_rio_grande_ssd.json b/configurations/meta/yv5/yosemite5_rio_grande_ssd.json
+index 73954af..5022c92 100644
+--- a/configurations/meta/yv5/yosemite5_rio_grande_ssd.json
++++ b/configurations/meta/yv5/yosemite5_rio_grande_ssd.json
+@@ -494,7 +494,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd0$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -533,7 +534,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd1$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -572,7 +574,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd2$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -611,7 +614,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd3$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -650,7 +654,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd4$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -689,7 +694,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd5$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -728,7 +734,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd6$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -767,7 +774,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd7$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -806,7 +814,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd8$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -845,7 +854,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd9$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -884,7 +894,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd10$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -923,7 +934,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd11$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -962,7 +974,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd12$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1001,7 +1014,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd13$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1040,7 +1054,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd14$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1079,7 +1094,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd15$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1118,7 +1134,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd16$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1157,7 +1174,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd17$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1196,7 +1214,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd18$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1235,7 +1254,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd19$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1274,7 +1294,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd20$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1313,7 +1334,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd21$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1352,7 +1374,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd22$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1391,7 +1414,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd23$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1430,7 +1454,8 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd24$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     },
+     {
+         "Exposes": [
+@@ -1469,6 +1494,7 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'ssd25$'})"
+         ],
+-        "Type": "Board"
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Item.Drive": {}
+     }
+ ]
+-- 
+2.43.0
+

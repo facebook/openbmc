@@ -27,7 +27,7 @@ from utils.test_utils import qemu_check
 
 def collect_show_tech():
     show_tech_cmd = "/usr/local/bin/showtech"
-    return run_shell_cmd(show_tech_cmd, ignore_err=True)
+    return run_shell_cmd(show_tech_cmd, ignore_err=True, errors="replace")
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")

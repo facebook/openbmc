@@ -74,14 +74,14 @@ class Mock3Modbus : public Modbus {
       : Modbus(), fake_(e, mina, maxa, b) {
     port_ = p;
     ON_CALL(*this, command(_, _, _, _, _))
-        .WillByDefault(Invoke([this](
-                                  Msg& req,
-                                  Msg& resp,
-                                  uint32_t b,
-                                  ModbusTime timeout,
-                                  Parity parity) {
+        .WillByDefault([this](
+                           Msg& req,
+                           Msg& resp,
+                           uint32_t b,
+                           ModbusTime timeout,
+                           Parity parity) {
           return fake_.command(req, resp, b, timeout, parity);
-        }));
+        });
   }
   MOCK_METHOD0(isPresent, bool());
   MOCK_METHOD1(initialize, void(const nlohmann::json& j));
@@ -555,11 +555,11 @@ TEST_F(RackmonTest, DormantRecovery) {
     EXPECT_CALL(*ptr, isPresent()).WillRepeatedly(Return(true));
     EXPECT_CALL(*ptr, command(_, _, _, _, _))
         .WillRepeatedly(
-            Invoke([&commandTimeout](Msg&, Msg&, uint32_t, ModbusTime, Parity) {
+            [&commandTimeout](Msg&, Msg&, uint32_t, ModbusTime, Parity) {
               if (commandTimeout) {
                 throw TimeoutException();
               }
-            }));
+            });
     std::unique_ptr<Modbus> ptr2 = std::move(ptr);
     return ptr2;
   };

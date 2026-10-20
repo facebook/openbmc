@@ -1,6 +1,6 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
-require recipes-core/images/fb-zstd-rootfs.inc
+# Use the default LZMA rootfs to keep this image within its FIT partition.
 inherit kernel_fitimage
 
 require recipes-core/images/fb-openbmc-image.bb

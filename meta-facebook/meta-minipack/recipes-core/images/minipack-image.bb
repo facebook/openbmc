@@ -4,6 +4,10 @@ inherit kernel_fitimage
 
 require recipes-core/images/fb-openbmc-image.bb
 
+# Keep the image within its FIT partition. A 32 MiB dictionary reduces the
+# rootfs size while using 16 MiB more memory during initramfs decompression.
+CONVERSION_CMD:lzma = "lzma -k -f --lzma1=preset=9e,dict=32MiB ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type}"
+
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \

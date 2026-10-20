@@ -3,6 +3,9 @@
 #include <string>
 #include <fcntl.h>
 #include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
+#include <unistd.h>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -41,7 +44,13 @@ class TmpFile {
   public:
   string name;
   TmpFile(string contents) {
-    name = std::tmpnam(nullptr);
+    char path[] = "/tmp/fw-util-bmc-test.XXXXXX";
+    int fd = mkstemp(path);
+    if (fd < 0) {
+      throw std::runtime_error("Failed to create BMC test temporary file");
+    }
+    close(fd);
+    name = path;
     {
       ofstream mtd(name);
       mtd << contents;

@@ -24,8 +24,6 @@ install_systemd() {
   install -d ${D}${prefix}/local/bin
   install -m 755 ${UNPACKDIR}/setup_crond.sh ${D}${prefix}/local/bin/setup_crond.sh
   install -m 644 ${UNPACKDIR}/setup_crond.service ${D}${systemd_system_unitdir}/setup_crond.service
-  # XXX hack: SYSTEMD_SERVICE not functioning in this recipe
-  systemctl --root=${D} enable setup_crond.service
 }
 
 do_install:append:openbmc-fb() {
@@ -40,3 +38,4 @@ do_install:append:openbmc-fb() {
 }
 
 SYSTEMD_SERVICE:${PN} = "setup_crond.service"
+SYSTEMD_PACKAGES:append:openbmc-fb = " ${PN}"

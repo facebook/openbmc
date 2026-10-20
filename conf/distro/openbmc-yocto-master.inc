@@ -15,3 +15,7 @@ BBMASK:append:qemuall = " u-boot/u-boot-aspeed-sdk_%.bbappend"
 # Master eliminated the virtual/${TARGET_PREFIX} variables, so we needed to
 # adjust some recipes to use `${VIRTUAL_CROSS_CC}` and populate it here.
 VIRTUAL_CROSS_CC ?= "virtual/cross-cc"
+
+# The FIT generators still use this variable, which newer uboot-config
+# no longer defines.
+UBOOT_ARCH ?= "${@oe.kernel.map_uboot_arch(d)}"

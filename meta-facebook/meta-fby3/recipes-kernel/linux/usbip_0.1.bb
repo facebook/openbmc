@@ -2,7 +2,6 @@ SUMMARY = "Linux kernel USBIP tools"
 SECTION = "kernel"
 LICENSE = "GPL-2.0-or-later"
 
-inherit linux-kernel-base
 inherit module-base
 inherit autotools pkgconfig
 

@@ -1,4 +1,4 @@
-From 17fd0c5954143f650307305f53a3d25b91320e69 Mon Sep 17 00:00:00 2001
+From e06f8c7158063e1fe8f465e99cfd17a0e047a8e4 Mon Sep 17 00:00:00 2001
 From: Eldin Lee <eldin.lee@quantatw.com>
 Date: Mon, 25 May 2026 23:04:21 +0800
 Subject: [PATCH] meta: add Ventura2 network initialization support
@@ -1074,7 +1074,7 @@ index 0000000..15440b7
 +
 +} // namespace mdio
 diff --git a/meson.build b/meson.build
-index 2c8d240..cc8afc8 100644
+index 2288d0a..7cf985e 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -10,7 +10,16 @@ gpiodcxx_dep = dependency('libgpiodcxx', default_options: ['bindings=cxx'])
@@ -1096,8 +1096,8 @@ index 2c8d240..cc8afc8 100644
      'CLI11',
 @@ -22,16 +31,31 @@ i2c_dep = meson.get_compiler('cpp').find_library('i2c')
  platform_srcs = files(
-     'platforms/intel/acrp.cpp',
-     'platforms/intel/jcrp.cpp',
+     'platforms/intel/avcrp.cpp',
+     'platforms/intel/jncrp.cpp',
 +    'platforms/meta/ventura2.cpp',
      'platforms/nvidia/gb200.cpp',
      'platforms/nvidia/nvl32.cpp',
@@ -1129,7 +1129,7 @@ index 2c8d240..cc8afc8 100644
      install: true,
      install_dir: get_option('libexecdir'),
 diff --git a/platform.cpp b/platform.cpp
-index 66663cb..a4ce288 100644
+index 71249a6..419e394 100644
 --- a/platform.cpp
 +++ b/platform.cpp
 @@ -4,6 +4,7 @@
@@ -1142,8 +1142,8 @@ index 66663cb..a4ce288 100644
  
 @@ -23,6 +24,7 @@ constexpr auto init_functions =
      std::to_array<std::pair<std::string_view, int (*)()>>(
-         {{"intel-acrp", intel::init_acrp},
-          {"intel-jcrp", intel::init_jcrp},
+         {{"intel-avcrp", intel::init_avcrp},
+          {"intel-jncrp", intel::init_jncrp},
 +         {"meta-ventura2", meta::init_ventura2},
           {"nvidia-gb200", nvidia::init_gb200_base},
           {"nvidia-gb200-with-p2020", nvidia::init_gb200_with_p2020},
@@ -1888,5 +1888,5 @@ index 0000000..218736c
 +    description: 'Unused parent project option',
 +)
 -- 
-2.53.0-Meta
+2.52.0
 

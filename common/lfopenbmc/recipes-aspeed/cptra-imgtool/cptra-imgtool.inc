@@ -14,7 +14,7 @@ SRCREV = "3c06158958aeac6b8aa537a3da67331e730e4562"
 
 DEPENDS += "caliptra-mcu-sw"
 
-inherit cargo cargo-update-recipe-crates
+inherit cargo cargo-update-recipe-crates perlnative
 
 # crates.io may reject the API download endpoint used by BitBake's crate
 # fetcher; prefer the static crate tarball location first.
@@ -24,6 +24,9 @@ PREMIRRORS:prepend = " \
 
 do_compile() {
     cd ${S}
+    # The pinned Rust fork uses the OpenSSL 3.5 source from Cargo.lock.
+    # Keep its generated Makefile using Yocto's native Perl wrapper.
+    export OPENSSL_NO_VENDOR=0 PERL=perl
     # Build caliptra-auth-manifest-app
     cargo build --offline -p ${CALIPTRA_AUTH_MANIFEST_APP} --release
 

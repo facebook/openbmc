@@ -1,7 +1,7 @@
 SUMMARY = "Python support for J2CLI"
 HOMEPAGE = "https://pypi.org/project/j2cli/"
 SECTION = "devel/python"
-LICENSE = "BSD"
+LICENSE = "BSD-2-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=e46989ee3017dd8d4373102ac88457be"
 DEPENDS = "python3-pyyaml python3-jinja2"
 

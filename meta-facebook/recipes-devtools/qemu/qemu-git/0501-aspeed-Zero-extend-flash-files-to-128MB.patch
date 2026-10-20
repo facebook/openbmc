@@ -1,4 +1,4 @@
-From e0bbf56e672dcb0b77e65d897c4d8d998a168cdc Mon Sep 17 00:00:00 2001
+From cb7dab5b5d7eb79a8f82d567d198b508aa718f1f Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 17 Jun 2022 12:21:22 -0700
 Subject: [PATCH] aspeed: Zero extend flash files to 128MB
@@ -40,10 +40,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 15 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed_soc_common.c b/hw/arm/aspeed_soc_common.c
-index fd08793575..7f7768c0ee 100644
+index 54a128c965..d318df272a 100644
 --- a/hw/arm/aspeed_soc_common.c
 +++ b/hw/arm/aspeed_soc_common.c
-@@ -125,12 +125,25 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
+@@ -114,12 +114,25 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
      }
  
      for (i = 0; i < count; ++i) {
@@ -84,5 +84,5 @@ index f187fa025d..24fb43c228 100644
          error_setg(errp, "%s device '%s' requires %" HWADDR_PRIu
                     " bytes, %s block backend provides %" PRIu64 " bytes",
 -- 
-2.53.0-Meta
+2.52.0
 

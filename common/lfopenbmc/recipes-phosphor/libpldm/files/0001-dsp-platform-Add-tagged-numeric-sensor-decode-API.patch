@@ -1,4 +1,4 @@
-From b13f524006421b1fbc333183669838f2e59f7917 Mon Sep 17 00:00:00 2001
+From d1bccf8e1fbdbe382224fa7198339a0e501da6ea Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Fri, 7 Aug 2026 18:33:11 +0530
 Subject: [PATCH] dsp: platform: Add tagged numeric sensor decode API
@@ -24,13 +24,13 @@ Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
  7 files changed, 335 insertions(+), 85 deletions(-)
 
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 10c32cd..c1a9782 100644
+index 5d05d7c..b07af5e 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -19,6 +19,7 @@ Change categories:
- 
+@@ -20,6 +20,7 @@ Change categories:
  ### Added
  
+ - fru: New constants for additional bound on GetFRURecordTable payload size
 +- dsp: platform: Add 64-bit numeric sensor support
  - libpldm++ support for fw update pkg v1.1.0
  - libpldm++ support for fw update pkg v1.2.0
@@ -599,7 +599,7 @@ index 3b3b094..4a100bb 100644
  
  	return -PLDM_ERROR_INVALID_DATA;
 diff --git a/tests/unit/dsp/platform.cpp b/tests/unit/dsp/platform.cpp
-index b1c3c8a..cda5ab2 100644
+index 96a010e..3b7339d 100644
 --- a/tests/unit/dsp/platform.cpp
 +++ b/tests/unit/dsp/platform.cpp
 @@ -2847,6 +2847,7 @@ TEST(PlatformEventMessage, testGoodNumericSensorEventDataDecodeRequest)
@@ -699,5 +699,5 @@ index b1c3c8a..cda5ab2 100644
      uint8_t sensor_dataSize = PLDM_EFFECTER_DATA_SIZE_UINT8;
  
 -- 
-2.34.1
+2.52.0
 

@@ -173,8 +173,15 @@ int Scheduler::show_task() const {
   }
 
   //create a tmp file
-  string tmp_file = tmpnam(nullptr);
+  char tmp_file[] = "/tmp/fw-util-schedule.XXXXXX";
+  int tmp_fd = mkstemp(tmp_file);
+  if (tmp_fd < 0) {
+    cerr << "Failed to create a tmp file" << endl;
+    return -1;
+  }
+  close(tmp_fd);
   fstream skd_list_tmp(tmp_file, fstream::in | fstream::out | fstream::app);
+  unlink(tmp_file);
   if ( skd_list_tmp.is_open() == false ) {
     cerr << "The fstream isn't associated to a tmp file" << endl;
     return -1;
@@ -197,9 +204,6 @@ int Scheduler::show_task() const {
   skd_list.open(SCHEDULE_LIST_PATH, fstream::out | fstream::trunc);
   skd_list_tmp.seekg (0, skd_list_tmp.beg);
   skd_list << skd_list_tmp.rdbuf();
-
-  //rm tmp file
-  remove(tmp_file.c_str());
 
   return 0;
 }
@@ -315,8 +319,15 @@ int Scheduler::del_task(const string& task_id) const {
   }
 
   //create a tmp file
-  string tmp_file = tmpnam(nullptr);
+  char tmp_file[] = "/tmp/fw-util-schedule.XXXXXX";
+  int tmp_fd = mkstemp(tmp_file);
+  if (tmp_fd < 0) {
+    cerr << "Failed to create a tmp file" << endl;
+    return -1;
+  }
+  close(tmp_fd);
   fstream skd_list_tmp(tmp_file, fstream::in | fstream::out | fstream::app);
+  unlink(tmp_file);
   if ( skd_list_tmp.is_open() == false ) {
     cerr << "The fstream isn't associated to a tmp file" << endl;
     return -1;
@@ -336,9 +347,6 @@ int Scheduler::del_task(const string& task_id) const {
   skd_list.open(SCHEDULE_LIST_PATH, fstream::out | fstream::trunc);
   skd_list_tmp.seekg (0, skd_list_tmp.beg);
   skd_list << skd_list_tmp.rdbuf();
-
-  //rm tmp file
-  remove(tmp_file.c_str());
 
   return 0;
 }

@@ -1,4 +1,4 @@
-From 2b365633123b0b4b7e7fe4f040058538e194ac1e Mon Sep 17 00:00:00 2001
+From f466417ec8896735dee9e77ea9886874decc9ea9 Mon Sep 17 00:00:00 2001
 From: Eric Liu <liuer@nvidia.com>
 Date: Wed, 2 Sep 2026 21:50:34 +0900
 Subject: [PATCH] nvidia-gpu: add SMA leak detector associations
@@ -69,10 +69,10 @@ Signed-off-by: Eric Liu <liuer@nvidia.com>
  3 files changed, 51 insertions(+)
 
 diff --git a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
-index 17cd36e..5c2d76c 100644
+index 052b38b..bc59fe0 100644
 --- a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
 +++ b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
-@@ -43,6 +43,7 @@ int main()
+@@ -35,6 +35,7 @@ int main()
      objectServer.add_manager("/xyz/openbmc_project/inventory");
      objectServer.add_manager("/xyz/openbmc_project/software");
      objectServer.add_manager("/xyz/openbmc_project/metric");
@@ -181,5 +181,5 @@ index 5bda457..4bc9cd9 100644
      {
          Normal,
 -- 
-2.53.0-Meta
+2.52.0
 

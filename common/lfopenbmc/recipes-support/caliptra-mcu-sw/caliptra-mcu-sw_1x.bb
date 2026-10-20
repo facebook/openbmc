@@ -14,7 +14,7 @@ SRC_URI = "gitsm://github.com/chipsalliance/caliptra-mcu-sw;protocol=https;branc
 
 SRCREV = "2b7837402328ab611968d40243075082469df7ae"
 
-inherit cargo cargo-update-recipe-crates
+inherit cargo cargo-update-recipe-crates perlnative
 
 require caliptra-mcu-sw_1x-crates.inc
 require caliptra-mcu-sw_1x-git-crates.inc
@@ -29,7 +29,10 @@ do_compile() {
     cd ${S}
 
     # Build xtask
-    cargo build --offline -p xtask --release
+    # The pinned Rust OpenSSL fork requires the OpenSSL 3.5 source already
+    # vendored in Cargo.lock; cargo_common otherwise forces system OpenSSL 4.
+    # Keep OpenSSL's generated Makefile using Yocto's Perl wrapper.
+    PERL=perl OPENSSL_NO_VENDOR=0 cargo build --offline -p xtask --release
 }
 
 do_install() {

@@ -1,4 +1,4 @@
-From 156db4e6173356bd43960453ab8d9711599e00aa Mon Sep 17 00:00:00 2001
+From 535076817896a9afb56bb33daf6425714fa4ba65 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 1 Jul 2026 13:47:12 +0800
 Subject: [PATCH] nvidia-gpu: add option to disable PCIe device support
@@ -56,10 +56,10 @@ index 0718209..6dfb444 100644
      'external',
      type: 'feature',
 diff --git a/src/nvidia-gpu/DeviceManager.cpp b/src/nvidia-gpu/DeviceManager.cpp
-index b856a2f..67a780f 100644
+index e1bc1eb..873493c 100644
 --- a/src/nvidia-gpu/DeviceManager.cpp
 +++ b/src/nvidia-gpu/DeviceManager.cpp
-@@ -136,6 +136,7 @@ void DeviceManager::processQueryDeviceIdResponse(
+@@ -168,6 +168,7 @@ void DeviceManager::processQueryDeviceIdResponse(
  
          case gpu::DeviceIdentification::DEVICE_PCIE:
          {
@@ -67,7 +67,7 @@ index b856a2f..67a780f 100644
              lg2::info(
                  "Found the PCIe Device with EID {EID}, DeviceType {DEVTYPE}, InstanceId {IID}.",
                  "EID", eid, "DEVTYPE", responseDeviceType, "IID",
-@@ -159,7 +160,11 @@ void DeviceManager::processQueryDeviceIdResponse(
+@@ -191,7 +192,11 @@ void DeviceManager::processQueryDeviceIdResponse(
                      "PCIe Device with name {NAME} already exists. Skipping creating a new device.",
                      "NAME", pcieName);
              }
@@ -81,5 +81,5 @@ index b856a2f..67a780f 100644
          }
  
 -- 
-2.53.0-Meta
+2.52.0
 

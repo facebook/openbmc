@@ -177,13 +177,11 @@ std::string BmcComponent::get_bmc_version(const std::string &mtd)
 {
   // parsering the image to get the version string
   std::string bmc_ver = "NA";
-  char cmd[128];
   FILE *fp;
 
-  snprintf(cmd, sizeof(cmd),
-      "dd if=%s bs=64k count=6 2>/dev/null | strings | grep -E 'U-Boot (SPL ){,}20[[:digit:]]{2}\\.[[:digit:]]{2}'",
-      mtd.c_str());
-  fp = popen(cmd, "r");
+  const std::string cmd = "dd if=" + mtd +
+      " bs=64k count=6 2>/dev/null | strings | grep -E 'U-Boot (SPL ){,}20[[:digit:]]{2}\\.[[:digit:]]{2}'";
+  fp = popen(cmd.c_str(), "r");
   if (fp) {
     char line[256];
     char *ver = (char*) malloc(256);

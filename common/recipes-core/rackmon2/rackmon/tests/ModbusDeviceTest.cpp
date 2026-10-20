@@ -155,17 +155,17 @@ TEST_F(ModbusDeviceTest, CommandMisc) {
 TEST_F(ModbusDeviceTest, CommandFlaky) {
   EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(2)
-      .WillOnce(Invoke([](Msg& req, Msg&, uint32_t, ModbusTime, Parity) {
+      .WillOnce([](Msg& req, Msg&, uint32_t, ModbusTime, Parity) {
         EXPECT_EQ(req, 0x3202_M);
         Encoder::encode(req);
         throw TimeoutException();
-      }))
-      .WillOnce(Invoke([](Msg& req, Msg& resp, uint32_t, ModbusTime, Parity) {
+      })
+      .WillOnce([](Msg& req, Msg& resp, uint32_t, ModbusTime, Parity) {
         EXPECT_EQ(req, 0x3202_M);
         Encoder::encode(req);
         resp = 0x32020304_EM;
         Encoder::decode(resp);
-      }));
+      });
 
   ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 3);
 

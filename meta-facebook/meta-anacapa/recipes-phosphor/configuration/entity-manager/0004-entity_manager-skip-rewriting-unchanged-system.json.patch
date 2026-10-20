@@ -1,4 +1,4 @@
-From c0d679f46815c3c4039ef9ea8d524669adf858b0 Mon Sep 17 00:00:00 2001
+From d3eb97073b1316a6d5fd0a05fb7addba3b82acbe Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Thu, 15 Oct 2026 14:08:00 +0800
 Subject: [PATCH] entity_manager: skip rewriting unchanged system.json
@@ -85,3 +85,6 @@ index c92113f..f9b657e 100644
 +    // Last content written to currentConfiguration.
 +    std::string lastWritten;
  };
+-- 
+2.53.0-Meta
+

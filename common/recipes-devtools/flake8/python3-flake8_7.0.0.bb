@@ -1,6 +1,6 @@
 SUMMARY = "flake8 is a python tool that glues together pycodestyle, pyflakes, mccabe, and third-party plugins to check the style and quality of some python code."
 HOMEPAGE = "https://github.com/pycqa/flake8"
-LICENSE = "MIT & Python-2.0"
+LICENSE = "MIT AND Python-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=75b26781f1adf1aa310bda6098937878"
 
 PYPI_PACKAGE = "flake8"

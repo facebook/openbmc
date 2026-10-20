@@ -21,6 +21,7 @@ DEPENDS += " \
     python3-types-psutil-native \
     python3-types-setuptools-native \
     python3-typing-extensions-native \
+    python3-wheel-native \
 "
 
 RDEPENDS:${PN} += " \

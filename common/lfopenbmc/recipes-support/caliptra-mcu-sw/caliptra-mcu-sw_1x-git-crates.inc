@@ -150,8 +150,10 @@ do_configure:append() {
     # as ufmt-write v0.1.0.  Two path deps at different directories with the same
     # name+version cause a lockfile collision.  Fix by redirecting ufmt's path dep for
     # ufmt-write to the workspace-internal copy so both resolve to the same directory.
-    grep -q 'ufmt-write = { path = "write"' "${UNPACKDIR}/ufmt/Cargo.toml" || \
-        bbfatal "ufmt Cargo.toml format mismatch; update sed pattern in caliptra-mcu-sw-git-crates.inc"
     sed -i "s|ufmt-write = { path = \"write\", version = \"0.1.0\" }|ufmt-write = { path = \"${S}/runtime/userspace/libtock/ufmt/write\", version = \"0.1.0\" }|" \
         "${UNPACKDIR}/ufmt/Cargo.toml"
+    # Validate the result so configuring an already rewritten tree also succeeds.
+    grep -Fq 'ufmt-write = { path = "${S}/runtime/userspace/libtock/ufmt/write", version = "0.1.0" }' \
+        "${UNPACKDIR}/ufmt/Cargo.toml" || \
+        bbfatal "ufmt Cargo.toml format mismatch; update sed pattern in caliptra-mcu-sw-git-crates.inc"
 }

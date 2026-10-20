@@ -1,4 +1,4 @@
-From 9a994731ea835068c35029b7de05ed1a71e06671 Mon Sep 17 00:00:00 2001
+From 943547f3929f66a24674d3e71b7ef6081d3ba6ce Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] aspeed: Expose i2c buses to machine
@@ -18,7 +18,7 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  create mode 100644 include/hw/arm/fby35.h
 
 diff --git a/hw/arm/aspeed_soc_common.c b/hw/arm/aspeed_soc_common.c
-index 7f7768c0ee..28aae10c83 100644
+index d318df272a..9edd2b1846 100644
 --- a/hw/arm/aspeed_soc_common.c
 +++ b/hw/arm/aspeed_soc_common.c
 @@ -98,6 +98,20 @@ bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp)
@@ -92,7 +92,7 @@ index 8dbd43651c..447156a5d0 100644
  }
  
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 7ece64a094..ac20652bd7 100644
+index 4be392199f..bcd88bce45 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -1663,7 +1663,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
@@ -118,10 +118,10 @@ index 7ece64a094..ac20652bd7 100644
  
  static void aspeed_i2c_bus_get_scl_timeout(Object *obj, Visitor *v,
 diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
-index 38226d9b80..d3fe763540 100644
+index 338496a421..a3b4c817bd 100644
 --- a/include/hw/arm/aspeed_soc.h
 +++ b/include/hw/arm/aspeed_soc.h
-@@ -314,6 +314,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
+@@ -305,6 +305,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
  void aspeed_soc_uart_set_chr(SerialMM *uart, int dev, int uarts_base,
                               int uarts_num, Chardev *chr);
  bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp);
@@ -129,7 +129,7 @@ index 38226d9b80..d3fe763540 100644
 +I2CBus *aspeed_soc_i2c_bus(AspeedSoCState *s, int bus_id);
  void aspeed_mmio_map(MemoryRegion *memory, SysBusDevice *dev, int n,
                       hwaddr addr);
- void aspeed_mmio_map_unimplemented(MemoryRegion *memory, SysBusDevice *dev,
+ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
 diff --git a/include/hw/arm/fby35.h b/include/hw/arm/fby35.h
 new file mode 100644
 index 0000000000..b8fbd1bf9a
@@ -247,5 +247,5 @@ index 0000000000..b8fbd1bf9a
 +
 +#endif
 -- 
-2.54.0
+2.52.0
 

@@ -32,14 +32,13 @@ root@bmc:~# pldmtool base GetTID -m 60
 
 Signed-off-by: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 ---
- src/mctpd.c | 578 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 567 insertions(+), 11 deletions(-)
+ src/mctpd.c | 580 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 568 insertions(+), 12 deletions(-)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index a7036ad..c2f5b2b 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -53,6 +53,12 @@
+@@ -58,6 +58,12 @@
  #define OPENBMC_IFACE_COMMON_UUID "xyz.openbmc_project.Common.UUID"
  #define CC_MCTP_DBUS_IFACE_INTERFACE "au.com.codeconstruct.MCTP.Interface1"
  #define CC_MCTP_DBUS_NETWORK_INTERFACE "au.com.codeconstruct.MCTP.Network1"
@@ -52,7 +51,7 @@ index a7036ad..c2f5b2b 100644
  
  // an arbitrary constant for use with sd_id128_get_machine_app_specific()
  static const char *mctpd_appid = "67369c05-4b97-4b7e-be72-65cfd8639f10";
-@@ -68,6 +74,7 @@ static const uint8_t MCTP_TYPE_VENDOR_IANA = 0x7f;
+@@ -73,6 +79,7 @@
  
  // arbitrary sanity
  static size_t MAX_PEER_SIZE = 1000000;
@@ -60,9 +59,9 @@ index a7036ad..c2f5b2b 100644
  
  struct dest_phys {
  	int ifindex;
-@@ -148,6 +155,13 @@ struct link {
- 	struct ctx *ctx;
- };
+@@ -158,6 +165,13 @@
+ 
+ struct vdm_type_support;
  
 +struct association {
 +	char *forward;
@@ -74,7 +73,7 @@ index a7036ad..c2f5b2b 100644
  struct peer {
  	uint32_t net;
  	mctp_eid_t eid;
-@@ -172,6 +186,7 @@ struct peer {
+@@ -182,6 +196,7 @@
  	sd_bus_slot *slot_cc_endpoint;
  	sd_bus_slot *slot_bridge;
  	sd_bus_slot *slot_uuid;
@@ -82,7 +81,7 @@ index a7036ad..c2f5b2b 100644
  	char *path;
  
  	bool have_neigh;
-@@ -192,6 +207,9 @@ struct peer {
+@@ -205,6 +220,9 @@
  	// From Get Endpoint UUID. A malloced 16 bytes */
  	uint8_t *uuid;
  
@@ -92,7 +91,7 @@ index a7036ad..c2f5b2b 100644
  	// Stuff the ctx pointer into peer for tidier parameter passing
  	struct ctx *ctx;
  
-@@ -293,7 +311,7 @@ static int emit_interface_removed(struct link *link);
+@@ -360,7 +378,7 @@
  static int emit_net_added(struct ctx *ctx, struct net *net);
  static int emit_net_removed(struct ctx *ctx, struct net *net);
  static int add_peer(struct ctx *ctx, const dest_phys *dest, mctp_eid_t eid,
@@ -101,7 +100,7 @@ index a7036ad..c2f5b2b 100644
  static int add_peer_from_addr(struct ctx *ctx,
  			      const struct sockaddr_mctp_ext *addr,
  			      struct peer **ret_peer);
-@@ -322,6 +340,7 @@ static const sd_bus_vtable bus_endpoint_obmc_vtable[];
+@@ -389,6 +407,7 @@
  static const sd_bus_vtable bus_endpoint_cc_vtable[];
  static const sd_bus_vtable bus_endpoint_bridge[];
  static const sd_bus_vtable bus_endpoint_uuid_vtable[];
@@ -109,7 +108,7 @@ index a7036ad..c2f5b2b 100644
  
  __attribute__((format(printf, 1, 2))) static void bug_warn(const char *fmt, ...)
  {
-@@ -413,6 +432,18 @@ static int find_local_eids_by_net(struct net *net, size_t *local_eid_cnt,
+@@ -480,6 +499,18 @@
  	return 0;
  }
  
@@ -128,7 +127,7 @@ index a7036ad..c2f5b2b 100644
  /* Returns a deferred free pointer */
  static const char *dest_phys_tostr(const dest_phys *dest)
  {
-@@ -1909,7 +1940,7 @@ static bool is_eid_in_bridge_pool(const struct net *n, const struct ctx *ctx,
+@@ -2000,7 +2031,7 @@
   * Error is -EEXISTS if it exists
   */
  static int add_peer(struct ctx *ctx, const dest_phys *dest, mctp_eid_t eid,
@@ -137,7 +136,7 @@ index a7036ad..c2f5b2b 100644
  {
  	struct peer *peer, **tmp;
  	struct net *n;
-@@ -1960,6 +1991,14 @@ static int add_peer(struct ctx *ctx, const dest_phys *dest, mctp_eid_t eid,
+@@ -2051,6 +2082,14 @@
  	// Update network eid map
  	n->peers[eid] = peer;
  
@@ -152,7 +151,7 @@ index a7036ad..c2f5b2b 100644
  	*ret_peer = peer;
  	return 0;
  }
-@@ -1975,7 +2014,7 @@ static int add_peer_from_addr(struct ctx *ctx,
+@@ -2066,7 +2105,7 @@
  	phys.hwaddr_len = addr->smctp_halen;
  
  	return add_peer(ctx, &phys, addr->smctp_base.smctp_addr.s_addr,
@@ -161,9 +160,9 @@ index a7036ad..c2f5b2b 100644
  }
  
  static int check_peer_struct(const struct peer *peer, const struct net *n)
-@@ -2086,6 +2125,12 @@ static int remove_peer(struct peer *peer)
- 	n->peers[peer->eid] = NULL;
+@@ -2178,6 +2217,12 @@
  	free(peer->message_types);
+ 	free(peer->vdm_types);
  	free(peer->uuid);
 +	if (peer->association) {
 +		free(peer->association->forward);
@@ -174,7 +173,7 @@ index a7036ad..c2f5b2b 100644
  
  	for (idx = 0; idx < ctx->num_peers; idx++) {
  		if (ctx->peers[idx] == peer)
-@@ -2134,6 +2179,7 @@ static void free_peers(struct ctx *ctx)
+@@ -2227,6 +2272,7 @@
  		sd_bus_slot_unref(peer->slot_cc_endpoint);
  		sd_bus_slot_unref(peer->slot_bridge);
  		sd_bus_slot_unref(peer->slot_uuid);
@@ -182,7 +181,7 @@ index a7036ad..c2f5b2b 100644
  		free(peer);
  	}
  
-@@ -2281,7 +2327,7 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
+@@ -2402,7 +2448,7 @@
  	}
  
  	if (static_eid) {
@@ -191,7 +190,7 @@ index a7036ad..c2f5b2b 100644
  		if (rc < 0)
  			return rc;
  
-@@ -2304,7 +2350,7 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
+@@ -2425,7 +2471,7 @@
  
  		new_eid = alloc.start;
  
@@ -200,7 +199,16 @@ index a7036ad..c2f5b2b 100644
  		if (rc < 0)
  			return rc;
  
-@@ -2518,8 +2564,12 @@ static int get_endpoint_peer(struct ctx *ctx, sd_bus_error *berr,
+@@ -2526,7 +2572,7 @@
+ 		return -EADDRNOTAVAIL;
+ 	}
+ 
+-	rc = add_peer(ctx, dest, static_eid, net, &peer, false);
++	rc = add_peer(ctx, dest, static_eid, net, NULL, &peer, false);
+ 	if (rc < 0)
+ 		return rc;
+ 
+@@ -2731,8 +2777,12 @@
  			return 0;
  		}
  		/* New endpoint */
@@ -213,9 +221,9 @@ index a7036ad..c2f5b2b 100644
 +					eid);
 +		else if (rc < 0)
  			return rc;
- 	}
  
-@@ -2710,6 +2760,190 @@ static int message_read_hwaddr(sd_bus_message *call, dest_phys *dest)
+ 		add_peer_route(peer);
+@@ -3024,6 +3074,190 @@
  	return 0;
  }
  
@@ -406,7 +414,7 @@ index a7036ad..c2f5b2b 100644
  /* SetupEndpoint method tries the following in order:
    - request Get Endpoint ID to add to the known table, return that
    - request Set Endpoint ID, return that */
-@@ -2794,7 +3028,7 @@ static int method_setup_endpoint(sd_bus_message *call, void *data,
+@@ -3108,7 +3342,7 @@
  
  	/* simple allocation: try to use existing EID */
  	if (eid && !is_bridge) {
@@ -415,7 +423,7 @@ index a7036ad..c2f5b2b 100644
  		if (rc == -EEXIST) {
  			/* proposed EID already present on a different peer,
  			 * fall back to assigning */
-@@ -3013,6 +3247,21 @@ err:
+@@ -3420,6 +3654,21 @@
  	return rc;
  }
  
@@ -437,7 +445,7 @@ index a7036ad..c2f5b2b 100644
  // Query various properties of a peer.
  // To be called when a new peer is discovered/assigned, once an EID is known
  // and routable.
-@@ -3252,6 +3501,15 @@ static int publish_peer(struct peer *peer)
+@@ -3632,6 +3881,15 @@
  					 bus_endpoint_uuid_vtable, peer);
  	}
  
@@ -453,7 +461,7 @@ index a7036ad..c2f5b2b 100644
  	rc = emit_endpoint_added(peer);
  	if (rc > 0)
  		rc = 0;
-@@ -3300,6 +3558,8 @@ static int unpublish_peer(struct peer *peer)
+@@ -3680,6 +3938,8 @@
  		peer->slot_bridge = NULL;
  		sd_bus_slot_unref(peer->slot_uuid);
  		peer->slot_uuid = NULL;
@@ -462,7 +470,7 @@ index a7036ad..c2f5b2b 100644
  		peer->published = false;
  		free(peer->path);
  	}
-@@ -3581,7 +3841,7 @@ static int method_net_learn_endpoint(sd_bus_message *call, void *data,
+@@ -3962,7 +4222,7 @@
  		return sd_bus_reply_method_return(call, "sb",
  						  path_from_peer(peer), false);
  
@@ -471,7 +479,7 @@ index a7036ad..c2f5b2b 100644
  	if (rc) {
  		warnx("can't add peer: %s", strerror(-rc));
  		goto err;
-@@ -3918,6 +4178,11 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
+@@ -4318,6 +4578,11 @@
  		SD_BUS_PARAM(found),
  		method_learn_endpoint,
  		0),
@@ -483,7 +491,7 @@ index a7036ad..c2f5b2b 100644
  	SD_BUS_VTABLE_END,
  
  };
-@@ -3945,6 +4210,10 @@ static int bus_endpoint_get_prop(sd_bus *bus, const char *path,
+@@ -4380,6 +4645,10 @@
  	} else if (strcmp(property, "Connectivity") == 0) {
  		rc = sd_bus_message_append(
  			reply, "s", peer->degraded ? "Degraded" : "Available");
@@ -494,7 +502,7 @@ index a7036ad..c2f5b2b 100644
  	} else {
  		warnx("Unknown property '%s' for %s iface %s", property, path,
  		      interface);
-@@ -4190,6 +4459,16 @@ static const sd_bus_vtable bus_endpoint_bridge[] = {
+@@ -4658,6 +4927,16 @@
  	SD_BUS_VTABLE_END
  };
  
@@ -511,7 +519,7 @@ index a7036ad..c2f5b2b 100644
  static const sd_bus_vtable bus_link_vtable[] = {
  	SD_BUS_VTABLE_START(0),
  	SD_BUS_WRITABLE_PROPERTY("Role",
-@@ -4336,6 +4615,251 @@ static int emit_interface_removed(struct link *link)
+@@ -4804,6 +5083,251 @@
  	return rc;
  }
  
@@ -763,7 +771,7 @@ index a7036ad..c2f5b2b 100644
  static int setup_bus(struct ctx *ctx)
  {
  	sigset_t sigset;
-@@ -4398,6 +4922,36 @@ static int setup_bus(struct ctx *ctx)
+@@ -4866,6 +5390,36 @@
  		goto out;
  	}
  
@@ -800,7 +808,7 @@ index a7036ad..c2f5b2b 100644
  	rc = 0;
  out:
  	return rc;
-@@ -4714,7 +5268,7 @@ static int add_local_eid(struct ctx *ctx, uint32_t net, int eid)
+@@ -5184,7 +5738,7 @@
  		}
  	}
  
@@ -809,7 +817,7 @@ index a7036ad..c2f5b2b 100644
  	if (rc < 0) {
  		bug_warn("Error adding local eid %d net %d", eid, net);
  		return rc;
-@@ -5441,7 +5995,7 @@ static int peer_endpoint_poll(sd_event_source *s, uint64_t usec, void *userdata)
+@@ -6209,7 +6763,7 @@
  	peer = n->peers[ep];
  	if (!peer) {
  		rc = add_peer(bridge->ctx, &(bridge->phys), ep, bridge->net,
@@ -818,7 +826,7 @@ index a7036ad..c2f5b2b 100644
  		if (rc < 0)
  			goto exit;
  	}
-@@ -5631,6 +6185,8 @@ int main(int argc, char **argv)
+@@ -6443,6 +6997,8 @@
  	if (rc < 0)
  		return 1;
  

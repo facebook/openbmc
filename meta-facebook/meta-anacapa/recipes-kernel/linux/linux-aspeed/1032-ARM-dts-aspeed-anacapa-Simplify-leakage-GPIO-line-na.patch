@@ -1,0 +1,43 @@
+From 8395f2e7d5403a348ef0cf8d1c7875b35deb982c Mon Sep 17 00:00:00 2001
+From: Colin Huang <colin.huang2@amd.com>
+Date: Tue, 20 Oct 2026 16:35:24 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: Simplify leakage GPIO line names
+
+Lore: https://lore.kernel.org/r/20260930-anacapa-devlop-phase-devicetree-v9-0-f08aa0d7182d@gmail.com
+
+Remove the board location suffixes from the leakage GPIO line
+names. The channel number is enough to identify each leakage
+signal.
+
+Signed-off-by: Rex Fu <rex.fu.amd@gmail.com>
+Signed-off-by: Colin Huang <colin.huang2@amd.com>
+---
+ .../aspeed/aspeed-bmc-facebook-anacapa-evt2.dts    | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 22e8dd669..84206ba49 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -1192,14 +1192,14 @@ &sgpiom0 {
+ 	"", "",
+ 
+ 	/* B0-B7 line 16-31 */
+-	"Channel0_leakage_EAM3", "FM_CPU_FPGA_JTAG_MUX_SEL",
+-	"Channel1_leakage_EAM0", "FM_SCM_JTAG_MUX_SEL",
+-	"Channel2_leakage_Manifold1", "FM_BRIDGE_JTAG_MUX_SEL",
++	"Channel0_leakage", "FM_CPU_FPGA_JTAG_MUX_SEL",
++	"Channel1_leakage", "FM_SCM_JTAG_MUX_SEL",
++	"Channel2_leakage", "FM_BRIDGE_JTAG_MUX_SEL",
+ 	"Channel5_leakage_present", "FM_CPU0_NMI_SYNC_FLOOD_N",
+-	"Channel4_leakage_Manifold2", "BMC_AINIC0_WP_R2_L",
+-	"Channel5_leakage_EAM1", "BMC_AINIC1_WP_R2_L",
+-	"Channel6_leakage_CPU_DIMM", "CPLD_BUF_R_AGPIO330",
+-	"Channel7_leakage_EAM2", "CPLD_BUF_R_AGPIO331",
++	"Channel4_leakage", "BMC_AINIC0_WP_R2_L",
++	"Channel5_leakage", "BMC_AINIC1_WP_R2_L",
++	"Channel6_leakage", "CPLD_BUF_R_AGPIO330",
++	"Channel7_leakage", "CPLD_BUF_R_AGPIO331",
+ 
+ 	/* C0-C7 line 32-47 */
+ 	"RSVD_RMC_GPIO3", "RTM_MUX_L",

@@ -5,4 +5,5 @@ SRC_URI:append = " \
     file://0002-configuration-anacapa-Update-Mortaro-sensors-under-N.patch \
     file://0003-configurations-samsung-Add-PM9D3a-E1.S-naming.patch \
     file://0004-entity_manager-skip-rewriting-unchanged-system.json.patch \
+    file://0005-configuration-anacapa-update-leakdetector-pin-object.patch \
 "

@@ -1,0 +1,44 @@
+From 8517120826d8a308a796d8e1cf6b96d7ee108812 Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Fri, 16 Oct 2026 14:17:49 +0000
+Subject: [PATCH] ARM: aspeed: limit Aristabmc U-Boot relocation
+
+Aristabmc DRAM starts at 0x400000000. MAC0 ping succeeds when both the
+descriptor rings and packet buffers are below 0x4f0000000, which is 3.75
+GiB above that base. Splitting the allocations across the boundary fails:
+low rings with buffers at 0x4f0000000 fail ARP, while rings at that address
+with low buffers time out during TX. Moving both allocations below the
+boundary restores ping. Tests show that both descriptor and packet DMA
+accesses need the low DDR range.
+
+Override board_get_usable_ram_top() to keep U-Boot relocation, the stack
+and malloc heap below the tested boundary. The existing Ethernet driver
+then allocates its rings and packet buffers in low DDR. Keep the detected
+RAM size and DRAM banks unchanged so Linux retains the full memory range.
+This does not constrain all LMB allocations or explicit physical addresses.
+
+Upstream-Status: Inappropriate
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+ arch/arm/mach-aspeed/ast2700/board_common.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm/mach-aspeed/ast2700/board_common.c b/arch/arm/mach-aspeed/ast2700/board_common.c
+index 6e25e5e9a4..f3c0010f41 100644
+--- a/arch/arm/mach-aspeed/ast2700/board_common.c
++++ b/arch/arm/mach-aspeed/ast2700/board_common.c
+@@ -46,6 +46,12 @@ int dram_init(void)
+ 	return 0;
+ }
+ 
++phys_addr_t board_get_usable_ram_top(phys_size_t total_size)
++{
++	return min_t(phys_addr_t, gd->ram_top,
++		     gd->ram_base + 0xf0000000ULL);
++}
++
+ #ifdef CONFIG_USB_GADGET_DOWNLOAD
+ int g_dnl_get_board_bcd_device_number(int gcnum)
+ {
+-- 
+2.51.0

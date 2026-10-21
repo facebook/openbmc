@@ -1,4 +1,4 @@
-From 72cebad1a79fb9fa1eb0b9fe66dda012c6e9a007 Mon Sep 17 00:00:00 2001
+From 929f031ca9ab3dabf8b64c862131de8a5a1c1f96 Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Tue, 20 Oct 2026 16:02:55 +0800
 Subject: [PATCH] configuration: anacapa: update leakdetector pin/object name
@@ -88,3 +88,6 @@ index 534e12f..9008421 100644
              "Polarity": "High",
              "SubType": "LeakSensingCable",
              "Type": "GPIOLeakDetector"
+-- 
+2.53.0-Meta
+

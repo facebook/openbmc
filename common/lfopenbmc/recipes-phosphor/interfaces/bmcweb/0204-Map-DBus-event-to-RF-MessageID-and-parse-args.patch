@@ -1,4 +1,4 @@
-From 7d9bac584ecb362419ffee995742f9e9f4fca21a Mon Sep 17 00:00:00 2001
+From 7454559c43e54b4c429e5210a9a53a0a64ebf708 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH] Map DBus event to RF MessageID and parse args
@@ -823,10 +823,10 @@ index 00000000..5d41f2f1
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/test/meson.build b/test/meson.build
-index 8cfd6840..1c8d3859 100644
+index c0b3b15f..57caf938 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -61,6 +61,7 @@ srcfiles_unittest = files(
+@@ -62,6 +62,7 @@ srcfiles_unittest = files(
      'redfish-core/lib/chassis_test.cpp',
      'redfish-core/lib/ethernet_test.cpp',
      'redfish-core/lib/fabric_test.cpp',

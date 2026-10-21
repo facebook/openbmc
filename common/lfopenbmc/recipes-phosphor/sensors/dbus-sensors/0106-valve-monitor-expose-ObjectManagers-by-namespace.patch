@@ -1,4 +1,4 @@
-From 25b201d759288e6b6c5a2aab75478eedf4daff53 Mon Sep 17 00:00:00 2001
+From ce4623d698d6677bb0977184f13ee02ac3694170 Mon Sep 17 00:00:00 2001
 From: Eldin Lee <eldin.lee@quantatw.com>
 Date: Thu, 8 Oct 2026 02:42:37 +0800
 Subject: [PATCH] valve-monitor: expose ObjectManagers by namespace
@@ -18,10 +18,10 @@ Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/src/valve-monitor/ValveMonitor.cpp b/src/valve-monitor/ValveMonitor.cpp
-index cbcc2a5..7060802 100644
+index 0cf06d8..5a3843c 100644
 --- a/src/valve-monitor/ValveMonitor.cpp
 +++ b/src/valve-monitor/ValveMonitor.cpp
-@@ -336,12 +336,13 @@ auto ValveMonitor::processAnalogConfigAddedAsync(
+@@ -84,12 +84,13 @@ auto ValveMonitor::processConfigAddedAsync(
  
  int main()
  {
@@ -39,5 +39,5 @@ index cbcc2a5..7060802 100644
  
      ctx.request_name(serviceName);
 -- 
-2.34.1
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From f58f7535bfa299f452cf5f9cc19515b9697e8e44 Mon Sep 17 00:00:00 2001
+From ec7e0354607e5d92abce3bb5672040df2ea41979 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Thu, 2 Apr 2026 09:25:08 -0700
 Subject: [PATCH] Fix const compiler error and format error
@@ -23,10 +23,10 @@ index e7b878e..2bd806f 100644
        if (dot == s || !isdigit(dot[-1]) || !isdigit(dot[1]))
          return -1;
 diff --git a/src/mctpd.c b/src/mctpd.c
-index 65bd65b..fade61f 100644
+index aaaf7a1..882c76b 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -5906,7 +5906,7 @@ static int parse_config_bus_owner(struct ctx *ctx, toml_table_t *bus_owner)
+@@ -6462,7 +6462,7 @@ static int parse_config_bus_owner(struct ctx *ctx, toml_table_t *bus_owner)
  	if (val.ok && val.u.i) {
  		uint64_t i = val.u.i;
  		if ((i > max_poll_interval_ms) || (i < min_poll_interval_ms)) {
@@ -36,5 +36,5 @@ index 65bd65b..fade61f 100644
  			return -1;
  		}
 -- 
-2.52.0
+2.53.0-Meta
 

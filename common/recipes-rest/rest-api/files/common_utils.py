@@ -3,8 +3,7 @@ import json
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple, Union  # noqa: F401
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Union  # noqa: F401
 
 from aiohttp import web
 from common_webapp import WebApp
@@ -15,17 +14,22 @@ common_executor = ThreadPoolExecutor(5)
 ENDPOINT_CHILDREN = {}  # type: Dict[str, Set[str]]
 
 
-@dataclass(frozen=True)
-class RequestContext:
+# Functional NamedTuple form, not @dataclass or class-body annotations: this
+# module is imported on rocko-based BMCs (fbtp, fbttn, fby2, ...) that still
+# run Python 3.5, which has neither `dataclasses` nor variable annotations.
+class RequestContext(
+    NamedTuple(
+        "_RequestContext",
+        [("method", str), ("path", str), ("json_data", Dict[str, Any])],
+    )
+):
     """Thread-safe, immutable context extracted from an aiohttp request.
 
-    This dataclass captures request data before entering the executor thread,
+    This captures request data before entering the executor thread,
     since aiohttp's request object is not thread-safe.
     """
 
-    method: str
-    path: str
-    json_data: Dict[str, Any]
+    __slots__ = ()
 
 
 async def _run_in_common_executor(func, *args, **kwargs):

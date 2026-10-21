@@ -6,7 +6,7 @@ Subject: [PATCH] arm64: dts: aspeed: Add rainiera7 dts
 Add rainiera7 ast2700 dts.
 ---
  arch/arm64/boot/dts/aspeed/Makefile           |    1 +
- .../aspeed/aspeed-bmc-facebook-rainiera7.dts  | 1073 +++++++++++++++++
+ .../aspeed/aspeed-bmc-facebook-rainiera7.dts  | 1067 +++++++++++++++++
  2 files changed, 1074 insertions(+)
  create mode 100644 arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 
@@ -25,7 +25,7 @@ new file mode 100644
 index 000000000000..a27bdf4c2501
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
-@@ -0,0 +1,1073 @@
+@@ -0,0 +1,1067 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) 2026 Facebook Inc.
 +
@@ -484,12 +484,6 @@ index 000000000000..a27bdf4c2501
 +		reg = <0x46>;
 +	};
 +
-+	power-monitor@47 {
-+		compatible = "ti,tps25990";
-+		reg = <0x47>;
-+		ti,rimon-micro-ohms = <430000000>;
-+	};
-+
 +	temperature-sensor@48 {
 +		compatible = "ti,tmp75";
 +		reg = <0x48>;
@@ -912,7 +906,7 @@ index 000000000000..a27bdf4c2501
 +	"PWRGD_EAST_DIMM_CPLD","",
 +	"PWRGD_WEST_DIMM_CPLD","FM_BUF_PPS_NIC_OUT_EN_CPLD",
 +	"PWRGD_NIC_CPLD","",
-+	"","PMBUS_MUX_SEL_C0",
++	"wLONG_BTN_EVENT","PMBUS_MUX_SEL_C0",
 +	"PHOENIX_PWRBTN_N_CPLD","PMBUS_MUX_SEL_C1",
 +	"IRQ_INA230_E1S_0_ALERT_N","",
 +	// IOE0-IOE7 bit32-39
@@ -1020,8 +1014,8 @@ index 000000000000..a27bdf4c2501
 +	"C1_POSTCODE_3_CPLD","",
 +	"C1_POSTCODE_4_CPLD","",
 +	"","",
-+	"SOC_GPIO_17","",
-+	"SOC_GPIO_18","",
++	"FM_BIOS_POST_CMPLT","",
++	"FM_CLEAR_RTC","",
 +	"SOC_GPIO_37","";
 +};
 +

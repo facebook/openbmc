@@ -138,7 +138,7 @@ class TestGetUpdater(unittest.TestCase):
     def test_bbu_vendors_pick_the_mailbox_variant(self):
         mu.get_updater("ORV3_BBU", "panasonic", None)(self.dev, "fw.bin")
         self.orv3_device_update_mailbox.main.assert_called_once_with(
-            self.dev, "fw.bin", "panasonic"
+            self.dev, "fw.bin", "panasonic", None
         )
 
     def test_a_pmm_is_updated_as_its_own_vendor(self):
@@ -147,14 +147,42 @@ class TestGetUpdater(unittest.TestCase):
             with self.subTest(dev_type=dev_type):
                 mu.get_updater(dev_type, "delta", None)(self.dev, "fw.bin")
                 self.orv3_device_update_mailbox.main.assert_called_once_with(
-                    self.dev, "fw.bin", "hpr_pmm_delta"
+                    self.dev, "fw.bin", "hpr_pmm_delta", None
                 )
 
     def test_cbu_has_its_own_variant(self):
         mu.get_updater("CBU", "delta", None)(self.dev, "fw.bin")
         self.orv3_device_update_mailbox.main.assert_called_once_with(
-            self.dev, "fw.bin", "delta_cbu"
+            self.dev, "fw.bin", "delta_cbu", None
         )
+
+    def test_a_mailbox_block_size_is_passed_through(self):
+        update = mu.get_updater("ORV3_BBU", "delta", None, 128)
+        update(self.dev, "fw.bin")
+        self.orv3_device_update_mailbox.main.assert_called_once_with(
+            self.dev, "fw.bin", "delta", 128
+        )
+        self.assertIn("block_size=128", update.description)
+
+    def test_a_block_size_does_not_change_the_shared_updater(self):
+        mu.get_updater("ORV3_BBU", "delta", None, 128)
+        mu.get_updater("ORV3_BBU", "delta", None)(self.dev, "fw.bin")
+        self.orv3_device_update_mailbox.main.assert_called_once_with(
+            self.dev, "fw.bin", "delta", None
+        )
+
+    def test_a_block_size_is_refused_by_updaters_that_cannot_take_one(self):
+        for dev_type, vendor, component in (
+            ("ORV3_PSU", "artesyn", None),
+            ("PSU", "delta", None),
+            ("RPU", "delta", "HEX"),
+            ("RPU2", "coolermaster", None),
+        ):
+            with self.subTest(dev_type=dev_type, vendor=vendor):
+                with patch("sys.stdout", new=io.StringIO()) as out:
+                    with self.assertRaises(SystemExit):
+                        mu.get_updater(dev_type, vendor, component, 128)
+                self.assertIn("--block-size is not supported", out.getvalue())
 
     def test_rpu_defaults_to_the_plc(self):
         mu.get_updater("RPU", "delta", None)(self.dev, "fw.txt")
@@ -701,13 +729,28 @@ class TestMain(unittest.TestCase):
             ["-n", "PSU_1_1", "fw.bin"], dev, vendor="artesyn"
         )
         get_manufacturer.assert_called_once_with("PSU", dev)
-        get_updater.assert_called_once_with("PSU", "artesyn", None)
+        get_updater.assert_called_once_with("PSU", "artesyn", None, None)
 
     def test_the_component_is_passed_through(self):
         _, get_updater, _ = self.run_main(
             ["-n", "RPU_1", "-c", "HEX", "fw.bin"], FakeDev()
         )
-        get_updater.assert_called_once_with("PSU", "delta", "HEX")
+        get_updater.assert_called_once_with("PSU", "delta", "HEX", None)
+
+    def test_the_block_size_is_passed_through(self):
+        _, get_updater, _ = self.run_main(
+            ["-n", "BBU_1_1", "--block-size", "0x40", "fw.bin"], FakeDev()
+        )
+        get_updater.assert_called_once_with("PSU", "delta", None, 64)
+
+    def test_an_odd_block_size_is_a_usage_error(self):
+        for size in ("63", "0", "-2"):
+            with self.subTest(size=size):
+                argv = ["modbus-update.py", "-n", "BBU_1_1", "--block-size", size]
+                with patch("sys.argv", argv + ["fw.bin"]):
+                    with patch("sys.stderr", new=io.StringIO()):
+                        with self.assertRaises(SystemExit):
+                            mu.parse_args()
 
     def test_a_dry_run_stops_before_the_update(self):
         dev = FakeDev()

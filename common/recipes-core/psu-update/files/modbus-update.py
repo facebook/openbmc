@@ -81,11 +81,16 @@ def modbus_lock(path):
             os.close(fd)
 
 
-def _mailbox(variant):
+def _mailbox(variant, block_size=None):
     def update(dev, path):
-        orv3_device_update_mailbox.main(dev, path, variant)
+        orv3_device_update_mailbox.main(dev, path, variant, block_size)
 
-    update.description = f"orv3_device_update_mailbox.main(variant={variant})"
+    update.description = (
+        f"orv3_device_update_mailbox.main(variant={variant}, block_size={block_size})"
+    )
+    # Only the mailbox protocol lets the block size be picked by the
+    # caller, the rest have it fixed by the device.
+    update.with_block_size = lambda size: _mailbox(variant, size)
     return update
 
 
@@ -163,7 +168,7 @@ def rpu2_updater(component):
     return update
 
 
-def get_updater(device_type, device_vendor, component):
+def find_updater(device_type, device_vendor, component):
     if device_type == "RPU":
         return rpu_updater(device_vendor, component)
     if device_type == "RPU2":
@@ -176,6 +181,16 @@ def get_updater(device_type, device_vendor, component):
         print(f"Unsupported {name} Vendor: {device_vendor}")
         sys.exit(1)
     return vendors[device_vendor]
+
+
+def get_updater(device_type, device_vendor, component, block_size=None):
+    update = find_updater(device_type, device_vendor, component)
+    if block_size is None:
+        return update
+    if not hasattr(update, "with_block_size"):
+        print(f"--block-size is not supported by {update.description}")
+        sys.exit(1)
+    return update.with_block_size(block_size)
 
 
 def parse_args():
@@ -226,8 +241,21 @@ def parse_args():
             "even if its managed by rackmon"
         ),
     )
+    parser.add_argument(
+        "--block-size",
+        type=auto_int,
+        default=None,
+        help=(
+            "Override the number of bytes written per block. Only supported "
+            "by mailbox updates (BBU, CBU and PMM)"
+        ),
+    )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.block_size is not None and (args.block_size <= 0 or args.block_size % 2):
+        # The block is written as 16-bit registers.
+        parser.error("--block-size must be a positive, even number of bytes")
+    return args
 
 
 # Rackmon names a device after the register map it matched during the
@@ -406,7 +434,9 @@ def run(args):
     device_type, dev = get_device(args.name, args.address, args.force_direct)
     with dev.suppress_monitoring():
         device_vendor = manufacturers.get_manufacturer(device_type, dev)
-        update = get_updater(device_type, device_vendor, args.component)
+        update = get_updater(
+            device_type, device_vendor, args.component, args.block_size
+        )
 
         if args.name is not None:
             print(f"Updating Name: {args.name} Component: {args.component}")

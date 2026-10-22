@@ -41,7 +41,7 @@ IMAGE_INSTALL += " \
   bios-util \
   pldmd \
   front-paneld \
-  mctpd \
+  fb-mctpd \
   ncsi-util \
   crashdump \
   attest-util \

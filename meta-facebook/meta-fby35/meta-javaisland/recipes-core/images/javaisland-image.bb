@@ -59,7 +59,7 @@ IMAGE_INSTALL += " \
   jbi \
   attest-util \
   tcpdump \
-  mctpd \
+  fb-mctpd \
   pldmd \
   tpm-factory-upd \
   libcper \

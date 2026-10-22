@@ -9,7 +9,7 @@ LOCAL_URI += " \
     "
 
 DEPENDS:append = " plat-utils update-rc.d-native"
-RDEPENDS:mctpd = " bash"
+RDEPENDS:fb-mctpd = " bash"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

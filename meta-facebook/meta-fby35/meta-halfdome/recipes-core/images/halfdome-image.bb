@@ -62,6 +62,6 @@ IMAGE_INSTALL += " \
   psb-util \
   apml-util \
   crashdump-amd \
-  mctpd \
+  fb-mctpd \
   apmldump \
   "

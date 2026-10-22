@@ -64,7 +64,7 @@ IMAGE_INSTALL += " \
   dimm-util \
   attest-util \
   tcpdump \
-  mctpd \
+  fb-mctpd \
   pldmd \
   tpm-factory-upd \
   "

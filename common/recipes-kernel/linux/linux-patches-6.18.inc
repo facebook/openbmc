@@ -133,7 +133,7 @@ SRC_URI:append = " \
 # RTC drivers
 #
 SRC_URI:append = " \
-    file://0800-rtc-Add-NXP-PCF85053A-driver-support.patch \
+    file://0800-rtc-Add-NXP-PCF85053-driver-support.patch \
 "
 
 #

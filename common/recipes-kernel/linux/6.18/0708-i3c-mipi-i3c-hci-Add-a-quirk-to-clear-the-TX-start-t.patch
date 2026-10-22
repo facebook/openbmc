@@ -1,4 +1,4 @@
-From e1d1d4a387b6975d4c62d7cc98d6d569a79aa625 Mon Sep 17 00:00:00 2001
+From a3cdc36aa4280ea32c8b1f5fbe7737fd610c7c59 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 1 Sep 2026 19:35:31 +0800
 Subject: [PATCH] i3c: mipi-i3c-hci: Add a quirk to clear the TX start
@@ -43,18 +43,18 @@ Link: https://lore.kernel.org/r/20260901-b4-i3c-hci-ast2700-v1-4-19909e7cbd7e@as
  create mode 100644 drivers/i3c/master/mipi-i3c-hci/pio.h
 
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index 1d9a15e1ca4a..a9de51ef8e5c 100644
+index 9bb694f92840..ba952fcf76fd 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
-@@ -22,6 +22,7 @@
- #include "ext_caps.h"
+@@ -23,6 +23,7 @@
  #include "cmd.h"
  #include "dat.h"
+ #include "ibi.h"
 +#include "pio.h"
  
  
  /*
-@@ -766,6 +767,19 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -799,6 +800,19 @@ static int i3c_hci_init(struct i3c_hci *hci)
  		} else {
  			hci->io = &mipi_i3c_hci_dma;
  			dev_dbg(&hci->master.dev, "Using DMA\n");
@@ -75,10 +75,10 @@ index 1d9a15e1ca4a..a9de51ef8e5c 100644
  	}
  
 diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
-index fc9103dde101..c121fd06d048 100644
+index 5474f5a99364..9c067089af5d 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/hci.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
-@@ -147,6 +147,7 @@ struct i3c_hci_dev_data {
+@@ -148,6 +148,7 @@ struct i3c_hci_dev_data {
  #define HCI_QUIRK_DMA_ABORT_REQUIRES_PIO_RESET	BIT(8)  /* Do PIO queue SW resets after DMA abort */
  #define HCI_QUIRK_DAT_INDEX_IS_ADDR	BIT(10)  /* DAT entries are indexed by device address */
  #define HCI_QUIRK_DMA_64BIT		BIT(11)  /* Controller DMA supports 64-bit addressing */
@@ -87,7 +87,7 @@ index fc9103dde101..c121fd06d048 100644
  
  /* global functions */
 diff --git a/drivers/i3c/master/mipi-i3c-hci/pio.c b/drivers/i3c/master/mipi-i3c-hci/pio.c
-index cb3232c9cf33..830bb209b40c 100644
+index 48f1fc97c7e3..1df43177daf0 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/pio.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/pio.c
 @@ -14,6 +14,7 @@
@@ -307,5 +307,5 @@ index 000000000000..72318961e991
 +
 +#endif
 -- 
-2.53.0
+2.53.0-Meta
 

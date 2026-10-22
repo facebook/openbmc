@@ -1,4 +1,4 @@
-From 2dfda2b0abb8b868868887add0b0258325261b9e Mon Sep 17 00:00:00 2001
+From f849e24fba4b7cd8005b6a7af8fc02790df7cd42 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 27 Mar 2026 06:38:52 +0000
 Subject: [PATCH] Fix log flooding caused by per-sensor failsafe logging
@@ -286,10 +286,10 @@ index 5cbf19d..d3aa0d5 100644
      'sysfs/sysfsread.cpp',
      'sysfs/sysfswrite.cpp',
 diff --git a/pid/zone.cpp b/pid/zone.cpp
-index bfcbe3b..b40abec 100644
+index fae9478..036f795 100644
 --- a/pid/zone.cpp
 +++ b/pid/zone.cpp
-@@ -116,7 +116,7 @@ void DbusPidZone::markSensorMissing(const std::string& name,
+@@ -117,7 +117,7 @@ void DbusPidZone::markSensorMissing(const std::string& name,
      }
  
      outputFailsafeLogWithZone(_zoneId, this->getFailSafeMode(), name,
@@ -298,7 +298,7 @@ index bfcbe3b..b40abec 100644
  
      if (debugEnabled)
      {
-@@ -510,7 +510,7 @@ void DbusPidZone::initializeCache(void)
+@@ -513,7 +513,7 @@ void DbusPidZone::initializeCache(void)
          _cachedFanOutputs[f] = {nan, nan};
  
          // Start all fans in fail-safe mode.
@@ -307,7 +307,7 @@ index bfcbe3b..b40abec 100644
      }
  
      for (const auto& t : _thermalInputs)
-@@ -518,7 +518,7 @@ void DbusPidZone::initializeCache(void)
+@@ -521,7 +521,7 @@ void DbusPidZone::initializeCache(void)
          _cachedValuesByName[t] = {nan, nan};
  
          // Start all sensors in fail-safe mode.
@@ -317,12 +317,12 @@ index bfcbe3b..b40abec 100644
  }
  
 diff --git a/pid/zone.hpp b/pid/zone.hpp
-index d81cd53..d430799 100644
+index c7206d5..e211122 100644
 --- a/pid/zone.hpp
 +++ b/pid/zone.hpp
-@@ -197,9 +197,6 @@ class DbusPidZone : public ZoneInterface, public ModeObject
-                 {
-                     std::cerr << sensorInput << " sensor timeout\n";
+@@ -200,9 +200,6 @@ class DbusPidZone : public ZoneInterface, public ModeObject
+                     lg2::debug("{SENSOR} sensor timeout", "SENSOR",
+                                sensorInput);
                  }
 -                outputFailsafeLogWithZone(_zoneId, this->getFailSafeMode(),
 -                                          sensorInput,

@@ -1,4 +1,4 @@
-From c0073354113568ec6a0fbb8bd3d5101a8795588a Mon Sep 17 00:00:00 2001
+From 341b4fa74657adbb7c5bd0ef973d3230b3ce4f10 Mon Sep 17 00:00:00 2001
 From: Adrian Hunter <adrian.hunter@intel.com>
 Date: Fri, 6 Mar 2026 09:24:44 +0200
 Subject: [PATCH] i3c: mipi-i3c-hci: Fix race between DMA ring dequeue and
@@ -38,10 +38,10 @@ Signed-off-by: Alexandre Belloni <alexandre.belloni@bootlin.com>
  3 files changed, 8 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index 1eeab337e5e5..d81b3ff9ce5d 100644
+index e9fd314eb17b..1558334640d7 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
-@@ -539,6 +539,8 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
+@@ -572,6 +572,8 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
  	irqreturn_t result = IRQ_NONE;
  	u32 val;
  
@@ -51,7 +51,7 @@ index 1eeab337e5e5..d81b3ff9ce5d 100644
  	 * The IRQ can be shared, so the handler may be called when the IRQ is
  	 * due to a different device. That could happen before the controller
 diff --git a/drivers/i3c/master/mipi-i3c-hci/dma.c b/drivers/i3c/master/mipi-i3c-hci/dma.c
-index 775c62fe85ee..2e9379876d6a 100644
+index bfff538cccbe..3fa7f46ab2c2 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/dma.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/dma.c
 @@ -504,6 +504,8 @@ static bool hci_dma_dequeue_xfer(struct i3c_hci *hci,
@@ -95,8 +95,8 @@ index 775c62fe85ee..2e9379876d6a 100644
  }
  
  static int hci_dma_request_ibi(struct i3c_hci *hci, struct i3c_dev_desc *dev,
-@@ -771,13 +773,10 @@ static void hci_dma_process_ibi(struct i3c_hci *hci, struct hci_rh_data *rh)
- 	i3c_master_queue_ibi(dev, slot);
+@@ -779,13 +781,10 @@ static void hci_dma_process_ibi(struct i3c_hci *hci, struct hci_rh_data *rh)
+ 	spin_unlock(&hci->lock);
  
  done:
 -	/* take care to update the ibi dequeue pointer atomically */
@@ -110,10 +110,10 @@ index 775c62fe85ee..2e9379876d6a 100644
  	/* update the chunk pointer */
  	rh->ibi_chunk_ptr += ibi_chunks;
 diff --git a/drivers/i3c/master/mipi-i3c-hci/pio.c b/drivers/i3c/master/mipi-i3c-hci/pio.c
-index 35e6acc958a8..cb3232c9cf33 100644
+index 3a89f1628f6d..48f1fc97c7e3 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/pio.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/pio.c
-@@ -990,15 +990,12 @@ static bool hci_pio_irq_handler(struct i3c_hci *hci)
+@@ -993,15 +993,12 @@ static bool hci_pio_irq_handler(struct i3c_hci *hci)
  	struct hci_pio_data *pio = hci->io_data;
  	u32 status;
  
@@ -130,7 +130,7 @@ index 35e6acc958a8..cb3232c9cf33 100644
  
  	if (status & STAT_IBI_STATUS_THLD)
  		hci_pio_process_ibi(hci, pio);
-@@ -1032,7 +1029,6 @@ static bool hci_pio_irq_handler(struct i3c_hci *hci)
+@@ -1035,7 +1032,6 @@ static bool hci_pio_irq_handler(struct i3c_hci *hci)
  	pio_reg_write(INTR_SIGNAL_ENABLE, pio->enabled_irqs);
  	dev_dbg(&hci->master.dev, "PIO_INTR_STATUS %#x/%#x",
  		pio_reg_read(INTR_STATUS), pio_reg_read(INTR_SIGNAL_ENABLE));
@@ -139,5 +139,5 @@ index 35e6acc958a8..cb3232c9cf33 100644
  }
  
 -- 
-2.53.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 8b5dda4f6eec1a446528aacb92de2aefe0f9df31 Mon Sep 17 00:00:00 2001
+From 38bfce230720a1bfe5e428823e2bbd0c65ef0309 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 7 Jan 2025 13:35:34 +0800
 Subject: [PATCH] iio: adc: aspeed: Disable the last channel by default
@@ -18,7 +18,7 @@ Change-Id: Ic7bf980bdbabf4cc749c1f2a1231aaf61ad54933
  1 file changed, 26 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
-index 040045770276..0249658f694b 100644
+index 9e0b993dd0ae..b3570379e5e9 100644
 --- a/drivers/iio/adc/aspeed_adc.c
 +++ b/drivers/iio/adc/aspeed_adc.c
 @@ -72,6 +72,8 @@
@@ -75,7 +75,7 @@ index 040045770276..0249658f694b 100644
  			       data->base + ASPEED_REG_ENGINE_CONTROL);
  		} else
  			*val = readw(data->base + chan->address);
-@@ -606,9 +611,14 @@ static int aspeed_adc_probe(struct platform_device *pdev)
+@@ -607,9 +612,14 @@ static int aspeed_adc_probe(struct platform_device *pdev)
  
  	aspeed_adc_compensation(indio_dev);
  	/* Start all channels in normal mode. */
@@ -94,5 +94,5 @@ index 040045770276..0249658f694b 100644
  	       data->base + ASPEED_REG_ENGINE_CONTROL);
  
 -- 
-2.52.0
+2.53.0-Meta
 

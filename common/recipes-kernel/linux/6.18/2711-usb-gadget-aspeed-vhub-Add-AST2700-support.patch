@@ -1,4 +1,4 @@
-From d2a2beb008e838dfe5b462af6e49421afe7f45cb Mon Sep 17 00:00:00 2001
+From 259dad1c91a58a904d73245b62a7ff715ca4236f Mon Sep 17 00:00:00 2001
 From: Bianca Giocas <bgiocas@arista.com>
 Date: Tue, 11 Aug 2026 14:35:00 +0000
 Subject: [PATCH] usb: gadget: aspeed-vhub: Add AST2700 support
@@ -36,7 +36,7 @@ index 605500b19cf3..a94f305ab354 100644
 +	  and AST2700 family SoCs supporting the "vHub" functionality and
 +	  USB2.0
 diff --git a/drivers/usb/gadget/udc/aspeed-vhub/core.c b/drivers/usb/gadget/udc/aspeed-vhub/core.c
-index f2685f89b3e5..14deacb7f3b2 100644
+index 62d282bab525..ca44e703bfc6 100644
 --- a/drivers/usb/gadget/udc/aspeed-vhub/core.c
 +++ b/drivers/usb/gadget/udc/aspeed-vhub/core.c
 @@ -23,6 +23,7 @@
@@ -72,7 +72,7 @@ index f2685f89b3e5..14deacb7f3b2 100644
  	/* Enable some interrupts */
  	writel(VHUB_IRQ_HUB_EP0_IN_ACK_STALL |
  	       VHUB_IRQ_HUB_EP0_OUT_ACK_STALL |
-@@ -280,6 +296,8 @@ static void ast_vhub_remove(struct platform_device *pdev)
+@@ -283,6 +299,8 @@ static void ast_vhub_remove(struct platform_device *pdev)
  	if (vhub->clk)
  		clk_disable_unprepare(vhub->clk);
  
@@ -81,7 +81,7 @@ index f2685f89b3e5..14deacb7f3b2 100644
  	spin_unlock_irqrestore(&vhub->lock, flags);
  
  	if (vhub->ep0_bufs)
-@@ -291,9 +309,65 @@ static void ast_vhub_remove(struct platform_device *pdev)
+@@ -294,9 +312,65 @@ static void ast_vhub_remove(struct platform_device *pdev)
  	vhub->ep0_bufs = NULL;
  }
  
@@ -147,7 +147,7 @@ index f2685f89b3e5..14deacb7f3b2 100644
  	struct ast_vhub *vhub;
  	struct resource *res;
  	int i, rc = 0;
-@@ -323,6 +397,10 @@ static int ast_vhub_probe(struct platform_device *pdev)
+@@ -326,6 +400,10 @@ static int ast_vhub_probe(struct platform_device *pdev)
  	if (!vhub->epns)
  		return -ENOMEM;
  
@@ -156,9 +156,9 @@ index f2685f89b3e5..14deacb7f3b2 100644
 +		of_property_read_bool(np, "aspeed,txfifo-retry-quirk");
 +
  	spin_lock_init(&vhub->lock);
+ 	INIT_WORK(&vhub->wake_work, ast_vhub_wake_work);
  	vhub->pdev = pdev;
- 	vhub->port_irq_mask = GENMASK(VHUB_IRQ_DEV1_BIT + vhub->max_ports - 1,
-@@ -348,6 +426,21 @@ static int ast_vhub_probe(struct platform_device *pdev)
+@@ -352,6 +430,21 @@ static int ast_vhub_probe(struct platform_device *pdev)
  		goto err;
  	}
  
@@ -180,7 +180,7 @@ index f2685f89b3e5..14deacb7f3b2 100644
  	/* Check if we need to limit the HW to USB1 */
  	max_speed = usb_get_maximum_speed(&pdev->dev);
  	if (max_speed != USB_SPEED_UNKNOWN && max_speed < USB_SPEED_HIGH)
-@@ -370,6 +463,13 @@ static int ast_vhub_probe(struct platform_device *pdev)
+@@ -374,6 +467,13 @@ static int ast_vhub_probe(struct platform_device *pdev)
  		goto err;
  	}
  
@@ -194,7 +194,7 @@ index f2685f89b3e5..14deacb7f3b2 100644
  	/*
  	 * Allocate DMA buffers for all EP0s in one chunk,
  	 * one per port and one for the vHub itself
-@@ -412,15 +512,25 @@ static int ast_vhub_probe(struct platform_device *pdev)
+@@ -416,15 +516,25 @@ static int ast_vhub_probe(struct platform_device *pdev)
  	return rc;
  }
  
@@ -221,7 +221,7 @@ index f2685f89b3e5..14deacb7f3b2 100644
  	{ }
  };
 diff --git a/drivers/usb/gadget/udc/aspeed-vhub/vhub.h b/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
-index 6b9dfa6e10eb..100d25a1ce38 100644
+index 0ca168b39d96..10412eb63a85 100644
 --- a/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
 +++ b/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
 @@ -29,12 +29,14 @@

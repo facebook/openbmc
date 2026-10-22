@@ -1,4 +1,4 @@
-From 38c119514616c4eaad30413a16004ae773c9c4db Mon Sep 17 00:00:00 2001
+From 41a6371710b891e40460e4cd5036fc341dac7964 Mon Sep 17 00:00:00 2001
 From: Ender Hsieh <andhsieh@nvidia.com>
 Date: Mon, 29 Jun 2026 14:23:40 +0900
 Subject: [PATCH] nvidia-gpu: recover from MCTP endpoint removal
@@ -83,7 +83,7 @@ Signed-off-by: Ender Hsieh <andhsieh@nvidia.com>
  8 files changed, 353 insertions(+), 21 deletions(-)
 
 diff --git a/src/nvidia-gpu/DeviceManager.cpp b/src/nvidia-gpu/DeviceManager.cpp
-index 873493c..342da24 100644
+index b9e3725..598b13a 100644
 --- a/src/nvidia-gpu/DeviceManager.cpp
 +++ b/src/nvidia-gpu/DeviceManager.cpp
 @@ -23,6 +23,7 @@
@@ -123,7 +123,7 @@ index 873493c..342da24 100644
                  applyEvent(mctpObjectPath, EndpointEvent::InitComplete);
              }
              else
-@@ -480,6 +485,154 @@ void DeviceManager::onConfigInterfaceRemoved(sdbusplus::message_t& message)
+@@ -484,6 +489,154 @@ void DeviceManager::onConfigInterfaceRemoved(sdbusplus::message_t& message)
      }
  }
  
@@ -278,7 +278,7 @@ index 873493c..342da24 100644
  void DeviceManager::applyEvent(const sdbusplus::object_path& mctpObjectPath,
                                 EndpointEvent event)
  {
-@@ -511,8 +664,6 @@ void DeviceManager::applyEvent(const sdbusplus::object_path& mctpObjectPath,
+@@ -515,8 +668,6 @@ void DeviceManager::applyEvent(const sdbusplus::object_path& mctpObjectPath,
      }
  }
  
@@ -287,7 +287,7 @@ index 873493c..342da24 100644
  void DeviceManager::onConnectivityChanged(sdbusplus::message_t& msg)
  {
      std::string iface;
-@@ -526,17 +677,14 @@ void DeviceManager::onConnectivityChanged(sdbusplus::message_t& msg)
+@@ -530,17 +681,14 @@ void DeviceManager::onConnectivityChanged(sdbusplus::message_t& msg)
          return;
      }
  
@@ -307,7 +307,7 @@ index 873493c..342da24 100644
      if (*value == "Degraded")
      {
          applyEvent(mctpObjectPath, EndpointEvent::ConnectivityDegraded);
-@@ -545,10 +693,4 @@ void DeviceManager::onConnectivityChanged(sdbusplus::message_t& msg)
+@@ -549,10 +697,4 @@ void DeviceManager::onConnectivityChanged(sdbusplus::message_t& msg)
      {
          applyEvent(mctpObjectPath, EndpointEvent::ConnectivityAvailable);
      }
@@ -681,5 +681,5 @@ index c17c208..6a6cea8 100644
 +    EXPECT_EQ(available.action, EndpointAction::None);
 +}
 -- 
-2.52.0
+2.53.0-Meta
 

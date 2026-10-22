@@ -1,4 +1,4 @@
-From 654215a71637001abad18a52dd926819792a8319 Mon Sep 17 00:00:00 2001
+From 45f40a8b98ecc452bbc88f19725a44bded78fc68 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Mon, 29 Jun 2026 11:40:26 +0800
 Subject: [PATCH] iio: adc: aspeed: Support deglitch feature.
@@ -19,7 +19,7 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  1 file changed, 191 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
-index 0249658f694b..9badb3e12d40 100644
+index b3570379e5e9..b2b9b96109a8 100644
 --- a/drivers/iio/adc/aspeed_adc.c
 +++ b/drivers/iio/adc/aspeed_adc.c
 @@ -121,6 +121,27 @@ struct aspeed_adc_data {
@@ -264,7 +264,7 @@ index 0249658f694b..9badb3e12d40 100644
  	/* Register ADC clock prescaler with source specified by device tree. */
  	spin_lock_init(&data->clk_lock);
  	snprintf(clk_parent_name, ARRAY_SIZE(clk_parent_name), "%s",
-@@ -622,6 +806,10 @@ static int aspeed_adc_probe(struct platform_device *pdev)
+@@ -623,6 +807,10 @@ static int aspeed_adc_probe(struct platform_device *pdev)
  	writel(adc_engine_control_reg_val,
  	       data->base + ASPEED_REG_ENGINE_CONTROL);
  

@@ -1,4 +1,4 @@
-From 4863940a7b27573a975c63562f16d2a1439bb688 Mon Sep 17 00:00:00 2001
+From 098cae95fd3eba8341ad034791cf8ca4fd21f9ca Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Wed, 12 Aug 2026 10:49:25 +0800
 Subject: [PATCH] i2c-vr: add support for TI TPS544X27 VR firmware update
@@ -315,10 +315,10 @@ index 3d3c68f..bccfb01 100644
 +
 +std::vector<std::string> splitCsvLine(const std::string& line);
 diff --git a/common/src/utils.cpp b/common/src/utils.cpp
-index 03d953c..e34a70e 100644
+index 24dc1af..7d892fb 100644
 --- a/common/src/utils.cpp
 +++ b/common/src/utils.cpp
-@@ -5,7 +5,11 @@
+@@ -6,7 +6,11 @@
  
  #include <phosphor-logging/lg2.hpp>
  
@@ -330,7 +330,7 @@ index 03d953c..e34a70e 100644
  
  PHOSPHOR_LOG2_USING;
  
-@@ -127,3 +131,151 @@ sdbusplus::async::task<bool> asyncSystem(
+@@ -129,3 +133,151 @@ sdbusplus::async::task<bool> asyncSystem(
      co_return co_await runParent(ctx, pid, exitPipefd[0],
                                   result ? resultPipefd[0] : -1, result, cmd);
  }

@@ -1,4 +1,4 @@
-From 4b68f1351fe817991d1d0e591766602d6ab87e4d Mon Sep 17 00:00:00 2001
+From 886dbf5a1ee6b1bf8b55cadfaadac605094ca84a Mon Sep 17 00:00:00 2001
 From: Adrian Hunter <adrian.hunter@intel.com>
 Date: Fri, 6 Mar 2026 09:24:48 +0200
 Subject: [PATCH] i3c: mipi-i3c-hci: Consolidate common xfer processing logic
@@ -29,7 +29,7 @@ Signed-off-by: Alexandre Belloni <alexandre.belloni@bootlin.com>
  4 files changed, 33 insertions(+), 28 deletions(-)
 
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
-index efb7a1f92641..8751f8e3950e 100644
+index b6ba18ccdd2d..f4071e5e94f0 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 @@ -333,12 +333,10 @@ static int hci_cmd_v1_daa(struct i3c_hci *hci)
@@ -49,7 +49,7 @@ index efb7a1f92641..8751f8e3950e 100644
  		     RESP_STATUS(xfer->response) == RESP_ERR_NACK) &&
  		    RESP_DATA_LENGTH(xfer->response) == 1) {
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
-index 5fc2e4c55ebb..d2bc1775cbaf 100644
+index d7999d341a22..d620cffaf48b 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
 @@ -255,6 +255,7 @@ static int hci_cmd_v2_daa(struct i3c_hci *hci)
@@ -76,10 +76,10 @@ index 5fc2e4c55ebb..d2bc1775cbaf 100644
  			ret = 0;  /* no more devices to be assigned */
  			break;
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index d81b3ff9ce5d..668eeb155d5a 100644
+index 1558334640d7..e6f7be9a1976 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
-@@ -185,6 +185,25 @@ void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
+@@ -191,6 +191,25 @@ void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
  	reg_write(DCT_SECTION, FIELD_PREP(DCT_TABLE_INDEX, 0));
  }
  
@@ -105,7 +105,7 @@ index d81b3ff9ce5d..668eeb155d5a 100644
  static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
  				struct i3c_ccc_cmd *ccc)
  {
-@@ -225,18 +244,14 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
+@@ -231,18 +250,14 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
  	last = i - 1;
  	xfer[last].cmd_desc[0] |= CMD_0_TOC;
  	xfer[last].completion = &done;
@@ -126,7 +126,7 @@ index d81b3ff9ce5d..668eeb155d5a 100644
  	for (i = prefixed; i < nxfers; i++) {
  		if (ccc->rnw)
  			ccc->dests[i - prefixed].payload.len =
-@@ -307,15 +322,11 @@ static int i3c_hci_priv_xfers(struct i3c_dev_desc *dev,
+@@ -313,15 +328,11 @@ static int i3c_hci_priv_xfers(struct i3c_dev_desc *dev,
  	last = i - 1;
  	xfer[last].cmd_desc[0] |= CMD_0_TOC;
  	xfer[last].completion = &done;
@@ -144,7 +144,7 @@ index d81b3ff9ce5d..668eeb155d5a 100644
  	for (i = 0; i < nxfers; i++) {
  		if (i3c_xfers[i].rnw)
  			i3c_xfers[i].len = RESP_DATA_LENGTH(xfer[i].response);
-@@ -355,15 +366,11 @@ static int i3c_hci_i2c_xfers(struct i2c_dev_desc *dev,
+@@ -361,15 +372,11 @@ static int i3c_hci_i2c_xfers(struct i2c_dev_desc *dev,
  	last = i - 1;
  	xfer[last].cmd_desc[0] |= CMD_0_TOC;
  	xfer[last].completion = &done;
@@ -163,10 +163,10 @@ index d81b3ff9ce5d..668eeb155d5a 100644
  		if (RESP_STATUS(xfer[i].response) != RESP_SUCCESS) {
  			ret = -EIO;
 diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
-index 5502ab0a3535..40b925e4da04 100644
+index dad6b71bac35..53b1b881aa17 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/hci.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
-@@ -83,6 +83,7 @@ struct hci_xfer {
+@@ -84,6 +84,7 @@ struct hci_xfer {
  	unsigned int data_len;
  	unsigned int cmd_tid;
  	struct completion *completion;
@@ -174,7 +174,7 @@ index 5502ab0a3535..40b925e4da04 100644
  	union {
  		struct {
  			/* PIO specific */
-@@ -150,5 +151,6 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci);
+@@ -151,5 +152,6 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci);
  void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci);
  void amd_set_od_pp_timing(struct i3c_hci *hci);
  void amd_set_resp_buf_thld(struct i3c_hci *hci);
@@ -182,5 +182,5 @@ index 5502ab0a3535..40b925e4da04 100644
  
  #endif
 -- 
-2.53.0
+2.53.0-Meta
 

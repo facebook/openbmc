@@ -1,4 +1,4 @@
-From 083620b0aacc5fb8aabb87e48c0871b315ab79db Mon Sep 17 00:00:00 2001
+From de18fe8c348e0cc19c22f10668c46020ed7f8545 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 1 Sep 2026 19:35:29 +0800
 Subject: [PATCH] i3c: mipi-i3c-hci: Support address-indexed DAT slots
@@ -30,7 +30,7 @@ Link: https://lore.kernel.org/r/20260901-b4-i3c-hci-ast2700-v1-2-19909e7cbd7e@as
  5 files changed, 98 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
-index 8751f8e3950e..0980f26a9f16 100644
+index f4071e5e94f0..dce81c51b3bf 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 @@ -143,6 +143,14 @@ static enum hci_cmd_mode get_i2c_mode(struct i3c_hci *hci)
@@ -140,10 +140,10 @@ index 8751f8e3950e..0980f26a9f16 100644
  			CMD_A0_ROC | CMD_A0_TOC;
  		xfer->cmd_desc[1] = 0;
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index 0f5fc0ed6dc7..c9a8876a5e77 100644
+index 3e1a17d0731e..b44f891c4d3f 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
-@@ -417,7 +417,8 @@ static int i3c_hci_attach_i3c_dev(struct i3c_dev_desc *dev)
+@@ -423,7 +423,8 @@ static int i3c_hci_attach_i3c_dev(struct i3c_dev_desc *dev)
  	if (!dev_data)
  		return -ENOMEM;
  	if (hci->cmd == &mipi_i3c_hci_cmd_v1) {
@@ -153,7 +153,7 @@ index 0f5fc0ed6dc7..c9a8876a5e77 100644
  		if (ret < 0) {
  			kfree(dev_data);
  			return ret;
-@@ -436,9 +437,17 @@ static int i3c_hci_reattach_i3c_dev(struct i3c_dev_desc *dev, u8 old_dyn_addr)
+@@ -442,9 +443,17 @@ static int i3c_hci_reattach_i3c_dev(struct i3c_dev_desc *dev, u8 old_dyn_addr)
  	struct i3c_hci *hci = to_i3c_hci(m);
  	struct i3c_hci_dev_data *dev_data = i3c_dev_get_master_data(dev);
  
@@ -174,7 +174,7 @@ index 0f5fc0ed6dc7..c9a8876a5e77 100644
  	return 0;
  }
  
-@@ -466,7 +475,7 @@ static int i3c_hci_attach_i2c_dev(struct i2c_dev_desc *dev)
+@@ -472,7 +481,7 @@ static int i3c_hci_attach_i2c_dev(struct i2c_dev_desc *dev)
  	dev_data = kzalloc(sizeof(*dev_data), GFP_KERNEL);
  	if (!dev_data)
  		return -ENOMEM;
@@ -308,10 +308,10 @@ index 85c4916972e4..04309008c0e5 100644
  	u32 dat_w0;
  
 diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
-index 4ec3ec21d7f5..0a85374540ca 100644
+index 2bb302e8b281..807b3689290c 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/hci.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
-@@ -145,6 +145,7 @@ struct i3c_hci_dev_data {
+@@ -146,6 +146,7 @@ struct i3c_hci_dev_data {
  #define HCI_QUIRK_OD_PP_TIMING		BIT(3)  /* Set OD and PP timings for AMD platforms */
  #define HCI_QUIRK_RESP_BUF_THLD		BIT(4)  /* Set resp buf thld to 0 for AMD platforms */
  #define HCI_QUIRK_DMA_ABORT_REQUIRES_PIO_RESET	BIT(8)  /* Do PIO queue SW resets after DMA abort */
@@ -320,5 +320,5 @@ index 4ec3ec21d7f5..0a85374540ca 100644
  
  /* global functions */
 -- 
-2.53.0
+2.53.0-Meta
 

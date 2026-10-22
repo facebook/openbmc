@@ -1,4 +1,4 @@
-From 09b696584eaeffd2fa314ce5dcd9f6b7a4ffb3bd Mon Sep 17 00:00:00 2001
+From f3f1a5c1223ca02d245437db7256fa1cb600c2d6 Mon Sep 17 00:00:00 2001
 From: Adrian Hunter <adrian.hunter@intel.com>
 Date: Wed, 3 Jun 2026 12:07:46 +0300
 Subject: [PATCH] i3c: mipi-i3c-hci: Add DMA ring abort/reset quirk for Intel
@@ -28,10 +28,10 @@ Signed-off-by: Alexandre Belloni <alexandre.belloni@bootlin.com>
  3 files changed, 18 insertions(+)
 
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index a57b5575ca85..0f5fc0ed6dc7 100644
+index 2f61c7aa97f8..3e1a17d0731e 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
-@@ -179,6 +179,18 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
+@@ -185,6 +185,18 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
  	reg_write(RESET_CONTROL, RX_FIFO_RST | TX_FIFO_RST | RESP_QUEUE_RST);
  }
  
@@ -51,7 +51,7 @@ index a57b5575ca85..0f5fc0ed6dc7 100644
  void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
  {
 diff --git a/drivers/i3c/master/mipi-i3c-hci/dma.c b/drivers/i3c/master/mipi-i3c-hci/dma.c
-index 3cc5ba2b0eb7..01e8e6803c74 100644
+index 516c14b99c2b..e4d820e7a901 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/dma.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/dma.c
 @@ -506,6 +506,10 @@ static bool hci_dma_dequeue_xfer(struct i3c_hci *hci,
@@ -66,10 +66,10 @@ index 3cc5ba2b0eb7..01e8e6803c74 100644
  		struct hci_xfer *xfer = xfer_list + i;
  		int idx = xfer->ring_entry;
 diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
-index 93295c82c0b1..4ec3ec21d7f5 100644
+index a10c3aac114e..2bb302e8b281 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/hci.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
-@@ -144,11 +144,13 @@ struct i3c_hci_dev_data {
+@@ -145,11 +145,13 @@ struct i3c_hci_dev_data {
  #define HCI_QUIRK_PIO_MODE	BIT(2)  /* Set PIO mode for AMD platforms */
  #define HCI_QUIRK_OD_PP_TIMING		BIT(3)  /* Set OD and PP timings for AMD platforms */
  #define HCI_QUIRK_RESP_BUF_THLD		BIT(4)  /* Set resp buf thld to 0 for AMD platforms */
@@ -84,5 +84,5 @@ index 93295c82c0b1..4ec3ec21d7f5 100644
  void amd_set_od_pp_timing(struct i3c_hci *hci);
  void amd_set_resp_buf_thld(struct i3c_hci *hci);
 -- 
-2.53.0
+2.53.0-Meta
 

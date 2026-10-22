@@ -1,4 +1,4 @@
-From c7ad4f31d58daa907022e0e8261a2bfbdc78df4a Mon Sep 17 00:00:00 2001
+From c309a91781ec2b11e9355335de088939b38b8533 Mon Sep 17 00:00:00 2001
 From: Adrian Hunter <adrian.hunter@intel.com>
 Date: Fri, 6 Mar 2026 09:24:49 +0200
 Subject: [PATCH] i3c: mipi-i3c-hci: Fix race in DMA error handling in
@@ -36,10 +36,10 @@ Signed-off-by: Alexandre Belloni <alexandre.belloni@bootlin.com>
  3 files changed, 24 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index 668eeb155d5a..a57b5575ca85 100644
+index e6f7be9a1976..2f61c7aa97f8 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
-@@ -195,10 +195,21 @@ int i3c_hci_process_xfer(struct i3c_hci *hci, struct hci_xfer *xfer, int n)
+@@ -201,10 +201,21 @@ int i3c_hci_process_xfer(struct i3c_hci *hci, struct hci_xfer *xfer, int n)
  	if (ret)
  		return ret;
  
@@ -66,7 +66,7 @@ index 668eeb155d5a..a57b5575ca85 100644
  
  	return 0;
 diff --git a/drivers/i3c/master/mipi-i3c-hci/dma.c b/drivers/i3c/master/mipi-i3c-hci/dma.c
-index 2e9379876d6a..3cc5ba2b0eb7 100644
+index 3fa7f46ab2c2..516c14b99c2b 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/dma.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/dma.c
 @@ -546,6 +546,11 @@ static bool hci_dma_dequeue_xfer(struct i3c_hci *hci,
@@ -81,7 +81,7 @@ index 2e9379876d6a..3cc5ba2b0eb7 100644
  static void hci_dma_xfer_done(struct i3c_hci *hci, struct hci_rh_data *rh)
  {
  	u32 op1_val, op2_val, resp, *ring_resp;
-@@ -810,29 +815,8 @@ static bool hci_dma_irq_handler(struct i3c_hci *hci)
+@@ -818,29 +823,8 @@ static bool hci_dma_irq_handler(struct i3c_hci *hci)
  			hci_dma_xfer_done(hci, rh);
  		if (status & INTR_RING_OP)
  			complete(&rh->op_done);
@@ -113,7 +113,7 @@ index 2e9379876d6a..3cc5ba2b0eb7 100644
  		if (status & INTR_IBI_RING_FULL)
  			dev_err_ratelimited(&hci->master.dev,
  				"Ring %d: IBI Ring Full Condition\n", i);
-@@ -848,6 +832,7 @@ const struct hci_io_ops mipi_i3c_hci_dma = {
+@@ -856,6 +840,7 @@ const struct hci_io_ops mipi_i3c_hci_dma = {
  	.cleanup		= hci_dma_cleanup,
  	.queue_xfer		= hci_dma_queue_xfer,
  	.dequeue_xfer		= hci_dma_dequeue_xfer,
@@ -122,10 +122,10 @@ index 2e9379876d6a..3cc5ba2b0eb7 100644
  	.request_ibi		= hci_dma_request_ibi,
  	.free_ibi		= hci_dma_free_ibi,
 diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
-index 40b925e4da04..93295c82c0b1 100644
+index 53b1b881aa17..a10c3aac114e 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/hci.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
-@@ -118,6 +118,7 @@ struct hci_io_ops {
+@@ -119,6 +119,7 @@ struct hci_io_ops {
  	bool (*irq_handler)(struct i3c_hci *hci);
  	int (*queue_xfer)(struct i3c_hci *hci, struct hci_xfer *xfer, int n);
  	bool (*dequeue_xfer)(struct i3c_hci *hci, struct hci_xfer *xfer, int n);
@@ -134,5 +134,5 @@ index 40b925e4da04..93295c82c0b1 100644
  			   const struct i3c_ibi_setup *req);
  	void (*free_ibi)(struct i3c_hci *hci, struct i3c_dev_desc *dev);
 -- 
-2.53.0
+2.53.0-Meta
 

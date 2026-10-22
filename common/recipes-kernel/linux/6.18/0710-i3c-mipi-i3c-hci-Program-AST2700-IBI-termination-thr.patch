@@ -1,4 +1,4 @@
-From 0965ffae7c63942ef4c6989484912ebf9d425f94 Mon Sep 17 00:00:00 2001
+From 3c820e6c6c13aadfa741c459dd777c5d8e24fa93 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 1 Sep 2026 19:35:33 +0800
 Subject: [PATCH] i3c: mipi-i3c-hci: Program AST2700 IBI termination threshold
@@ -26,10 +26,10 @@ Link: https://lore.kernel.org/r/20260901-b4-i3c-hci-ast2700-v1-6-19909e7cbd7e@as
  3 files changed, 35 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index c10a0bcc22ad..f18aed3d5ebc 100644
+index a7caee798a95..5abe31630d68 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
-@@ -534,15 +534,21 @@ static void i3c_hci_detach_i2c_dev(struct i2c_dev_desc *dev)
+@@ -540,15 +540,21 @@ static void i3c_hci_detach_i2c_dev(struct i2c_dev_desc *dev)
  static int i3c_hci_request_ibi(struct i3c_dev_desc *dev,
  			       const struct i3c_ibi_setup *req)
  {
@@ -110,5 +110,5 @@ index 8760384d1c6f..84afb2bec956 100644
  #define ASPEED_I3C_DAA_INDEX1			0x14
  #define ASPEED_I3C_DAA_INDEX2			0x18
 -- 
-2.53.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 9d472bcebd5b0b1cf646538c1c9e48f9404ca832 Mon Sep 17 00:00:00 2001
+From ca781b16d55322c0a1212504a8f9a1a183fd50a9 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 1 Sep 2026 19:35:32 +0800
 Subject: [PATCH] i3c: mipi-i3c-hci: Add support for the AST2700 I3C controller
@@ -65,7 +65,7 @@ index e3d3ef757035..f4f048786c95 100644
 +					   hci_quirks.o vendor_aspeed.o
  obj-$(CONFIG_MIPI_I3C_HCI_PCI)		+= mipi-i3c-hci-pci.o
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
-index 0980f26a9f16..327c036a6d2b 100644
+index dce81c51b3bf..7490d09436d8 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 @@ -14,6 +14,7 @@
@@ -111,7 +111,7 @@ index 0980f26a9f16..327c036a6d2b 100644
  		dev_dbg(&hci->master.dev,
  			"next_addr = 0x%02x, DAA using DAT %d",
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index a9de51ef8e5c..c10a0bcc22ad 100644
+index ba952fcf76fd..a7caee798a95 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
 @@ -8,6 +8,7 @@
@@ -122,7 +122,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  #include <linux/device.h>
  #include <linux/dma-mapping.h>
  #include <linux/errno.h>
-@@ -17,12 +18,14 @@
+@@ -17,6 +18,7 @@
  #include <linux/module.h>
  #include <linux/platform_data/mipi-i3c-hci.h>
  #include <linux/platform_device.h>
@@ -130,14 +130,15 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  
  #include "hci.h"
  #include "ext_caps.h"
- #include "cmd.h"
+@@ -24,6 +26,7 @@
  #include "dat.h"
+ #include "ibi.h"
  #include "pio.h"
 +#include "vendor_aspeed.h"
  
  
  /*
-@@ -118,12 +121,37 @@ static inline struct i3c_hci *to_i3c_hci(struct i3c_master_controller *m)
+@@ -119,6 +122,25 @@ static inline struct i3c_hci *to_i3c_hci(struct i3c_master_controller *m)
  	return container_of(m, struct i3c_hci, master);
  }
  
@@ -163,6 +164,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  static int i3c_hci_bus_init(struct i3c_master_controller *m)
  {
  	struct i3c_hci *hci = to_i3c_hci(m);
+@@ -126,6 +148,12 @@ static int i3c_hci_bus_init(struct i3c_master_controller *m)
  	struct i3c_device_info info;
  	int ret;
  
@@ -175,7 +177,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  	if (hci->cmd == &mipi_i3c_hci_cmd_v1) {
  		ret = mipi_i3c_hci_dat_v1.init(hci);
  		if (ret)
-@@ -574,23 +602,12 @@ static const struct i3c_master_controller_ops i3c_hci_ops = {
+@@ -607,23 +635,12 @@ static const struct i3c_master_controller_ops i3c_hci_ops = {
  	.recycle_ibi_slot	= i3c_hci_recycle_ibi_slot,
  };
  
@@ -201,7 +203,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  	val = reg_read(INTR_STATUS);
  	reg_write(INTR_STATUS, val);
  	dev_dbg(&hci->master.dev, "INTR_STATUS %#x", val);
-@@ -612,12 +629,73 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
+@@ -645,12 +662,73 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
  		dev_warn_once(&hci->master.dev,
  			      "unexpected INTR_STATUS %#x\n", val);
  
@@ -275,7 +277,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  static int i3c_hci_init(struct i3c_hci *hci)
  {
  	bool size_in_dwords, mode_selector;
-@@ -713,6 +791,11 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -746,6 +824,11 @@ static int i3c_hci_init(struct i3c_hci *hci)
  	 * Bit 0:5 are defined in IP version < 0.8 but not handled by PIO code
  	 */
  	reg_write(INTR_STATUS_ENABLE, GENMASK(31, 10));
@@ -287,7 +289,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  
  	/* Make sure our data ordering fits the host's */
  	regval = reg_read(HC_CONTROL);
-@@ -809,9 +892,16 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -842,9 +925,16 @@ static int i3c_hci_init(struct i3c_hci *hci)
  	return 0;
  }
  
@@ -304,7 +306,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  	struct i3c_hci *hci;
  	int irq, ret;
  
-@@ -834,8 +924,12 @@ static int i3c_hci_probe(struct platform_device *pdev)
+@@ -867,8 +957,12 @@ static int i3c_hci_probe(struct platform_device *pdev)
  	}
  
  	platform_set_drvdata(pdev, hci);
@@ -318,7 +320,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  
  	hci->quirks = (unsigned long)device_get_match_data(&pdev->dev);
  	if (hci->quirks & HCI_QUIRK_DMA_64BIT) {
-@@ -845,15 +939,64 @@ static int i3c_hci_probe(struct platform_device *pdev)
+@@ -878,15 +972,64 @@ static int i3c_hci_probe(struct platform_device *pdev)
  					     "cannot set DMA mask\n");
  	}
  
@@ -385,7 +387,7 @@ index a9de51ef8e5c..c10a0bcc22ad 100644
  	if (ret)
  		return ret;
  
-@@ -874,6 +1017,11 @@ static void i3c_hci_remove(struct platform_device *pdev)
+@@ -907,6 +1050,11 @@ static void i3c_hci_remove(struct platform_device *pdev)
  
  static const __maybe_unused struct of_device_id i3c_hci_of_match[] = {
  	{ .compatible = "mipi-i3c-hci", },
@@ -870,5 +872,5 @@ index 000000000000..8760384d1c6f
 +
 +#endif
 -- 
-2.53.0
+2.53.0-Meta
 

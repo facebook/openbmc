@@ -42,14 +42,12 @@ FLASH_FS_TYPE=jffs2
 MOUNT_POINT="/mnt/data"
 
 mtd_lookup_data_partition() {
-    dev_data0=$(cat /proc/mtd |
-                awk '{ if ($4 == "\"data0\"") print $1 }' |
+    dev_data0=$(awk '{ if ($4 == "\"data0\"") print $1 }' /proc/mtd |
                 cut -d ':' -f 1)
     if [ -n "$dev_data0" ]; then
         echo "$dev_data0"
     else
-        dev_dataro=$(cat /proc/mtd |
-                     awk '{ if ($4 == "\"dataro\"") print $1 }' |
+        dev_dataro=$(awk '{ if ($4 == "\"dataro\"") print $1 }' /proc/mtd |
                      cut -d ':' -f 1)
         echo "$dev_dataro"
     fi
@@ -90,15 +88,15 @@ get_reboot_cause_addr() {
     data_type=$1
     soc_model=$(cat /etc/soc_model)
 
-    if [ "$soc_model" == "SOC_MODEL_ASPEED_G6" ]; then
+    if [ "$soc_model" = "SOC_MODEL_ASPEED_G6" ]; then
         # ast_g6
         # sram reboot base:     0x10015000
         # sram reboot offset:   0xC00
         # cmd offset:           0x4
         # sig offset:           0x8
-        if [ "$data_type" == "cmd" ]; then
+        if [ "$data_type" = "cmd" ]; then
             echo "0x10015C04"
-        elif [ "$data_type" == "sig" ]; then
+        elif [ "$data_type" = "sig" ]; then
             echo "0x10015C08"
         fi
     else
@@ -107,9 +105,9 @@ get_reboot_cause_addr() {
         # sram reboot offset:   0x200
         # reboot cmd offset:    0x4
         # sig offset:           0x8
-        if [ "$data_type" == "cmd" ]; then
+        if [ "$data_type" = "cmd" ]; then
             echo "0x1E721204"
-        elif [ "$data_type" == "sig" ]; then
+        elif [ "$data_type" = "sig" ]; then
             echo "0x1E721208"
         fi
     fi
@@ -118,7 +116,7 @@ get_reboot_cause_addr() {
 is_ubifs_error_set() {
     BOOT_MAGIC="0xFB420054"
     reboot_sig_addr=$(get_reboot_cause_addr sig)
-    reboot_sig_val=$(devmem $reboot_sig_addr 2>/dev/null)
+    reboot_sig_val=$(devmem "$reboot_sig_addr" 2>/dev/null)
     if [ "$reboot_sig_val" != "$BOOT_MAGIC" ]; then
         # Power on reset
         return 1
@@ -126,7 +124,7 @@ is_ubifs_error_set() {
 
     # Read reboot command flags
     reboot_cmd_addr=$(get_reboot_cause_addr cmd)
-    reboot_cmd_flags=$(devmem $reboot_cmd_addr 2>/dev/null)
+    reboot_cmd_flags=$(devmem "$reboot_cmd_addr" 2>/dev/null)
     if [ "$((reboot_cmd_flags & 0x4))" -eq 0 ]; then
         # UBIFS_ERROR not set
         return 1
@@ -284,7 +282,7 @@ do_mount_jffs2() {
     # according "block" device (/dev/mtdblock#) due to mount.busybox
     # limitations.
     #
-    mtd_blkdev=${mtd_chardev/mtd/mtdblock}
+    mtd_blkdev=$(echo "$mtd_chardev" | sed 's/mtd/mtdblock/')
 
     if jffs2_mount "$mtd_blkdev" "$mnt_point"; then
         #

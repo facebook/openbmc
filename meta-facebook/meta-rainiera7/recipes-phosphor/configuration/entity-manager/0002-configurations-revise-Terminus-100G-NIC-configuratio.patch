@@ -35,7 +35,7 @@ index e4f92d7..46112a1 100644
                  "temp1"
              ],
 -            "Name": "NIC TEMP $bus",
-+            "Name": "NIC0_TEMP_C",
++            "Name": "NIC0_Temp_C",
              "Thresholds": [
 +                {
 +                    "Direction": "less than",

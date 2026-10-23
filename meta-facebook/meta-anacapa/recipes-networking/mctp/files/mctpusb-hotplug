@@ -6,9 +6,6 @@ LOCAL_EID=8
 INTERFACE="$1"
 newEid=""
 
-# setup local eid on loopback device
-mctp addr add "$LOCAL_EID" dev lo >/dev/null 2>&1 || true
-
 log()
 {
     logger -t mctpusb-hotplug "$*"
@@ -203,6 +200,14 @@ update_eid_json()
 ###############################################################################
 # Main
 ###############################################################################
+
+# setup local eid on loopback device
+mctp addr add "$LOCAL_EID" dev lo >/dev/null 2>&1 || true
+
+if [ "$(cat /proc/1/comm 2>/dev/null)" != "systemd" ]; then
+    log "${INTERFACE} script not running under systemd (in initramfs), exit."
+    exit 0
+fi
 
 wait_interface "$INTERFACE" || exit 0
 

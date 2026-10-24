@@ -1,0 +1,387 @@
+From e517358c24144c514b0516ad16398d83b54276d7 Mon Sep 17 00:00:00 2001
+From: Elton Wang <elton.wang.wiwynn@gmail.com>
+Date: Thu, 3 Sep 2026 01:01:46 +0000
+Subject: [PATCH] nvme: use configurable error retry delay
+
+When an NVMe device enters the error state, the sensor of the device
+is skipped for `scanDelayTicks` poll cycles. Currently `scanDelayTicks`
+is hardcoded to 300 ticks, about 5 minutes at the one second poll
+interval.
+
+Recovery time varies between devices, so changing the hardcoded value
+cannot suit every platform.
+
+Support configuring `scanDelayTicks` via the `ErrorRetryDelay`
+property [1] of each sensor configuration, so a device can be given a
+delay matching its own recovery time. When the property is absent the
+current 300 ticks are used, so existing configurations are unaffected.
+
+[1] https://gerrit.openbmc.org/c/openbmc/entity-manager/+/94231
+
+Tested:
+1. Set `ErrorRetryDelay` to 5 for RIO_GRANDE_SSD_0_TEMP_C, then
+   confirmed the sensor is retried every 5 poll cycles instead of every
+   300.
+   - Powered the SSD off with the host still running. After 5 failed
+     attempts the sensor fell into the error state and was marked
+     unavailable. The sensor was retried every 5 seconds.
+```
+root@bmc:~# curl -k -u root:0penBmc -X POST \
+    https://127.0.0.1/redfish/v1/Systems/system/Storage/1/Drives/ssd0/Actions/Drive.Reset \
+    -H "Content-Type: application/json" -d '{"ResetType": "ForceOff"}'
+{
+  "@Message.ExtendedInfo": [
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The request completed successfully.",
+      "MessageArgs": [],
+      "MessageId": "Base.1.19.Success",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    }
+  ]
+}
+root@bmc:~# journalctl -u xyz.openbmc_project.nvmesensor
+Sep 10 19:43:15 bmc systemd[1]: Starting NVMe Sensor...
+Sep 10 19:43:16 bmc nvmesensor[1063]: error getting SpecialMode status: 'No route to host'
+Sep 10 19:43:18 bmc systemd[1]: Started NVMe Sensor.
+Sep 10 19:45:14 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 10 19:45:15 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 10 19:45:16 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 10 19:45:17 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 10 19:45:18 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 10 19:45:18 bmc nvmesensor[1063]: Sensor name: RIO_GRANDE_SSD_0_TEMP_C, reading error!
+Sep 10 19:45:23 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 10 19:45:28 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 10 19:45:33 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 10 19:45:38 bmc nvmesensor[1063]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+
+root@bmc:~# mfg-tool sensor-display 2>/dev/null | table-sensor-display | grep SSD_0_TEMP
+RIO_GRANDE_SSD_0_TEMP_C    unavailable    N/A    DegreesC    N/A    5    N/A    N/A    70    N/A
+```
+
+   - Powered the SSD back on. The sensor recovered on the first valid
+     response.
+```
+root@bmc:~# curl -k -u root:0penBmc -X POST \
+    https://127.0.0.1/redfish/v1/Systems/system/Storage/1/Drives/ssd0/Actions/Drive.Reset \
+    -H "Content-Type: application/json" -d '{"ResetType": "On"}'
+{
+  "@Message.ExtendedInfo": [
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The request completed successfully.",
+      "MessageArgs": [],
+      "MessageId": "Base.1.19.Success",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    }
+  ]
+}
+root@bmc:~# mfg-tool sensor-display 2>/dev/null | table-sensor-display | grep SSD_0_TEMP
+RIO_GRANDE_SSD_0_TEMP_C    ok    40    DegreesC    N/A    5    N/A    N/A    70    N/A
+```
+
+2. Set `ErrorRetryDelay` to a negative value. The sensor was rejected
+   and the daemon kept running instead of terminating.
+```
+root@bmc:~# busctl introspect xyz.openbmc_project.EntityManager \
+    /xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C
+NAME                                          TYPE      SIGNATURE RESULT/VALUE              FLAGS
+...
+xyz.openbmc_project.Configuration.NVME1000    interface -         -                         -
+.Address                                      property  t         106                       emits-change
+.Bus                                          property  t         40                        emits-change
+.ErrorRetryDelay                              property  x         -42                       emits-change
+.Name                                         property  s         "RIO_GRANDE_SSD_0_TEMP_C" emits-change
+.PEC                                          property  s         "Required"                emits-change
+.PowerState                                   property  s         "On"                      emits-change
+.Type                                         property  s         "NVME1000"                emits-change
+...
+
+root@bmc:~# journalctl -u xyz.openbmc_project.nvmesensor
+Sep 14 19:43:49 bmc systemd[1]: Starting NVMe Sensor...
+Sep 14 19:43:49 bmc systemd[1]: Started NVMe Sensor.
+Sep 14 19:43:49 bmc nvmesensor[5425]: error getting SpecialMode status: 'No route to host'
+Sep 14 19:43:54 bmc nvmesensor[5425]: Failed to add sensor for '/xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C': 'Invalid ErrorRetryDelay: The delay must be a positive number'
+Sep 14 19:43:55 bmc nvmesensor[5425]: Failed to add sensor for '/xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C': 'Invalid ErrorRetryDelay: The delay must be a positive number'
+```
+
+3. Set `ErrorRetryDelay` to a non-arithmetic type. The conversion error
+   was caught and the daemon kept running instead of terminating.
+```
+root@bmc:~# busctl introspect xyz.openbmc_project.EntityManager \
+    /xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C
+NAME                                          TYPE      SIGNATURE RESULT/VALUE              FLAGS
+...
+xyz.openbmc_project.Configuration.NVME1000    interface -         -                         -
+.Address                                      property  t         106                       emits-change
+.Bus                                          property  t         40                        emits-change
+.ErrorRetryDelay                              property  s         "five"                    emits-change
+.Name                                         property  s         "RIO_GRANDE_SSD_0_TEMP_C" emits-change
+.PEC                                          property  s         "Required"                emits-change
+.PowerState                                   property  s         "On"                      emits-change
+.Type                                         property  s         "NVME1000"                emits-change
+...
+
+root@bmc:~# journalctl -u xyz.openbmc_project.nvmesensor
+Sep 10 19:51:32 bmc systemd[1]: Starting NVMe Sensor...
+Sep 10 19:51:33 bmc systemd[1]: Started NVMe Sensor.
+Sep 10 19:51:33 bmc nvmesensor[3883]: error getting SpecialMode status: 'No route to host'
+Sep 10 19:51:37 bmc nvmesensor[3883]: Failed to add sensor for '/xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C': 'Cannot translate type std::__cxx11::basic_string<char> to unsigned int'
+Sep 10 19:51:38 bmc nvmesensor[3883]: Failed to add sensor for '/xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C': 'Cannot translate type std::__cxx11::basic_string<char> to unsigned int'
+```
+
+4. Set `ErrorRetryDelay` to UINT_MAX + 1 seconds, so the resulting
+   `scanDelayTicks` no longer fits in an unsigned int. The sensor was
+   rejected and the daemon kept running instead of terminating.
+```
+root@bmc:~# busctl introspect xyz.openbmc_project.EntityManager \
+    /xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C
+NAME                                          TYPE      SIGNATURE RESULT/VALUE              FLAGS
+...
+xyz.openbmc_project.Configuration.NVME1000    interface -         -                         -
+.Address                                      property  t         106                       emits-change
+.Bus                                          property  t         40                        emits-change
+.ErrorRetryDelay                              property  t         4294967296                emits-change
+.Name                                         property  s         "RIO_GRANDE_SSD_0_TEMP_C" emits-change
+.PEC                                          property  s         "Required"                emits-change
+.PowerState                                   property  s         "On"                      emits-change
+.Type                                         property  s         "NVME1000"                emits-change
+...
+
+root@bmc:~# journalctl -u xyz.openbmc_project.nvmesensor
+Sep 14 19:46:56 bmc systemd[1]: Starting NVMe Sensor...
+Sep 14 19:46:56 bmc systemd[1]: Started NVMe Sensor.
+Sep 14 19:46:56 bmc nvmesensor[6133]: error getting SpecialMode status: 'No route to host'
+Sep 14 19:47:00 bmc nvmesensor[6133]: Failed to add sensor for '/xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C': 'Invalid scanDelayTicks: The delayed ticks is out of range'
+Sep 14 19:47:02 bmc nvmesensor[6133]: Failed to add sensor for '/xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C': 'Invalid scanDelayTicks: The delayed ticks is out of range'
+```
+
+5. Set `ErrorRetryDelay` to the non-integer 2.4. The delay was rounded
+   up to 3 poll ticks at the one second poll interval, so the sensor
+   was retried every 3 seconds.
+```
+root@bmc:~# busctl introspect xyz.openbmc_project.EntityManager \
+    /xyz/openbmc_project/inventory/system/board/ssd0/RIO_GRANDE_SSD_0_TEMP_C
+NAME                                          TYPE      SIGNATURE RESULT/VALUE              FLAGS
+...
+xyz.openbmc_project.Configuration.NVME1000    interface -         -                         -
+.Address                                      property  t         106                       emits-change
+.Bus                                          property  t         40                        emits-change
+.ErrorRetryDelay                              property  d         2.4                       emits-change
+.Name                                         property  s         "RIO_GRANDE_SSD_0_TEMP_C" emits-change
+.PEC                                          property  s         "Required"                emits-change
+.PowerState                                   property  s         "On"                      emits-change
+.Type                                         property  s         "NVME1000"                emits-change
+...
+
+root@bmc:~# journalctl -u xyz.openbmc_project.nvmesensor
+Sep 14 19:37:07 bmc systemd[1]: Starting NVMe Sensor...
+Sep 14 19:37:07 bmc systemd[1]: Started NVMe Sensor.
+Sep 14 19:37:07 bmc nvmesensor[3118]: error getting SpecialMode status: 'No route to host'
+Sep 14 19:37:12 bmc nvmesensor[3118]: NVMeSensor RIO_GRANDE_SSD_0_TEMP_C thresholds updated in-place to preserve state
+Sep 14 19:38:35 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 14 19:38:36 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 14 19:38:37 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 14 19:38:38 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 14 19:38:39 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 14 19:38:39 bmc nvmesensor[3118]: Sensor name: RIO_GRANDE_SSD_0_TEMP_C, reading error!
+Sep 14 19:38:42 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 14 19:38:45 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 14 19:38:48 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+Sep 14 19:38:51 bmc nvmesensor[3118]: Failed to read block data from device '0x6a' on bus '40': ERRNO
+```
+
+Change-Id: I482774983f00d95f28e41b87b234ab709f3a432e
+Signed-off-by: Elton Wang <elton.wang.wiwynn@gmail.com>
+---
+ src/nvme/NVMeBasicContext.cpp |  2 +-
+ src/nvme/NVMeContext.hpp      |  2 ++
+ src/nvme/NVMeSensor.cpp       | 42 ++++++++++++++++++++++++++++-------
+ src/nvme/NVMeSensor.hpp       |  6 +++--
+ src/nvme/NVMeSensorMain.cpp   | 21 ++++++++++++++++--
+ 5 files changed, 60 insertions(+), 13 deletions(-)
+
+diff --git a/src/nvme/NVMeBasicContext.cpp b/src/nvme/NVMeBasicContext.cpp
+index 9028996..3f03921 100644
+--- a/src/nvme/NVMeBasicContext.cpp
++++ b/src/nvme/NVMeBasicContext.cpp
+@@ -367,7 +367,7 @@ void NVMeBasicContext::pollNVMeDevices()
+ {
+     pollCursor = sensors.begin();
+ 
+-    scanTimer.expires_after(std::chrono::seconds(1));
++    scanTimer.expires_after(std::chrono::seconds(pollIntervalSec));
+     scanTimer.async_wait([weakSelf{weak_from_this()}](
+                              const boost::system::error_code errorCode) {
+         if (errorCode == boost::asio::error::operation_aborted)
+diff --git a/src/nvme/NVMeContext.hpp b/src/nvme/NVMeContext.hpp
+index cb5d062..c27733b 100644
+--- a/src/nvme/NVMeContext.hpp
++++ b/src/nvme/NVMeContext.hpp
+@@ -17,6 +17,8 @@
+ class NVMeContext : public std::enable_shared_from_this<NVMeContext>
+ {
+   public:
++    static constexpr unsigned int pollIntervalSec = 1;
++
+     NVMeContext(boost::asio::io_context& io, int rootBus) :
+         scanTimer(io), rootBus(rootBus), pollCursor(sensors.end())
+     {
+diff --git a/src/nvme/NVMeSensor.cpp b/src/nvme/NVMeSensor.cpp
+index 92a7c63..4a9d75f 100644
+--- a/src/nvme/NVMeSensor.cpp
++++ b/src/nvme/NVMeSensor.cpp
+@@ -16,6 +16,7 @@
+ 
+ #include "NVMeSensor.hpp"
+ 
++#include "NVMeContext.hpp"
+ #include "SensorPaths.hpp"
+ #include "Thresholds.hpp"
+ #include "Utils.hpp"
+@@ -25,9 +26,12 @@
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+ 
++#include <cmath>
+ #include <cstddef>
+ #include <cstdint>
++#include <limits>
+ #include <memory>
++#include <optional>
+ #include <stdexcept>
+ #include <string>
+ #include <utility>
+@@ -35,15 +39,16 @@
+ 
+ static constexpr double maxReading = 127;
+ static constexpr double minReading = 0;
++static constexpr double defaultErrorRetryDelaySec = 5 * 60;
+ 
+-NVMeSensor::NVMeSensor(
+-    sdbusplus::asio::object_server& objectServer,
+-    boost::asio::io_context& /*unused*/,
+-    std::shared_ptr<sdbusplus::asio::connection>& conn,
+-    const std::string& sensorName,
+-    std::vector<thresholds::Threshold>&& thresholdsIn,
+-    const std::string& sensorConfiguration, const int busNumber,
+-    const uint8_t slaveAddr, bool smbusPEC) :
++NVMeSensor::NVMeSensor(sdbusplus::asio::object_server& objectServer,
++                       boost::asio::io_context& /*unused*/,
++                       std::shared_ptr<sdbusplus::asio::connection>& conn,
++                       const std::string& sensorName,
++                       std::vector<thresholds::Threshold>&& thresholdsIn,
++                       const std::string& sensorConfiguration,
++                       const int busNumber, const uint8_t slaveAddr,
++                       bool smbusPEC, std::optional<double> errorRetryDelay) :
+     Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
+            NVMeSensor::sensorType, false, false, maxReading, minReading, conn,
+            PowerState::on),
+@@ -55,6 +60,27 @@ NVMeSensor::NVMeSensor(
+         throw std::invalid_argument("Invalid bus: Bus ID must not be negative");
+     }
+ 
++    const double errorRetryDelaySec =
++        errorRetryDelay.value_or(defaultErrorRetryDelaySec);
++
++    if (!std::isfinite(errorRetryDelaySec) || errorRetryDelaySec <= 0.0)
++    {
++        throw std::invalid_argument(
++            "Invalid ErrorRetryDelay: The delay must be a positive number");
++    }
++
++    static_assert(NVMeContext::pollIntervalSec > 0,
++                  "Non-positive poll interval");
++    const double roundedDelayTicks =
++        std::ceil(errorRetryDelaySec / NVMeContext::pollIntervalSec);
++
++    if (roundedDelayTicks > std::numeric_limits<unsigned int>::max())
++    {
++        throw std::invalid_argument(
++            "Invalid scanDelayTicks: The delayed ticks is out of range");
++    }
++    scanDelayTicks = static_cast<unsigned int>(roundedDelayTicks);
++
+     sensorInterface = objectServer.add_interface(
+         "/xyz/openbmc_project/sensors/temperature/" + name,
+         "xyz.openbmc_project.Sensor.Value");
+diff --git a/src/nvme/NVMeSensor.hpp b/src/nvme/NVMeSensor.hpp
+index 6508be9..4a2564a 100644
+--- a/src/nvme/NVMeSensor.hpp
++++ b/src/nvme/NVMeSensor.hpp
+@@ -9,6 +9,7 @@
+ 
+ #include <cstdint>
+ #include <memory>
++#include <optional>
+ #include <string>
+ #include <vector>
+ 
+@@ -23,7 +24,8 @@ class NVMeSensor : public Sensor
+                const std::string& sensorName,
+                std::vector<thresholds::Threshold>&& thresholds,
+                const std::string& sensorConfiguration, int busNumber,
+-               uint8_t slaveAddr, bool smbusPEC);
++               uint8_t slaveAddr, bool smbusPEC,
++               std::optional<double> errorRetryDelay);
+     ~NVMeSensor() override;
+ 
+     NVMeSensor& operator=(const NVMeSensor& other) = delete;
+@@ -35,7 +37,7 @@ class NVMeSensor : public Sensor
+     const bool smbusPEC;
+ 
+   private:
+-    const unsigned int scanDelayTicks = 5 * 60;
++    unsigned int scanDelayTicks;
+     sdbusplus::asio::object_server& objServer;
+     unsigned int scanDelay{0};
+ 
+diff --git a/src/nvme/NVMeSensorMain.cpp b/src/nvme/NVMeSensorMain.cpp
+index 7d2204d..3928c1f 100644
+--- a/src/nvme/NVMeSensorMain.cpp
++++ b/src/nvme/NVMeSensorMain.cpp
+@@ -112,6 +112,18 @@ static std::optional<std::string> extractPEC(
+     return std::visit(VariantToStringVisitor(), findPEC->second);
+ }
+ 
++static std::optional<double> extractErrorRetryDelay(
++    const SensorBaseConfigMap& properties)
++{
++    auto findErrorRetryDelay = properties.find("ErrorRetryDelay");
++    if (findErrorRetryDelay == properties.end())
++    {
++        return std::nullopt;
++    }
++
++    return std::visit(VariantToDoubleVisitor(), findErrorRetryDelay->second);
++}
++
+ static std::filesystem::path deriveRootBusPath(int busNumber)
+ {
+     return "/sys/bus/i2c/devices/i2c-" + std::to_string(busNumber) +
+@@ -218,13 +230,18 @@ static void handleSensorConfigurations(
+             std::shared_ptr<NVMeContext> context =
+                 provideRootBusContext(io, nvmeDeviceMap, *rootBus);
+ 
++            // May throw for a malformed ErrorRetryDelay
++            std::optional<double> errorRetryDelay =
++                extractErrorRetryDelay(sensorConfig);
++
+             // Construct the sensor after grabbing the context so we don't
+-            // glitch D-Bus May throw for an invalid busNumber
++            // glitch D-Bus May throw for an invalid busNumber or
++            // ErrorRetryDelay
+             std::shared_ptr<NVMeSensor> sensorPtr =
+                 std::make_shared<NVMeSensor>(
+                     objectServer, io, dbusConnection, *sensorName,
+                     std::move(sensorThresholds), interfacePath, *busNumber,
+-                    slaveAddr, smbusPEC);
++                    slaveAddr, smbusPEC, errorRetryDelay);
+ 
+             context->addSensor(sensorPtr);
+         }
+-- 
+2.43.0
+

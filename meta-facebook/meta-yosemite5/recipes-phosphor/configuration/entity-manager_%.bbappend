@@ -5,4 +5,5 @@ SRC_URI:append = " \
     file://0002-configurations-revise-200G-BRCM-NIC-configuration.patch \
     file://0003-configurations-yosemite5-add-PowerState-to-MCTPI2CTa.patch \
     file://0004-configurations-yosemite5-add-Item.Drive-interface.patch \
+    file://0005-configurations-yosemite5-add-ErrorRetryDelay-for-SSD.patch \
 "

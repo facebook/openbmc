@@ -1,7 +1,7 @@
-From 30e89b7f7dd3cd3406414063df17b6c754387bc9 Mon Sep 17 00:00:00 2001
+From cabb3f683521102a414998261eeb6de8d33233d9 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Thu, 11 Apr 2024 08:27:09 +0800
-Subject: [PATCH] Add method for setting up MCTP EID by config path
+Subject: [PATCH 501/504] Add method for setting up MCTP EID by config path
 
 Change:
 - Could apply both mctp-i2c and mctp-i3c config.
@@ -9,14 +9,14 @@ Change:
 The code have been update to
 https://github.com/CodeConstruct/mctp/pull/17
 ---
- src/mctpd.c | 197 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 197 insertions(+)
+ src/mctpd.c | 194 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 194 insertions(+)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index b05bddb..0fc528b 100644
+index 7a2fd70..0cb9122 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -3669,6 +3669,191 @@ out:
+@@ -3667,6 +3667,188 @@ out:
  	return rc;
  }
  
@@ -34,10 +34,7 @@ index b05bddb..0fc528b 100644
 +	char *peer_path;
 +	dest_phys desti = {0}, *dest = &desti;
 +	struct peer *peer = NULL;
-+	struct sockaddr_mctp_ext addr;
-+	struct mctp_ctrl_cmd_get_eid req = {0};
-+	req.ctrl_hdr.rq_dgram_inst = RQDI_REQ;
-+	req.ctrl_hdr.command_code = MCTP_CTRL_CMD_GET_ENDPOINT_ID;
++	struct mctp_ctrl_cmd_get_eid req = { 0 };
 +	sd_bus_error error = SD_BUS_ERROR_NULL;
 +	sd_bus_message *message = NULL;
 +
@@ -168,17 +165,17 @@ index b05bddb..0fc528b 100644
 +
 +	add_peer_route(peer);
 +
-+	uint8_t* buf = NULL;
-+	size_t buf_size = 0;
-+	rc = endpoint_query_peer(peer, MCTP_CTRL_HDR_MSG_TYPE,
-+		&req, sizeof(req), &buf, &buf_size, &addr);
++	struct mctp_ctrl_cmd cmd = { 0 };
++	mctp_ctrl_msg_hdr_init_req(&req.ctrl_hdr, mctp_next_iid(ctx),
++				   MCTP_CTRL_CMD_GET_ENDPOINT_ID);
++	mctp_ctrl_cmd_init_from_req_type(&cmd, req);
++	rc = endpoint_query_peer(peer, &cmd);
++	mctp_ctrl_cmd_free(&cmd);
 +	if (rc < 0) {
 +		warnx("Response timeout for EID %d.", eid);
 +		remove_peer(peer);
-+		free(buf);
 +		goto err;
 +	}
-+	free(buf);
 +
 +	rc = query_peer_properties(peer);
 +
@@ -208,7 +205,7 @@ index b05bddb..0fc528b 100644
  // Query various properties of a peer.
  // To be called when a new peer is discovered/assigned, once an EID is known
  // and routable.
-@@ -4578,11 +4763,23 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
+@@ -4576,11 +4758,23 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
  		SD_BUS_PARAM(found),
  		method_learn_endpoint,
  		0),
@@ -233,5 +230,5 @@ index b05bddb..0fc528b 100644
  
  };
 -- 
-2.53.0-Meta
+2.55.0
 

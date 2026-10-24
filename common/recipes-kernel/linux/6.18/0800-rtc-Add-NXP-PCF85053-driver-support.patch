@@ -1,7 +1,7 @@
-From 3f500133e6705e710189f41efa194d517dd3ab44 Mon Sep 17 00:00:00 2001
+From b67a1153b1a158a898d8d6adc22dfcd5ea609dd9 Mon Sep 17 00:00:00 2001
 From: Lakshay Piplani <lakshay.piplani@nxp.com>
 Date: Mon, 14 Sep 2026 19:45:37 +0530
-Subject: [PATCH 1/1] rtc: Add NXP PCF85053 driver support
+Subject: [PATCH] rtc: Add NXP PCF85053 driver support
 
 PCF85053 is i2c based RTC which supports timer and calendar
 functionality.
@@ -27,7 +27,7 @@ Signed-off-by: Lakshay Piplani <lakshay.piplani@nxp.com>
  create mode 100644 drivers/rtc/rtc-pcf85053.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index b6dcaf9fa6d2b..b0392b1655047 100644
+index b6dcaf9fa6d2..b0392b165504 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -18736,6 +18736,14 @@ S:	Maintained
@@ -46,7 +46,7 @@ index b6dcaf9fa6d2b..b0392b1655047 100644
  M:	Fabio Estevam <festevam@gmail.com>
  L:	linux-sound@vger.kernel.org
 diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 2933c41c77c88..0b17bcecd8378 100644
+index 2933c41c77c8..0b17bcecd837 100644
 --- a/drivers/rtc/Kconfig
 +++ b/drivers/rtc/Kconfig
 @@ -994,6 +994,17 @@ config RTC_DRV_PCF85063
@@ -68,7 +68,7 @@ index 2933c41c77c88..0b17bcecd8378 100644
  	tristate "Micro Crystal RV3029/3049"
  	depends on RTC_I2C_AND_SPI
 diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 8221bda6e6dca..2c09756813361 100644
+index 8221bda6e6dc..2c0975681336 100644
 --- a/drivers/rtc/Makefile
 +++ b/drivers/rtc/Makefile
 @@ -129,6 +129,7 @@ obj-$(CONFIG_RTC_DRV_PCAP)	+= rtc-pcap.o
@@ -81,7 +81,7 @@ index 8221bda6e6dca..2c09756813361 100644
  obj-$(CONFIG_RTC_DRV_PCF8563)	+= rtc-pcf8563.o
 diff --git a/drivers/rtc/rtc-pcf85053.c b/drivers/rtc/rtc-pcf85053.c
 new file mode 100644
-index 0000000000000..aff7ec8edafae
+index 000000000000..aff7ec8edafa
 --- /dev/null
 +++ b/drivers/rtc/rtc-pcf85053.c
 @@ -0,0 +1,901 @@
@@ -987,5 +987,5 @@ index 0000000000000..aff7ec8edafae
 +MODULE_DESCRIPTION("NXP pcf85053 RTC driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.52.0
+2.53.0-Meta
 

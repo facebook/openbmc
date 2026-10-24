@@ -7,7 +7,11 @@ SRC_URI += " \
     file://mctpusb-init \
     file://mctpusb-init.service \
 "
-RDEPENDS:${PN} += "bash"
+RDEPENDS:${PN} += "bash mctp"
+
+FILES:${PN}:append = " \
+    ${libexecdir}/mctp \
+"
 
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE:${PN}:append = " \

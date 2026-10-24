@@ -1,7 +1,7 @@
-From 7f3c3d75694f00c218d2e5243123dce4a839af32 Mon Sep 17 00:00:00 2001
+From cd3051c12cc2d5ba8156925dab5fb2760bfea136 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Wed, 11 Oct 2023 14:31:47 +0800
-Subject: [PATCH] Support get static eid config from entity manager
+Subject: [PATCH 500/504] Support get static eid config from entity manager
 
 The mctpd will try to find the configuration interface
 "xyz.openbmc_project.Configuration.MCTPEndpoint" and parse the data.
@@ -32,11 +32,11 @@ root@bmc:~# pldmtool base GetTID -m 60
 
 Signed-off-by: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 ---
- src/mctpd.c | 580 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 568 insertions(+), 12 deletions(-)
+ src/mctpd.c | 576 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 564 insertions(+), 12 deletions(-)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index a1d2728..b05bddb 100644
+index a1d2728..7a2fd70 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
 @@ -58,6 +58,12 @@
@@ -224,7 +224,7 @@ index a1d2728..b05bddb 100644
  			return rc;
  
  		add_peer_route(peer);
-@@ -3024,6 +3074,190 @@ static int message_read_hwaddr(sd_bus_message *call, dest_phys *dest)
+@@ -3024,6 +3074,188 @@ static int message_read_hwaddr(sd_bus_message *call, dest_phys *dest)
  	return 0;
  }
  
@@ -236,10 +236,7 @@ index a1d2728..b05bddb 100644
 +	int net;
 +	dest_phys desti = {0}, *dest = &desti;
 +	struct peer *peer = NULL;
-+	struct sockaddr_mctp_ext addr;
-+	struct mctp_ctrl_cmd_get_eid req = {0};
-+	req.ctrl_hdr.rq_dgram_inst = RQDI_REQ;
-+	req.ctrl_hdr.command_code = MCTP_CTRL_CMD_GET_ENDPOINT_ID;
++	struct mctp_ctrl_cmd_get_eid req = { 0 };
 +	sd_bus_error error = SD_BUS_ERROR_NULL;
 +	sd_bus_message *message = NULL;
 +
@@ -384,17 +381,18 @@ index a1d2728..b05bddb 100644
 +
 +		add_peer_route(peer);
 +
-+		uint8_t* buf = NULL;
-+		size_t buf_size = 0;
-+		rc = endpoint_query_peer(peer, MCTP_CTRL_HDR_MSG_TYPE,
-+			&req, sizeof(req), &buf, &buf_size, &addr);
++		struct mctp_ctrl_cmd cmd = { 0 };
++		mctp_ctrl_msg_hdr_init_req(&req.ctrl_hdr,
++					   mctp_next_iid(ctx),
++					   MCTP_CTRL_CMD_GET_ENDPOINT_ID);
++		mctp_ctrl_cmd_init_from_req_type(&cmd, req);
++		rc = endpoint_query_peer(peer, &cmd);
++		mctp_ctrl_cmd_free(&cmd);
 +		if (rc < 0) {
 +			warnx("Response timeout for EID %d.", eid);
 +			remove_peer(peer);
-+			free(buf);
 +			continue;
 +		}
-+		free(buf);
 +
 +		rc = query_peer_properties(peer);
 +
@@ -415,7 +413,7 @@ index a1d2728..b05bddb 100644
  /* SetupEndpoint method tries the following in order:
    - request Get Endpoint ID to add to the known table, return that
    - request Set Endpoint ID, return that */
-@@ -3108,7 +3342,7 @@ static int method_setup_endpoint(sd_bus_message *call, void *data,
+@@ -3108,7 +3340,7 @@ static int method_setup_endpoint(sd_bus_message *call, void *data,
  
  	/* simple allocation: try to use existing EID */
  	if (eid && !is_bridge) {
@@ -424,7 +422,7 @@ index a1d2728..b05bddb 100644
  		if (rc == -EEXIST) {
  			/* proposed EID already present on a different peer,
  			 * fall back to assigning */
-@@ -3420,6 +3654,21 @@ err:
+@@ -3420,6 +3652,21 @@ err:
  	return rc;
  }
  
@@ -446,7 +444,7 @@ index a1d2728..b05bddb 100644
  // Query various properties of a peer.
  // To be called when a new peer is discovered/assigned, once an EID is known
  // and routable.
-@@ -3632,6 +3881,15 @@ static int publish_peer(struct peer *peer)
+@@ -3632,6 +3879,15 @@ static int publish_peer(struct peer *peer)
  					 bus_endpoint_uuid_vtable, peer);
  	}
  
@@ -462,7 +460,7 @@ index a1d2728..b05bddb 100644
  	rc = emit_endpoint_added(peer);
  	if (rc > 0)
  		rc = 0;
-@@ -3680,6 +3938,8 @@ static int unpublish_peer(struct peer *peer)
+@@ -3680,6 +3936,8 @@ static int unpublish_peer(struct peer *peer)
  		peer->slot_bridge = NULL;
  		sd_bus_slot_unref(peer->slot_uuid);
  		peer->slot_uuid = NULL;
@@ -471,7 +469,7 @@ index a1d2728..b05bddb 100644
  		peer->published = false;
  		free(peer->path);
  	}
-@@ -3962,7 +4222,7 @@ static int method_net_learn_endpoint(sd_bus_message *call, void *data,
+@@ -3962,7 +4220,7 @@ static int method_net_learn_endpoint(sd_bus_message *call, void *data,
  		return sd_bus_reply_method_return(call, "sb",
  						  path_from_peer(peer), false);
  
@@ -480,7 +478,7 @@ index a1d2728..b05bddb 100644
  	if (rc) {
  		warnx("can't add peer: %s", strerror(-rc));
  		goto err;
-@@ -4318,6 +4578,11 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
+@@ -4318,6 +4576,11 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
  		SD_BUS_PARAM(found),
  		method_learn_endpoint,
  		0),
@@ -492,7 +490,7 @@ index a1d2728..b05bddb 100644
  	SD_BUS_VTABLE_END,
  
  };
-@@ -4380,6 +4645,10 @@ static int bus_endpoint_get_prop(sd_bus *bus, const char *path,
+@@ -4380,6 +4643,10 @@ static int bus_endpoint_get_prop(sd_bus *bus, const char *path,
  	} else if (strcmp(property, "Connectivity") == 0) {
  		rc = sd_bus_message_append(
  			reply, "s", peer->degraded ? "Degraded" : "Available");
@@ -503,7 +501,7 @@ index a1d2728..b05bddb 100644
  	} else {
  		warnx("Unknown property '%s' for %s iface %s", property, path,
  		      interface);
-@@ -4658,6 +4927,16 @@ static const sd_bus_vtable bus_endpoint_bridge[] = {
+@@ -4658,6 +4925,16 @@ static const sd_bus_vtable bus_endpoint_bridge[] = {
  	SD_BUS_VTABLE_END
  };
  
@@ -520,7 +518,7 @@ index a1d2728..b05bddb 100644
  static const sd_bus_vtable bus_link_vtable[] = {
  	SD_BUS_VTABLE_START(0),
  	SD_BUS_WRITABLE_PROPERTY("Role",
-@@ -4804,6 +5083,251 @@ static int emit_interface_removed(struct link *link)
+@@ -4804,6 +5081,249 @@ static int emit_interface_removed(struct link *link)
  	return rc;
  }
  
@@ -685,21 +683,19 @@ index a1d2728..b05bddb 100644
 +
 +			add_peer_route(peer);
 +
-+			uint8_t* buf = NULL;
-+			size_t buf_size = 0;
-+			struct sockaddr_mctp_ext addr;
-+			struct mctp_ctrl_cmd_get_eid req = {0};
-+			req.ctrl_hdr.rq_dgram_inst = RQDI_REQ;
-+			req.ctrl_hdr.command_code = MCTP_CTRL_CMD_GET_ENDPOINT_ID;
-+			rc = endpoint_query_peer(peer, MCTP_CTRL_HDR_MSG_TYPE,
-+				&req, sizeof(req), &buf, &buf_size, &addr);
++			struct mctp_ctrl_cmd cmd = { 0 };
++			struct mctp_ctrl_cmd_get_eid req = { 0 };
++			mctp_ctrl_msg_hdr_init_req(&req.ctrl_hdr,
++						   mctp_next_iid(ctx),
++						   MCTP_CTRL_CMD_GET_ENDPOINT_ID);
++			mctp_ctrl_cmd_init_from_req_type(&cmd, req);
++			rc = endpoint_query_peer(peer, &cmd);
++			mctp_ctrl_cmd_free(&cmd);
 +			if (rc < 0 && eid % 10 != 0) {
 +				warnx("Response timeout for EID %d.", eid);
 +				remove_peer(peer);
-+				free(buf);
 +				break;
 +			}
-+			free(buf);
 +
 +			rc = query_peer_properties(peer);
 +
@@ -772,7 +768,7 @@ index a1d2728..b05bddb 100644
  static int setup_bus(struct ctx *ctx)
  {
  	sigset_t sigset;
-@@ -4866,6 +5390,36 @@ static int setup_bus(struct ctx *ctx)
+@@ -4866,6 +5386,36 @@ static int setup_bus(struct ctx *ctx)
  		goto out;
  	}
  
@@ -809,7 +805,7 @@ index a1d2728..b05bddb 100644
  	rc = 0;
  out:
  	return rc;
-@@ -5184,7 +5738,7 @@ static int add_local_eid(struct ctx *ctx, uint32_t net, int eid)
+@@ -5184,7 +5734,7 @@ static int add_local_eid(struct ctx *ctx, uint32_t net, int eid)
  		}
  	}
  
@@ -818,7 +814,7 @@ index a1d2728..b05bddb 100644
  	if (rc < 0) {
  		bug_warn("Error adding local eid %d net %d", eid, net);
  		return rc;
-@@ -6209,7 +6763,7 @@ static int peer_endpoint_poll(sd_event_source *s, uint64_t usec, void *userdata)
+@@ -6209,7 +6759,7 @@ static int peer_endpoint_poll(sd_event_source *s, uint64_t usec, void *userdata)
  	peer = n->peers[ep];
  	if (!peer) {
  		rc = add_peer(bridge->ctx, &(bridge->phys), ep, bridge->net,
@@ -827,7 +823,7 @@ index a1d2728..b05bddb 100644
  		if (rc < 0)
  			goto exit;
  	}
-@@ -6443,6 +6997,8 @@ int main(int argc, char **argv)
+@@ -6443,6 +6993,8 @@ int main(int argc, char **argv)
  	if (rc < 0)
  		return 1;
  
@@ -837,5 +833,5 @@ index a1d2728..b05bddb 100644
  	rc = listen_control_msg(ctx, MCTP_NET_ANY);
  	if (rc < 0) {
 -- 
-2.53.0-Meta
+2.55.0
 

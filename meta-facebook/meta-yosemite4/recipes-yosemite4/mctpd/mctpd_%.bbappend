@@ -4,7 +4,7 @@ SRC_URI += " \
     file://wantedby.conf \
 "
 
-FILES:${PN} += "${systemd_system_unitdir}/*"
+FILES:${PN}:append = " ${systemd_system_unitdir}/*"
 
 do_install:append () {
     override_dir=${D}${systemd_system_unitdir}/mctpd.service.d

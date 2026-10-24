@@ -626,6 +626,7 @@ recovery_bic_by_uart() {
 	return 0
 }
 recover_and_update_bic_by_uart() {
+	local update_ret=0
 	local slot=$1
 	local cpld_uart_routing=$2
 	local boot_strap_reg=$3
@@ -675,6 +676,7 @@ recover_and_update_bic_by_uart() {
     --comport /dev/ttyS$uart_num \
 	--baudrate 115200   \
     --input_image "$bic_image"
+	update_ret=$?
 	sleep 5
 
 	# Notify Nuvoton MGM CPLD to change baud rate to 57600
@@ -713,6 +715,10 @@ recover_and_update_bic_by_uart() {
 	fi
 
 	sleep 40
+	if [ "$update_ret" -ne 0 ]; then
+		echo "UART firmware tool failed: $update_ret"
+		return "$update_ret"
+	fi
 	# Update BIC version to Settings D-Bus
 	update_bic_version_dbus "$bic_name" "$slot_id"
 	echo "Update BIC via UART is finished."
@@ -739,7 +745,7 @@ wait_for_update_complete() {
 
 			status=$(busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.Activation Activation --timeout=120 2>&1 )
 			status=$(echo "$status" | cut -d " " -f 2)
-			if [ "${status}" == "xyz.openbmc_project.Software.Activation.Activations.Failed" ] || [ "${status}" == "xyz.openbmc_project.Software.Activation.Activations.Invalid" ]; then
+			if [ "${status}" == "\"xyz.openbmc_project.Software.Activation.Activations.Failed\"" ] || [ "${status}" == "\"xyz.openbmc_project.Software.Activation.Activations.Invalid\"" ]; then
 				echo -ne \\n"PLDM software activation is ${status}."\\n
 				return $FAIL_TO_UPDATE_PLDM_PLDM_SOFTWARE_ACTIVATION_STATUS_FAIL
 			fi
@@ -893,9 +899,9 @@ update_bic() {
 		fi
 		wait_for_update_complete
 		update_status=$?
-		if [ "$3" == "wf_bic" ] || [ "$3" == "sd_bic" ]; then
+		if [ "$3" == "wf" ] || [ "$3" == "sd" ]; then
 			bic_eid="${2}0"
-			if [ "$3" == "wf_bic" ]; then
+			if [ "$3" == "wf" ]; then
 				bic_eid=$((bic_eid+2))
 			fi
 			if [ $update_status == $FAIL_TO_UPDATE_PLDM_TIME_OUT_ERROR ]; then
@@ -1229,12 +1235,6 @@ handle_firmware_operations () {
 		exit 255
 	fi
 
-	if [ "$is_rcvy" == true ]; then
-		pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
-		pldm_image="${pldm_image}_re_wrapped"
-		echo "PLDM image name: ${pldm_image}"
-	fi
-
 	mctp_tree=$(busctl tree au.com.codeconstruct.MCTP1 --timeout=120 2>&1 | grep "/au/com/codeconstruct/mctp1/networks/1/endpoints")
 	echo "$mctp_tree"
 	case "$bic_name" in
@@ -1419,7 +1419,7 @@ get_vr_type() {
 	local init_header_offset descriptor_header_offset vr_hex
 
 	init_header_offset=$(hexdump -n 1 -s 0x23 -e '1/1 "%d"' "$pldm_image") || return 1
-	descriptor_header_offset=$(hexdump -n 1 -s $((0x23 + init_header_offset + 2)) -e '1/2 "%d"' "$pldm_image") || return 1
+	descriptor_header_offset=$(hexdump -n 2 -s $((0x23 + init_header_offset + 2)) -e '1/2 "%d"' "$pldm_image") || return 1
 	vr_hex=$(hexdump -n 1 -s $((0x23 + init_header_offset + 2 + descriptor_header_offset + 4)) -e '1/1 "%02x"' "$pldm_image") || return 1
 
 	echo "$vr_hex"
@@ -1458,6 +1458,9 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 	if [ $ident_result -eq $PLDM_FW_IDENT_FAIL ]; then
 		exit 255
 	fi
+	pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
+	pldm_image="${pldm_image}_re_wrapped"
+	echo "PLDM image name: ${pldm_image}"
 	retry_firmware_operation
 elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
     if [ "$bic_name" == "sd_vr" ] || [ "$bic_name" == "wf_vr" ]; then
@@ -1477,6 +1480,7 @@ elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
 	ln -s /usr/bin/ast1030_uart_fw.bin "$(pwd)/ast1030_uart_fw.bin"
 
 	echo "Start recover and update  $slot_id $bic_name BIC via UART"
+	ret=255
 	case $bic_name in
 	sd)
 		recover_and_update_bic_by_uart "$slot_id" "0x04" "0x01" "$bic_image"
@@ -1489,7 +1493,11 @@ elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
 		;;
 	esac
 	rm "$(pwd)/ast1030_uart_fw.bin"
-elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
+	if [ "$ret" -ne 0 ]; then
+		echo "Failed to recover and update BIC via UART. Return with error code: $ret"
+		exit "$ret"
+	fi
+elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]$ ]]; then
 	slot_id=$2
 	pldm_image=$3
 
@@ -1519,7 +1527,13 @@ elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 	    add_init_sel
 
 		#VR_TYPE=$(hexdump -n 1 -s 0x6D -e '1/1 "%02x"' "$pldm_image")
-		mapfile -t VR_OFFSET < <(get_offset_for_vr_type "$VR_TYPE")
+		vr_offsets=$(get_offset_for_vr_type "$VR_TYPE")
+		ret=$?
+		if [ "$ret" -ne 0 ]; then
+			echo "$vr_offsets"
+			exit "$ret"
+		fi
+		mapfile -t VR_OFFSET <<< "$vr_offsets"
 		VR_HIGHBYTE_OFFSET="${VR_OFFSET[0]}"
 		VR_LOWBYTE_OFFSET="${VR_OFFSET[1]}"
 	elif [ "$bic_name" == "wf_vr" ]; then
@@ -1563,7 +1577,7 @@ elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 			exit $exit_code
 		fi
 	fi
-	retry_firmware_operation
+	retry_firmware_operation || exit $?
 else
 	pldm_fw_identify "$bic_name" "$pldm_image"
 	ident_result=$?

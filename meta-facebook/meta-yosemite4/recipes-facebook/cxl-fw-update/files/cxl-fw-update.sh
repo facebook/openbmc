@@ -6,8 +6,8 @@ FAIL_TO_UPDATE_WF_CXL_PLDM_SERVICE_NOT_RUNING=16
 # FAIL_TO_UPDATE_WF_CXL_EID_DOES_NOT_EXIST=17
 FAIL_TO_UPDATE_WF_CXL_CAN_ONLY_UPDATE_ONE_BIC_AT_A_TIME=18
 FAIL_TO_UPDATE_WF_CXL_TIME_OUT_ERROR=19
-FAIL_TO_UPDATE_WF_CXL_FAIL_TO_DELETE_SOFTWARE_ID=20
-#FAIL_TO_UPDATE_WF_CXL_FAIL_TO_SET_REQUESTED_ACTIVATION=21
+FAIL_TO_UPDATE_PLDM_FAIL_TO_SET_REQUESTED_ACTIVATION=21
+FAIL_TO_UPDATE_WF_CXL_MISS_SOFTWARE_ID=22
 FAIL_TO_UPDATE_PLDM_IMAGE_DOES_NOT_MATCH=24
 FAIL_TO_UPDATE_WF_EID_DOES_NOT_EXIST=25
 INVALID_INPUT=255
@@ -43,7 +43,7 @@ add_result_sel() {
 }
 
 show_usage() {
-    echo "Usage: cxl-fw-update.sh <slot_id> (<instance_num>) <pldm image>"
+    echo "Usage: cxl-fw-update.sh <slot_id> <instance_num> <pldm image>"
     echo "       update CXL1  : cxl-fw-update.sh <slot_id> 1 <pldm image>"
     echo "       update CXL2  : cxl-fw-update.sh <slot_id> 2 <pldm image>"
     echo ""
@@ -174,9 +174,8 @@ update_cxl() {
 		fi
 		sleep 10
         if ! busctl set-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.Activation RequestedActivation s "xyz.openbmc_project.Software.Activation.RequestedActivations.Active" --timeout=120 2>&1; then
-            echo "Failed to set RequestedActivation. Exit with error code: $FAIL_TO_UPDATE_PLDM_FAIL_TO_SET_REQUESTED_ACTIVATION"
-            add_result_sel "${FAILURE_MSG}"
-            exit "$FAIL_TO_UPDATE_PLDM_FAIL_TO_SET_REQUESTED_ACTIVATION"
+            echo "Failed to set RequestedActivation. Return with error code: $FAIL_TO_UPDATE_PLDM_FAIL_TO_SET_REQUESTED_ACTIVATION"
+            return $FAIL_TO_UPDATE_PLDM_FAIL_TO_SET_REQUESTED_ACTIVATION
         fi
         wait_for_update_complete
         ret=$?
@@ -185,6 +184,7 @@ update_cxl() {
         fi
     else
         echo "Fail: Miss software id."
+        return $FAIL_TO_UPDATE_WF_CXL_MISS_SOFTWARE_ID
     fi
     return 0
 }
@@ -226,7 +226,7 @@ retry_update_cxl() {
         sleep 60
         # Try to delete previous software_id before retry
         if [ -n "$software_id" ]; then
-            busctl call xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Object Delete --timeout=120
+            busctl call xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Object.Delete Delete --timeout=120
             sleep 2
         fi
         update_cxl "$pldm_image"
@@ -241,15 +241,11 @@ retry_update_cxl() {
 }
 
 # Check for minimum required arguments
-[ $# -lt 2 ] && error_and_exit
+[ $# -ne 3 ] && error_and_exit
 
 slot_id=$1
 instance_num=$2
 pldm_image=$3
-
-if [ $# -eq 2 ]; then
-    pldm_image=$2
-fi
 
 [ ! -f "$pldm_image" ] && error_and_exit
 
@@ -264,7 +260,7 @@ if [ $ident_result -eq $PLDM_FW_IDENT_FAIL ]; then
 fi
 
 # Check if instance_num is between 1 and 2
-if [ $# -eq 3 ] && [[ "$instance_num" =~ ^[1-2]$ ]]; then
+if [[ "$instance_num" =~ ^[1-2]$ ]]; then
     pldm-package-re-wrapper cxl -s "$slot_id" -i "$instance_num" -f "$pldm_image"
     pldm_image="${pldm_image}_re_wrapped"
 else
@@ -321,9 +317,7 @@ fi
 busctl call xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Object.Delete Delete --timeout=120 2>&1
 ret=$?
 if [ "$ret" -ne 0 ]; then
-    echo "Failed to delete software id: Exit code $ret"
-    add_result_sel "${FAILURE_MSG}"
-    exit "$FAIL_TO_UPDATE_WF_CXL_FAIL_TO_DELETE_SOFTWARE_ID"
+    echo "Warning: Failed to delete software id after successful update (exit code: $ret)"
 fi
 
 add_result_sel "${SUCCESS_MSG}"

@@ -64,8 +64,10 @@ fi
 FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${DEVICE_LOCATION}-${COMPONENT}"
 trap 'rm -f "$FIRMWARE_FILE"' EXIT
 
-# modbus-update.py takes the modbus lock itself
-if /usr/local/bin/modbus-update.py "${DEVICE_ARGS[@]}" "${COMPONENT_ARGS[@]}" "$FIRMWARE_FILE"; then
+# modbus-update.py takes the modbus lock itself. Python block-buffers stdout
+# when it is not a tty (e.g. the journal), so disable buffering to stream
+# its progress as it happens rather than all at once when it exits.
+if PYTHONUNBUFFERED=1 /usr/local/bin/modbus-update.py "${DEVICE_ARGS[@]}" "${COMPONENT_ARGS[@]}" "$FIRMWARE_FILE"; then
     echo "Successfully upgraded ${DEVICE_TYPE} ${DEVICE_LOCATION} ${COMPONENT} using ${DEVICE_ARGS[*]}"
 else
     echo "Failed to upgrade ${DEVICE_TYPE} ${DEVICE_LOCATION} ${COMPONENT} using ${DEVICE_ARGS[*]}" >&2

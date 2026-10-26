@@ -189,6 +189,16 @@ def _add_minimalmodbus_framing(mod):
     mod._extract_payload = _extract_payload
 
 
+def _add_minimalmodbus_silent_period(mod):
+    """The inter-frame gap the backend raises the floor of"""
+
+    def _calculate_minimum_silent_period(baudrate):
+        # 3.5 character times of 11 bits, at least 1.75ms, as the real one
+        return max(11 * 3.5 / float(baudrate), 0.00175)
+
+    mod._calculate_minimum_silent_period = _calculate_minimum_silent_period
+
+
 def _install_minimalmodbus():
     mod = types.ModuleType("minimalmodbus")
     mod.serial = _fake_serial_module()
@@ -196,6 +206,7 @@ def _install_minimalmodbus():
     _add_minimalmodbus_exceptions(mod)
     mod.Instrument = _fake_instrument()
     _add_minimalmodbus_framing(mod)
+    _add_minimalmodbus_silent_period(mod)
     sys.modules["minimalmodbus"] = mod
     return mod
 

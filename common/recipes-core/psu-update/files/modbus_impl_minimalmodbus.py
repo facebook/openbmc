@@ -36,6 +36,19 @@ DEFAULT_TIMEOUT_MS = 300
 PMM_BAUDRATE = 115200
 PMM_PARITY = "E"
 
+# Minimum bus idle time between the end of one response and the next
+# request. This is the worst case across all the interfaces we talk to.
+MIN_DELAY = 3 / 1000.0  # 3ms
+
+# minimalmodbus already waits out the modbus silent period (3.5 characters,
+# at least 1.75ms) since the last response on the port before every request,
+# but has no knob to lengthen it. Raise its floor to MIN_DELAY so every
+# transaction, including raw ones through _communicate, gets the gap.
+_minimum_silent_period = minimalmodbus._calculate_minimum_silent_period
+minimalmodbus._calculate_minimum_silent_period = lambda baudrate: max(
+    _minimum_silent_period(baudrate), MIN_DELAY
+)
+
 # Parity keyed both by the single character phosphor_modbus spells it
 # with (see DeviceConfig.parity_char) and by the long form.
 PARITY = {

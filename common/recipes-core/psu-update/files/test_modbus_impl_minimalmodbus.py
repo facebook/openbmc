@@ -64,6 +64,23 @@ class TestStopbitsFor(unittest.TestCase):
         self.assertEqual(stopbits_for(serial.PARITY_ODD), serial.STOPBITS_ONE)
 
 
+class TestMinimumSilentPeriod(unittest.TestCase):
+    def test_fast_buses_wait_at_least_the_minimum_delay(self):
+        # The modbus floor of 1.75ms is shorter than what the devices need.
+        for baudrate in (19200, 38400, 57600, 115200):
+            with self.subTest(baudrate=baudrate):
+                self.assertEqual(
+                    minimalmodbus._calculate_minimum_silent_period(baudrate),
+                    backend.MIN_DELAY,
+                )
+
+    def test_slow_buses_keep_the_longer_modbus_silent_period(self):
+        # 3.5 characters of 11 bits at 9600 baud is about 4ms.
+        self.assertAlmostEqual(
+            minimalmodbus._calculate_minimum_silent_period(9600), 11 * 3.5 / 9600
+        )
+
+
 class TestTranslateErrors(unittest.TestCase):
     def test_no_response_is_a_timeout(self):
         with self.assertRaises(ModbusTimeout):

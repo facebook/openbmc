@@ -404,6 +404,16 @@ changed shape too:
   e.g. `/tmp/firmware-psu-1024_NA-NA` or `/tmp/firmware-rpu-100_NA-HEX`. The
   component was added to the name so that two components of one device can be
   staged at the same time.
+* **`start-firmware-upgrade --type <type> --location <location> [--component <component>] [--uuid <uuid>] --path <path>`**
+  does the staging: it copies `<path>` to that file (unless it already is that
+  file), starts the service and prints `get-firmware-upgrade-status`. The
+  component defaults to `NA`, as does the device number when `<location>` is
+  just a position. The uuid defaults to `date +%s`, and the service started
+  is printed to stderr so its status can be read later. It refuses to run
+  while another upgrade of the same component is active, since that upgrade
+  reads the same file. With `--wait` it streams the service's journal until
+  the upgrade finishes, prints the final status and exits non-zero unless it
+  is `SUCCESS`.
 * **It is a thin wrapper around `modbus-update.py`.** A location with `NA` and a
   position above 255 is a unique device address and becomes `--address`;
   anything else becomes `--name <TYPE>_<position>[_<device number>]`, and

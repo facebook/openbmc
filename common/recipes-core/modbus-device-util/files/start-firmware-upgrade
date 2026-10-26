@@ -1,0 +1,142 @@
+#!/bin/bash
+
+usage() {
+    echo "Usage: $0 --type <device_type> --location <device_location> [--component <component>] [--uuid <uuid>] --path <firmware_path> [--wait]
+      --type: device type we will be upgrading
+      --location: The location of the modbus device to upgrade in <position>[_<device_number>] format.
+                  The device number defaults to NA
+      --component: The sub-component in this device. Defaults to NA (Single firmware for device)
+      --uuid: Unique identifier for this upgrade request. Defaults to the current time in seconds
+      --path: The firmware image, copied to /tmp/firmware-<device_type>-<device_location>-<component>
+      --wait: Stream the service's journal until the upgrade finishes, then exit 0 only if it succeeded.
+              Interrupting the wait does not stop the upgrade
+      --help: Print this message
+    Starts firmware-upgrade@<device_type>:<device_location>:<component>:<uuid>.service and prints its status"
+}
+
+WAIT=0
+DEVICE_TYPE=""
+DEVICE_LOCATION=""
+COMPONENT="NA"
+UUID=""
+FIRMWARE_PATH=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --help)
+            usage
+            exit 0
+            ;;
+        --wait)
+            WAIT=1
+            shift
+            ;;
+        --type|--location|--component|--uuid|--path)
+            if [ $# -lt 2 ]; then
+                echo "$1 needs a value" >&2
+                usage >&2
+                exit 1
+            fi
+            case "$1" in
+                --type) DEVICE_TYPE="$2" ;;
+                --location) DEVICE_LOCATION="$2" ;;
+                --component) COMPONENT="$2" ;;
+                --uuid) UUID="$2" ;;
+                --path) FIRMWARE_PATH="$2" ;;
+            esac
+            shift 2
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+for opt in type:"$DEVICE_TYPE" location:"$DEVICE_LOCATION" component:"$COMPONENT" \
+    path:"$FIRMWARE_PATH"; do
+    if [ -z "${opt#*:}" ]; then
+        echo "--${opt%%:*} is required" >&2
+        usage >&2
+        exit 1
+    fi
+done
+
+if [ -z "$UUID" ]; then
+    UUID=$(date +%s)
+fi
+
+if [[ "$DEVICE_LOCATION" =~ ^[0-9]+$ ]]; then
+    DEVICE_LOCATION="${DEVICE_LOCATION}_NA"
+fi
+
+# These end up in a file name and a service instance, so validate them the
+# same way firmware-upgrade does
+if [[ ! "$DEVICE_TYPE" =~ ^[a-zA-Z0-9_]+$ ]]; then
+    echo "Invalid device type: $DEVICE_TYPE" >&2
+    exit 1
+fi
+
+if [[ ! "$DEVICE_LOCATION" =~ ^[0-9]+_([0-9]+|NA)$ ]]; then
+    echo "Invalid device location: $DEVICE_LOCATION" >&2
+    exit 1
+fi
+
+if [[ ! "$COMPONENT" =~ ^[a-zA-Z0-9_]+$ ]]; then
+    echo "Invalid component: $COMPONENT" >&2
+    exit 1
+fi
+
+if [[ ! "$UUID" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo "Invalid uuid: $UUID" >&2
+    exit 1
+fi
+
+if [ ! -f "$FIRMWARE_PATH" ]; then
+    echo "Firmware image not found: $FIRMWARE_PATH" >&2
+    exit 1
+fi
+
+script_dir=$( dirname "${BASH_SOURCE[0]}" )
+FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${DEVICE_LOCATION}-${COMPONENT}"
+INSTANCE="${DEVICE_TYPE}:${DEVICE_LOCATION}:${COMPONENT}:${UUID}"
+
+# Every upgrade of this component reads the same firmware file, whatever its
+# uuid, so do not replace it under one that is still running
+running=$(systemctl list-units --plain --no-legend --state=active,activating \
+    "firmware-upgrade@${DEVICE_TYPE}:${DEVICE_LOCATION}:${COMPONENT}:*.service")
+if [ -n "$running" ]; then
+    echo "An upgrade of ${DEVICE_TYPE} ${DEVICE_LOCATION} ${COMPONENT} is already running:" >&2
+    echo "$running" >&2
+    exit 1
+fi
+
+if [ ! "$FIRMWARE_PATH" -ef "$FIRMWARE_FILE" ]; then
+    cp "$FIRMWARE_PATH" "$FIRMWARE_FILE" || exit 1
+fi
+
+SERVICE="firmware-upgrade@${INSTANCE}.service"
+systemctl start "$SERVICE" || exit 1
+echo "Started $SERVICE" >&2
+
+if [ "$WAIT" -eq 0 ]; then
+    exec "$script_dir/get-firmware-upgrade-status" "$INSTANCE"
+fi
+
+# Each journalctl call prints only what was logged since the previous one.
+# The state is read before the journal, so the last call, made once the
+# service has stopped, also prints its final lines
+cursor_file=$(mktemp) || exit 1
+trap 'rm -f "$cursor_file"' EXIT
+while :; do
+    state=$(systemctl is-active "$SERVICE")
+    journalctl -q -I -o short -u "$SERVICE" --cursor-file="$cursor_file"
+    if [ "$state" != "active" ] && [ "$state" != "activating" ]; then
+        break
+    fi
+    sleep 1
+done
+
+status=$("$script_dir/get-firmware-upgrade-status" "$INSTANCE")
+echo "$status"
+[ "$status" == "SUCCESS" ]

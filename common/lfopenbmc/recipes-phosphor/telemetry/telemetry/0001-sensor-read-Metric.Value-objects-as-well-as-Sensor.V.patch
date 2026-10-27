@@ -1,0 +1,378 @@
+From 15930e9f8825433d0515db6dd5d29e66d692791f Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Wed, 21 Oct 2026 15:23:24 -0700
+Subject: [PATCH] sensor: read Metric.Value objects as well as Sensor.Value
+
+Reports can only reference objects implementing Sensor.Value under
+/xyz/openbmc_project/sensors.  Usage and behaviour counters (NIC port
+statistics, PCIe error counts, BMC memory and CPU) are published as
+xyz.openbmc_project.Metric.Value under /xyz/openbmc_project/metric, so
+they cannot be collected into a report today.
+
+Look up Metric.Value objects under the metric namespace alongside the
+sensors, and read and watch Value from whichever interface matches the
+object's namespace.  Metric paths are not a fixed depth, so the whole
+namespace is searched; the mapper fails the call when nothing lives
+there, which is treated as no metrics.  Metric.Value has no
+UpdatedTime, so those readings keep the collection time, as a sensor
+without UpdatedTime already does.
+
+Signed-off-by: Pete O_o <pmb@meta.com>
+---
+ src/sensor.cpp                         | 59 +++++++++++++++++---------
+ src/sensor.hpp                         |  2 +
+ src/utils/dbus_mapper.hpp              | 44 +++++++++++++++++++
+ tests/src/stubs/dbus_sensor_object.cpp | 19 ++++++---
+ tests/src/stubs/dbus_sensor_object.hpp | 11 +++--
+ tests/src/test_sensor.cpp              | 56 ++++++++++++++++++++++++
+ 6 files changed, 161 insertions(+), 30 deletions(-)
+
+diff --git a/src/sensor.cpp b/src/sensor.cpp
+index ddb51b4..fc55c9d 100644
+--- a/src/sensor.cpp
++++ b/src/sensor.cpp
+@@ -1,6 +1,7 @@
+ #include "sensor.hpp"
+ 
+ #include "utils/clock.hpp"
++#include "utils/dbus_mapper.hpp"
+ 
+ #include <boost/container/flat_map.hpp>
+ #include <phosphor-logging/log.hpp>
+@@ -10,12 +11,25 @@
+ #include <functional>
+ 
+ using SensorValue = sdbusplus::common::xyz::openbmc_project::sensor::Value;
++using MetricValue = sdbusplus::common::xyz::openbmc_project::metric::Value;
++
++static_assert(std::string_view(SensorValue::property_names::value) ==
++              std::string_view(MetricValue::property_names::value));
++
++static const char* valueInterfaceFor(std::string_view path)
++{
++    if (utils::isMetricPath(path))
++    {
++        return MetricValue::interface;
++    }
++    return SensorValue::interface;
++}
+ 
+ Sensor::Sensor(interfaces::Sensor::Id sensorId,
+                const std::string& sensorMetadata, boost::asio::io_context& ioc,
+                const std::shared_ptr<sdbusplus::asio::connection>& bus) :
+-    sensorId(std::move(sensorId)), sensorMetadata(sensorMetadata), ioc(ioc),
+-    bus(bus)
++    sensorId(std::move(sensorId)), sensorMetadata(sensorMetadata),
++    valueInterface(valueInterfaceFor(this->sensorId.path)), ioc(ioc), bus(bus)
+ {}
+ 
+ Sensor::Id Sensor::makeId(std::string_view service, std::string_view path)
+@@ -47,23 +61,27 @@ void Sensor::async_read(std::shared_ptr<utils::UniqueCall::Lock> lock)
+ {
+     makeSignalMonitor();
+ 
+-    sdbusplus::asio::getProperty<uint64_t>(
+-        *bus, sensorId.service, sensorId.path, SensorValue::interface,
+-        SensorValue::property_names::updated_time,
+-        [weakSelf = weak_from_this()](boost::system::error_code ec,
+-                                      uint64_t newUpdatedTime) {
+-            if (ec)
+-            {
+-                return;
+-            }
+-            if (auto self = weakSelf.lock())
+-            {
+-                self->updateTime(newUpdatedTime);
+-            }
+-        });
++    // Metric.Value has no UpdatedTime; its readings keep the collection time.
++    if (std::string_view(valueInterface) == SensorValue::interface)
++    {
++        sdbusplus::asio::getProperty<uint64_t>(
++            *bus, sensorId.service, sensorId.path, SensorValue::interface,
++            SensorValue::property_names::updated_time,
++            [weakSelf = weak_from_this()](boost::system::error_code ec,
++                                          uint64_t newUpdatedTime) {
++                if (ec)
++                {
++                    return;
++                }
++                if (auto self = weakSelf.lock())
++                {
++                    self->updateTime(newUpdatedTime);
++                }
++            });
++    }
+ 
+     sdbusplus::asio::getProperty<double>(
+-        *bus, sensorId.service, sensorId.path, SensorValue::interface,
++        *bus, sensorId.service, sensorId.path, valueInterface,
+         SensorValue::property_names::value,
+         [lock, id = sensorId, weakSelf = weak_from_this()](
+             boost::system::error_code ec, double newValue) {
+@@ -158,9 +176,8 @@ void Sensor::makeSignalMonitor()
+ 
+     using namespace std::string_literals;
+ 
+-    const auto param =
+-        "type='signal',member='PropertiesChanged',path='"s + sensorId.path +
+-        "',arg0='" + SensorValue::interface + "'"s;
++    const auto param = "type='signal',member='PropertiesChanged',path='"s +
++                       sensorId.path + "',arg0='" + valueInterface + "'"s;
+ 
+     signalMonitor = std::make_unique<sdbusplus::match>(
+         *bus, param,
+@@ -181,7 +198,7 @@ void Sensor::signalProc(const std::weak_ptr<Sensor>& weakSelf,
+ 
+         message.read(iface, changed_properties, invalidated_properties);
+ 
+-        if (iface == SensorValue::interface)
++        if (iface == self->valueInterface)
+         {
+             const auto timeIt = changed_properties.find(
+                 SensorValue::property_names::updated_time);
+diff --git a/src/sensor.hpp b/src/sensor.hpp
+index bf9ee24..ed972b0 100644
+--- a/src/sensor.hpp
++++ b/src/sensor.hpp
+@@ -55,6 +55,8 @@ class Sensor final :
+ 
+     interfaces::Sensor::Id sensorId;
+     std::string sensorMetadata;
++    // Sensor.Value, or Metric.Value for objects under the metric namespace.
++    const char* valueInterface;
+     boost::asio::io_context& ioc;
+     std::shared_ptr<sdbusplus::asio::connection> bus;
+     Milliseconds timerInterval = Milliseconds(0);
+diff --git a/src/utils/dbus_mapper.hpp b/src/utils/dbus_mapper.hpp
+index 072bd70..50c1e51 100644
+--- a/src/utils/dbus_mapper.hpp
++++ b/src/utils/dbus_mapper.hpp
+@@ -2,11 +2,15 @@
+ 
+ #include <boost/asio/spawn.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
++#include <xyz/openbmc_project/Metric/Value/common.hpp>
+ #include <xyz/openbmc_project/ObjectMapper/common.hpp>
+ #include <xyz/openbmc_project/Sensor/Value/common.hpp>
+ 
++#include <algorithm>
+ #include <array>
++#include <iterator>
+ #include <string>
++#include <string_view>
+ #include <utility>
+ #include <vector>
+ 
+@@ -20,9 +24,23 @@ using SensorIfaces = std::vector<std::pair<ServiceName, Ifaces>>;
+ using SensorTree = std::pair<SensorPath, SensorIfaces>;
+ using ObjectMapper = sdbusplus::common::xyz::openbmc_project::ObjectMapper;
+ using SensorValue = sdbusplus::common::xyz::openbmc_project::sensor::Value;
++using MetricValue = sdbusplus::common::xyz::openbmc_project::metric::Value;
+ 
+ constexpr std::array<const char*, 1> sensorInterfaces = {
+     SensorValue::interface};
++constexpr std::array<const char*, 1> metricInterfaces = {
++    MetricValue::interface};
++
++// Metric paths are not fixed depth (metric/bmc/memory/total,
++// metric/port_0/nic/rx_bytes), so search the whole namespace.
++constexpr int32_t metricDepth = 0;
++
++inline bool isMetricPath(std::string_view path)
++{
++    std::string_view ns = MetricValue::namespace_path::value;
++    return path.size() > ns.size() && path.starts_with(ns) &&
++           path[ns.size()] == '/';
++}
+ 
+ inline std::vector<SensorTree> getSubTreeSensors(
+     boost::asio::yield_context& yield,
+@@ -38,6 +56,17 @@ inline std::vector<SensorTree> getSubTreeSensors(
+     {
+         throw std::runtime_error("Failed to query ObjectMapper!");
+     }
++
++    // The metric namespace is optional; the mapper fails the call when no
++    // object lives under it.
++    auto metrics = bus->yield_method_call<std::vector<SensorTree>>(
++        yield, ec, ObjectMapper::default_service, ObjectMapper::instance_path,
++        ObjectMapper::interface, ObjectMapper::method_names::get_sub_tree,
++        MetricValue::namespace_path::value, metricDepth, metricInterfaces);
++    if (!ec)
++    {
++        std::move(metrics.begin(), metrics.end(), std::back_inserter(tree));
++    }
+     return tree;
+ }
+ 
+@@ -52,6 +81,21 @@ inline std::vector<SensorTree> getSubTreeSensors(
+ 
+     auto tree = reply.unpack<std::vector<SensorTree>>();
+ 
++    try
++    {
++        auto metricCall = bus->new_method_call(
++            ObjectMapper::default_service, ObjectMapper::instance_path,
++            ObjectMapper::interface, ObjectMapper::method_names::get_sub_tree);
++        metricCall.append(MetricValue::namespace_path::value, metricDepth,
++                          metricInterfaces);
++        auto metrics = bus->call(metricCall).unpack<std::vector<SensorTree>>();
++        std::move(metrics.begin(), metrics.end(), std::back_inserter(tree));
++    }
++    catch (const sdbusplus::exception_t&)
++    {
++        // No objects under the metric namespace.
++    }
++
+     return tree;
+ }
+ 
+diff --git a/tests/src/stubs/dbus_sensor_object.cpp b/tests/src/stubs/dbus_sensor_object.cpp
+index c86b46a..2c35701 100644
+--- a/tests/src/stubs/dbus_sensor_object.cpp
++++ b/tests/src/stubs/dbus_sensor_object.cpp
+@@ -16,10 +16,12 @@ namespace stubs
+ DbusSensorObject::DbusSensorObject(
+     boost::asio::io_context& ioc,
+     const std::shared_ptr<sdbusplus::asio::connection>& bus,
+-    const std::shared_ptr<sdbusplus::asio::object_server>& objServer) :
+-    ioc(ioc), bus(bus), objServer(objServer)
++    const std::shared_ptr<sdbusplus::asio::object_server>& objServer,
++    const char* path, const char* interface) :
++    ioc(ioc), bus(bus), objServer(objServer), objPath(path),
++    objInterface(interface ? interface : SensorValue::interface)
+ {
+-    sensorIface = objServer->add_interface(path(), interface());
++    sensorIface = objServer->add_interface(objPath, objInterface);
+     sensorIface->register_property_r(property.value(), value,
+                                      sdbusplus::vtable::property_::emits_change,
+                                      [this](const auto&) { return value; });
+@@ -43,14 +45,19 @@ double DbusSensorObject::getValue() const
+     return value;
+ }
+ 
+-const char* DbusSensorObject::path()
++const char* DbusSensorObject::defaultPath()
+ {
+     return "/telemetry/ut/DbusSensorObject";
+ }
+ 
+-const char* DbusSensorObject::interface()
++const char* DbusSensorObject::path() const
+ {
+-    return SensorValue::interface;
++    return objPath;
++}
++
++const char* DbusSensorObject::interface() const
++{
++    return objInterface;
+ }
+ 
+ const char* DbusSensorObject::Properties::value()
+diff --git a/tests/src/stubs/dbus_sensor_object.hpp b/tests/src/stubs/dbus_sensor_object.hpp
+index cc0d9a8..06c1da0 100644
+--- a/tests/src/stubs/dbus_sensor_object.hpp
++++ b/tests/src/stubs/dbus_sensor_object.hpp
+@@ -14,11 +14,14 @@ class DbusSensorObject
+     DbusSensorObject(
+         boost::asio::io_context& ioc,
+         const std::shared_ptr<sdbusplus::asio::connection>& bus,
+-        const std::shared_ptr<sdbusplus::asio::object_server>& objServer);
++        const std::shared_ptr<sdbusplus::asio::object_server>& objServer,
++        const char* path = defaultPath(), const char* interface = nullptr);
+     ~DbusSensorObject();
+ 
+-    static const char* path();
+-    static const char* interface();
++    static const char* defaultPath();
++
++    const char* path() const;
++    const char* interface() const;
+ 
+     void setValue(double);
+     double getValue() const;
+@@ -34,6 +37,8 @@ class DbusSensorObject
+     [[maybe_unused]] boost::asio::io_context& ioc;
+     std::shared_ptr<sdbusplus::asio::connection> bus;
+     std::shared_ptr<sdbusplus::asio::object_server> objServer;
++    const char* objPath;
++    const char* objInterface;
+ 
+     std::shared_ptr<sdbusplus::asio::dbus_interface> sensorIface;
+ 
+diff --git a/tests/src/test_sensor.cpp b/tests/src/test_sensor.cpp
+index 3a3bcc9..f9e6aef 100644
+--- a/tests/src/test_sensor.cpp
++++ b/tests/src/test_sensor.cpp
+@@ -7,6 +7,7 @@
+ #include "utils/clock.hpp"
+ 
+ #include <sdbusplus/asio/property.hpp>
++#include <xyz/openbmc_project/Metric/Value/common.hpp>
+ 
+ #include <thread>
+ 
+@@ -220,3 +221,58 @@ TEST_F(TestSensorNotification,
+     sensorObject = makeSensorObject();
+     DbusEnvironment::waitForFuture("notify-create");
+ }
++
++class TestMetricSensor : public Test
++{
++  public:
++    void TearDown() override
++    {
++        DbusEnvironment::synchronizeIoc();
++    }
++
++    static constexpr const char* metricPath =
++        "/xyz/openbmc_project/metric/port_0/nic/rx_bytes";
++
++    std::unique_ptr<stubs::DbusSensorObject> metricObject =
++        std::make_unique<stubs::DbusSensorObject>(
++            DbusEnvironment::getIoc(), DbusEnvironment::getBus(),
++            DbusEnvironment::getObjServer(), metricPath,
++            sdbusplus::common::xyz::openbmc_project::metric::Value::interface);
++
++    SensorCache sensorCache;
++    Milliseconds timestamp = Clock().steadyTimestamp();
++    std::shared_ptr<Sensor> sut = sensorCache.makeSensor<Sensor>(
++        DbusEnvironment::serviceName(), metricPath, "metadata",
++        DbusEnvironment::getIoc(), DbusEnvironment::getBus());
++    std::shared_ptr<SensorListenerMock> listenerMock =
++        std::make_shared<StrictMock<SensorListenerMock>>();
++};
++
++TEST_F(TestMetricSensor, readsMetricValueAfterRegister)
++{
++    metricObject->setValue(1234.);
++
++    EXPECT_CALL(*listenerMock, sensorUpdated(Ref(*sut), Ge(timestamp), 1234.))
++        .WillOnce(InvokeWithoutArgs(DbusEnvironment::setPromise("async_read")));
++
++    sut->registerForUpdates(listenerMock);
++
++    ASSERT_TRUE(DbusEnvironment::waitForFuture("async_read"));
++    EXPECT_EQ(sut->updatedTime(), 0u);
++}
++
++TEST_F(TestMetricSensor, notifiesWhenMetricValueChanges)
++{
++    InSequence seq;
++    EXPECT_CALL(*listenerMock, sensorUpdated(Ref(*sut), Ge(timestamp), 0.))
++        .WillOnce(InvokeWithoutArgs(DbusEnvironment::setPromise("async_read")));
++    EXPECT_CALL(*listenerMock, sensorUpdated(Ref(*sut), Ge(timestamp), 99.))
++        .WillOnce(InvokeWithoutArgs(DbusEnvironment::setPromise("notify")));
++
++    sut->registerForUpdates(listenerMock);
++    ASSERT_TRUE(DbusEnvironment::waitForFuture("async_read"));
++
++    metricObject->setValue(99.);
++
++    ASSERT_TRUE(DbusEnvironment::waitForFuture("notify"));
++}
+-- 
+2.53.0-Meta
+

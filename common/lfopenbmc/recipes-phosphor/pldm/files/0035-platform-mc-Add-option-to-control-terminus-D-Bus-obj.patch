@@ -1,0 +1,126 @@
+From 683273031149e376a7e731af7866678ecc27ea76 Mon Sep 17 00:00:00 2001
+From: Carl Lee <carl.lee@amd.com>
+Date: Mon, 19 Oct 2026 11:42:17 +0800
+Subject: [PATCH] platform-mc: Add option to control terminus D-Bus objects
+
+Add a build option to control whether Terminus sensor and inventory
+D-Bus objects are exposed.
+
+When disabled, PLDM will skip creating terminus numeric sensor objects
+and inventory objects.
+
+The new option is named enable-terminus-dbus and defaults to enabled
+to preserve the current behavior.
+
+The link of upstream:
+https://gerrit.openbmc.org/c/openbmc/pldm/+/96054
+
+Signed-off-by: Carl Lee <carl.lee@amd.com>
+---
+ meson.build              |  4 ++++
+ meson.options            |  8 ++++++++
+ platform-mc/terminus.cpp | 14 ++++++++++++--
+ 3 files changed, 24 insertions(+), 2 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index c85658c..9bcd2f6 100644
+--- a/meson.build
++++ b/meson.build
+@@ -136,6 +136,10 @@ conf_data.set(
+     'ENABLE_FALLBACK_TERMINUS_NAME',
+     get_option('enable-fallback-terminus-name').enabled(),
+ )
++conf_data.set(
++    'ENABLE_TERMINUS_DBUS',
++    get_option('enable-terminus-dbus').allowed(),
++)
+ 
+ conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
+ 
+diff --git a/meson.options b/meson.options
+index 636e79f..27c923a 100644
+--- a/meson.options
++++ b/meson.options
+@@ -187,6 +187,14 @@ option(
+     description: 'Enable fallback terminus name "Terminus_{tid}" when no terminus name is found.',
+ )
+ 
++# Control whether terminus inventory/sensor objects are exported on D-Bus.
++option(
++    'enable-terminus-dbus',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Expose terminus numeric sensors and inventory objects on D-Bus.',
++)
++
+ ## Sensor Polling Options
+ option(
+     'sensor-polling-time',
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index f2a1a7e..0ea4135 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -268,11 +268,13 @@ void Terminus::parseTerminusPDRs()
+     }
+     else
+     {
++#ifdef ENABLE_TERMINUS_DBUS
+         if (createInventoryPath(terminusName, findTerminusEntityType()))
+         {
+             lg2::info("Terminus ID {TID}: Created Inventory path {PATH}.", "TID",
+                       tid, "PATH", inventoryPath);
+         }
++#endif
+     }
+ 
+     addNextSensorFromPDRs();
+@@ -282,6 +284,9 @@ void Terminus::addNextSensorFromPDRs()
+ {
+     sensorCreationEvent.reset();
+ 
++#ifndef ENABLE_TERMINUS_DBUS
++    return;
++#else
+     if (terminusName.empty())
+     {
+         lg2::error(
+@@ -317,6 +322,7 @@ void Terminus::addNextSensorFromPDRs()
+ 
+     // Move the iteration to the next sensor PDR
+     sensorPdrIt++;
++#endif
+ }
+ 
+ std::shared_ptr<SensorAuxiliaryNames> Terminus::getSensorAuxiliaryNames(
+@@ -659,8 +665,10 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
+     }
+     if (!numericSensors.size())
+     {
++#ifdef ENABLE_TERMINUS_DBUS
+         lg2::error("Terminus ID {TID} name {NAME}: DOES NOT have sensor.",
+                    "TID", tid, "NAME", terminusName);
++#endif
+         return nullptr;
+     }
+ 
+@@ -704,13 +712,15 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
+             "TID", tid);
+         return;
+     }
+-
++#ifdef ENABLE_TERMINUS_DBUS
+     if (createInventoryPath(static_cast<std::string>(tmp.value()),
+                             findTerminusEntityType()))
+     {
+         lg2::info("Terminus ID {TID}: Created Inventory path.", "TID", tid);
+     }
+-
++#else
++    return;
++#endif
+     if (!fruDecoratorsIntf)
+     {
+         fruDecoratorsIntf = std::make_unique<pldm::dbus_api::PldmFruDecorators>(
+-- 
+2.34.1
+

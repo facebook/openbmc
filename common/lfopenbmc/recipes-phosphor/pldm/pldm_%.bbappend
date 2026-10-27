@@ -40,6 +40,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0032-platform-mc-drop-stale-discovery-work-on-endpoint-re.patch \
     file://0033-platform-mc-cper-submit-events-for-processing.patch \
     file://0034-fw-update-report-Software.Update-events.patch \
+    file://0035-platform-mc-Add-option-to-control-terminus-D-Bus-obj.patch \
 "
 
 # Must apply after common/lfopenbmc pldm patches.

@@ -1,4 +1,4 @@
-From fd8eec7df9b5f9ac933863e70f27594c30ed175e Mon Sep 17 00:00:00 2001
+From 31fa49237bbc697570fe45a8eacb2d5adc9669c9 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Mon, 17 Aug 2026 20:23:51 +0800
 Subject: [PATCH] fw_update: stop sensor polling during update when configured
@@ -42,7 +42,7 @@ Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
  fw-update/condition_collector.hpp             |  59 +++--
  fw-update/firmware_inventory_manager.cpp      |   4 +-
  fw-update/item_update_manager.cpp             |  11 +
- fw-update/item_update_manager.hpp             |  35 ++-
+ fw-update/item_update_manager.hpp             |  34 ++-
  fw-update/manager.hpp                         |  15 ++
  fw-update/test/condition_collector_test.cpp   | 221 +++++++++++++-----
  fw-update/update_manager.cpp                  |  16 ++
@@ -53,7 +53,7 @@ Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
  platform-mc/terminus_manager.cpp              |  17 ++
  platform-mc/terminus_manager.hpp              |  13 ++
  pldmd/pldmd.cpp                               |  26 +++
- 17 files changed, 407 insertions(+), 120 deletions(-)
+ 17 files changed, 406 insertions(+), 120 deletions(-)
 
 diff --git a/configurations/fw-update-conditions/schema/schema.json b/configurations/fw-update-conditions/schema/schema.json
 index cb628b9..70f2d9e 100644
@@ -283,12 +283,12 @@ index 3a75a85..5150f75 100644
  
      softwareMap.insert_or_assign(softwareIdentifier,
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 94bfd38..4b04435 100644
+index 59c23b4..ec06413 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
-@@ -82,6 +82,12 @@ bool ItemUpdateManager::processPackage()
-         eid, DeviceIDRecord{fwDeviceIDRecords[*deviceIdRecordOffset]},
-         compImageInfos, componentInfo, MAXIMUM_TRANSFER_SIZE, this);
+@@ -91,6 +91,12 @@ bool ItemUpdateManager::processPackage()
+     events::generateTargetDetermined(firmwareInventoryPath,
+                                      parser->packageVersion);
      inProgressActivation->activation(software::Activation::Activations::Ready);
 +
 +    if (stopSensorPollingDuringUpdate && sensorPollingCallback)
@@ -299,7 +299,7 @@ index 94bfd38..4b04435 100644
      if (!preConditionPath.empty())
      {
          SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
-@@ -224,6 +230,11 @@ void ItemUpdateManager::completeUpdate(bool status)
+@@ -233,6 +239,11 @@ void ItemUpdateManager::completeUpdate(bool status)
          return;
      }
  
@@ -312,7 +312,7 @@ index 94bfd38..4b04435 100644
      // update flow starts, so neither the progress interface nor the start time
      // is necessarily available here.
 diff --git a/fw-update/item_update_manager.hpp b/fw-update/item_update_manager.hpp
-index 711ab6f..758714c 100644
+index 1f20817..f68e26e 100644
 --- a/fw-update/item_update_manager.hpp
 +++ b/fw-update/item_update_manager.hpp
 @@ -1,5 +1,6 @@
@@ -322,7 +322,7 @@ index 711ab6f..758714c 100644
  #include "update_manager.hpp"
  
  #include <xyz/openbmc_project/Software/ApplyTime/server.hpp>
-@@ -46,6 +47,13 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+@@ -59,6 +60,13 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
       * @param[in] generatedId The software hash identifier
       * @param[in] descriptors The descriptors for the device
       * @param[in] componentInfo The component information for the device
@@ -336,7 +336,7 @@ index 711ab6f..758714c 100644
       */
      explicit ItemUpdateManager(
          mctp_eid_t eid, Event& event,
-@@ -53,17 +61,22 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+@@ -66,9 +74,11 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
          InstanceIdDb& instanceIdDb, const std::string& objPath,
          const std::string& generatedId, const Descriptors& descriptors,
          const ComponentInfo& componentInfo,
@@ -348,12 +348,14 @@ index 711ab6f..758714c 100644
 +        std::function<void(mctp_eid_t, SensorPollingAction)>
 +            sensorPollingCallback = nullptr) :
          UpdateManagerBase(event, handler, instanceIdDb),
-         ItemUpdateIntf(pldm::utils::DBusHandler::getBus(),
-                        std::format("{}_{}", objPath, generatedId).c_str()),
-         eid(eid), objPath(objPath), descriptors(descriptors),
--        componentInfo(componentInfo), preConditionPath(conditionPathPair.first),
+         ItemUpdateIntf(
+             pldm::utils::DBusHandler::getBus(),
+@@ -77,10 +87,12 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+         firmwareInventoryPath(
+             constructFirmwareInventoryPath(objPath, generatedId)),
+         descriptors(descriptors), componentInfo(componentInfo),
+-        preConditionPath(conditionPathPair.first),
 -        postConditionPath(conditionPathPair.second),
-+        componentInfo(componentInfo),
 +        preConditionPath(condition.preUpdateTarget.value_or("")),
 +        postConditionPath(condition.postUpdateTarget.value_or("")),
 +        stopSensorPollingDuringUpdate(condition.stopSensorPolling),
@@ -364,7 +366,7 @@ index 711ab6f..758714c 100644
      {}
  
      /**
-@@ -244,6 +257,12 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+@@ -262,6 +274,12 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
      std::string preConditionPath;
      std::string postConditionPath;
  
@@ -377,7 +379,7 @@ index 711ab6f..758714c 100644
      /**
       * @brief Named arguments known before an update is requested
       */
-@@ -267,6 +286,12 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+@@ -285,6 +303,12 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
  
      std::function<void()> taskCompletionCallback;
  
@@ -731,10 +733,10 @@ index 7144618..29ce77b 100644
 +    EXPECT_FALSE(manager.getCondition("BIC").stopSensorPolling);
  }
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index 5565462..a32680e 100644
+index 2981132..ff8b52d 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
-@@ -541,6 +541,14 @@ void UpdateManager::activatePackage()
+@@ -592,6 +592,14 @@ void UpdateManager::activatePackage()
          return;
      }
  
@@ -749,7 +751,7 @@ index 5565462..a32680e 100644
      if (!preConditionPath.empty())
      {
          SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
-@@ -587,6 +595,14 @@ void UpdateManager::completeUpdate(bool status)
+@@ -638,6 +646,14 @@ void UpdateManager::completeUpdate(bool status)
          return;
      }
  
@@ -765,10 +767,10 @@ index 5565462..a32680e 100644
      auto endTime = std::chrono::steady_clock::now();
      auto dur =
 diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
-index 88bce88..5a061af 100644
+index 6a9137d..04af4dc 100644
 --- a/fw-update/update_manager.hpp
 +++ b/fw-update/update_manager.hpp
-@@ -44,6 +44,15 @@ using DeviceUpdaterInfo =
+@@ -45,6 +45,15 @@ using DeviceUpdaterInfo =
  using DeviceUpdaterInfos = std::vector<DeviceUpdaterInfo>;
  using TotalComponentUpdates = size_t;
  
@@ -784,7 +786,7 @@ index 88bce88..5a061af 100644
  /**
   * @brief The base class of the UpdateManager and the
   *        ItemBaseUpdateManager
-@@ -105,10 +114,7 @@ class UpdateManager : public UpdateManagerBase
+@@ -106,10 +115,7 @@ class UpdateManager : public UpdateManagerBase
          pldm::requester::Handler<pldm::requester::Request>& handler,
          InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
          const DownstreamDescriptorMap& downstreamDescriptorMap,
@@ -796,7 +798,7 @@ index 88bce88..5a061af 100644
          UpdateManagerBase(event, handler, instanceIdDb),
          descriptorMap(descriptorMap),
          downstreamDescriptorMap(downstreamDescriptorMap),
-@@ -124,11 +130,23 @@ class UpdateManager : public UpdateManagerBase
+@@ -125,11 +131,23 @@ class UpdateManager : public UpdateManagerBase
                                           "/xyz/openbmc_project/software/pldm",
                                           this)),
  #endif
@@ -823,7 +825,7 @@ index 88bce88..5a061af 100644
      /** @brief Handle PLDM request for the commands in the FW update
       *         specification
       *
-@@ -264,7 +282,23 @@ class UpdateManager : public UpdateManagerBase
+@@ -284,7 +302,23 @@ class UpdateManager : public UpdateManagerBase
      std::string preConditionPath;
      std::string postConditionPath;
      std::string conditionArg;
@@ -883,10 +885,10 @@ index 6474180..6a389b3 100644
       *
       *  @param[in] request - Event message
 diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
-index b0e8ff1..c685bf7 100644
+index bdae6a0..55049cf 100644
 --- a/platform-mc/sensor_manager.cpp
 +++ b/platform-mc/sensor_manager.cpp
-@@ -109,6 +109,15 @@ void SensorManager::stopPolling(pldm_tid_t tid)
+@@ -120,6 +120,15 @@ void SensorManager::stopPolling(pldm_tid_t tid)
      availableState.erase(tid);
  }
  
@@ -901,9 +903,9 @@ index b0e8ff1..c685bf7 100644
 +
  void SensorManager::doSensorPolling(pldm_tid_t tid)
  {
-     auto it = doSensorPollingTaskHandles.find(tid);
+     auto [it, inserted] = doSensorPollingTaskHandles.try_emplace(tid);
 diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
-index 1540b1e..b5e5942 100644
+index f4cc0fa..56dbd27 100644
 --- a/platform-mc/sensor_manager.hpp
 +++ b/platform-mc/sensor_manager.hpp
 @@ -47,6 +47,10 @@ class SensorManager

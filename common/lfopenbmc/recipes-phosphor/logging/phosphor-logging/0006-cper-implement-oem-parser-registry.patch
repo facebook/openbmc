@@ -1,4 +1,4 @@
-From a8e504dd594e4f63d64c07dc185c46671759fff9 Mon Sep 17 00:00:00 2001
+From 95877a7f691562b4ad1ddeeb2a92b24aee45331b Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 23 Sep 2026 15:43:11 -0400
 Subject: [PATCH] cper: implement oem parser registry
@@ -1018,10 +1018,10 @@ index b6e0509..0fdb016 100644
 +
  } // namespace phosphor::logging::cper::test
 diff --git a/test/meson.build b/test/meson.build
-index 516fca1..18adb36 100644
+index b2ed8c9..cce6b9b 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -83,19 +83,40 @@ log_create_extensions_test = executable(
+@@ -90,19 +90,40 @@ log_create_extensions_test = executable(
  test('test_log_create_extensions', log_create_extensions_test)
  
  if get_option('cper-processor').allowed()

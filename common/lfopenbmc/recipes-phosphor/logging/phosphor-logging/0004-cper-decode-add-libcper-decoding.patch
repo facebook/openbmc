@@ -1,4 +1,4 @@
-From e46408db53036231423f9d8704cf484075f83c10 Mon Sep 17 00:00:00 2001
+From 9a93d8a6164f9c7555871d9158c81baa90845784 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 23 Sep 2026 00:13:47 -0400
 Subject: [PATCH] cper: decode: add libcper decoding
@@ -685,10 +685,10 @@ index 0000000..b6e0509
 +
 +} // namespace phosphor::logging::cper::test
 diff --git a/test/meson.build b/test/meson.build
-index 2ce27bc..516fca1 100644
+index 72b8e57..b2ed8c9 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -82,6 +82,22 @@ log_create_extensions_test = executable(
+@@ -89,6 +89,22 @@ log_create_extensions_test = executable(
  )
  test('test_log_create_extensions', log_create_extensions_test)
  

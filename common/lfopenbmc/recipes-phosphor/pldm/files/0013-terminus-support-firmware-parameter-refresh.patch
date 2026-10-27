@@ -1,4 +1,4 @@
-From 601a45377750c8ad1a964b52feab99dd002a6c5b Mon Sep 17 00:00:00 2001
+From 3c83653e2d907ff3738460be72a6789d2f35139b Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
 Subject: [PATCH] terminus: support firmware parameter refresh
@@ -32,7 +32,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  5 files changed, 200 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 652458e..68355f1 100644
+index 0c60c1c..df48d9c 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -14,13 +14,22 @@ namespace pldm
@@ -173,7 +173,7 @@ index 652458e..68355f1 100644
          return;
      }
  
-@@ -641,10 +746,25 @@ void InventoryManager::getFirmwareParameters(
+@@ -639,10 +744,25 @@ void InventoryManager::getFirmwareParameters(
          error(
              "No response received for get firmware parameters for endpoint ID {EID}",
              "EID", eid);
@@ -296,7 +296,7 @@ index 924f4fc..7a04ea0 100644
       *         the updated EM configurations
       *
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index e4a0a74..4227f34 100644
+index f6fba8f..9c966bb 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -440,6 +440,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,

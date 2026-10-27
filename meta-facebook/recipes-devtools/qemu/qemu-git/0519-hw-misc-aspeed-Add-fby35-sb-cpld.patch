@@ -1,4 +1,4 @@
-From 360c0ed7cce0818541aaa12bdd0d2aa22e64b2be Mon Sep 17 00:00:00 2001
+From 6ce2d2a57ab2299d55a65749607c2427088c27e3 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add fby35-sb-cpld
@@ -33,10 +33,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/fby35_sb_cpld.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 33b4f7c259..01abbbe1e7 100644
+index 4ca1751e30..034e2a3c6d 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -1292,6 +1292,7 @@ F: tests/*/*aspeed*
+@@ -1297,6 +1297,7 @@ F: tests/*/*aspeed*
  F: tests/*/*ast2700*
  F: pc-bios/ast27x0_bootrom.bin
  F: roms/vbootrom
@@ -188,10 +188,10 @@ index 0000000000..aa1a1e5c47
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 528f610965..ba734b471f 100644
+index c1a2dfc637..ada78ad57a 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -151,7 +151,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -153,7 +153,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_sdmc.c',
    'aspeed_xdma.c',
    'aspeed_peci.c',
@@ -202,10 +202,10 @@ index 528f610965..ba734b471f 100644
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 7fde3f8a76..3daa85ee8b 100644
+index 6c425ce8da..378b01f7b9 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -464,3 +464,7 @@ restore_host_x86_igvm(void) ""
+@@ -474,3 +474,7 @@ restore_host_x86_igvm(void) ""
  # tt_atlantis_prcm.c
  tt_atlantis_prcm_read(uint32_t domain, uint64_t offset, uint64_t data) "domain 0x%02x offset 0x%" PRIx64 " data 0x%" PRIx64
  tt_atlantis_prcm_write(uint32_t domain, uint64_t offset, uint64_t data) "domain 0x%02x offset 0x%" PRIx64 " data 0x%" PRIx64
@@ -214,5 +214,5 @@ index 7fde3f8a76..3daa85ee8b 100644
 +fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
 +fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
 -- 
-2.52.0
+2.53.0-Meta
 

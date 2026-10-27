@@ -1,4 +1,4 @@
-From f849e24fba4b7cd8005b6a7af8fc02790df7cd42 Mon Sep 17 00:00:00 2001
+From 198e782b406df8ed092ba79f649253f91e5b0262 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 27 Mar 2026 06:38:52 +0000
 Subject: [PATCH] Fix log flooding caused by per-sensor failsafe logging
@@ -286,10 +286,10 @@ index 5cbf19d..d3aa0d5 100644
      'sysfs/sysfsread.cpp',
      'sysfs/sysfswrite.cpp',
 diff --git a/pid/zone.cpp b/pid/zone.cpp
-index fae9478..036f795 100644
+index 6689678..9d2c4cc 100644
 --- a/pid/zone.cpp
 +++ b/pid/zone.cpp
-@@ -117,7 +117,7 @@ void DbusPidZone::markSensorMissing(const std::string& name,
+@@ -116,7 +116,7 @@ void DbusPidZone::markSensorMissing(const std::string& name,
      }
  
      outputFailsafeLogWithZone(_zoneId, this->getFailSafeMode(), name,
@@ -298,7 +298,7 @@ index fae9478..036f795 100644
  
      if (debugEnabled)
      {
-@@ -513,7 +513,7 @@ void DbusPidZone::initializeCache(void)
+@@ -511,7 +511,7 @@ void DbusPidZone::initializeCache(void)
          _cachedFanOutputs[f] = {nan, nan};
  
          // Start all fans in fail-safe mode.
@@ -307,7 +307,7 @@ index fae9478..036f795 100644
      }
  
      for (const auto& t : _thermalInputs)
-@@ -521,7 +521,7 @@ void DbusPidZone::initializeCache(void)
+@@ -519,7 +519,7 @@ void DbusPidZone::initializeCache(void)
          _cachedValuesByName[t] = {nan, nan};
  
          // Start all sensors in fail-safe mode.

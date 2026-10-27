@@ -1,4 +1,4 @@
-From c1be56d4ac84952c078dd59d3d33efda675c0a8c Mon Sep 17 00:00:00 2001
+From a38cf44c196ad28bb52f14975f7f72492f524a66 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
 Subject: [PATCH] Add back maximum transfer size configuration
@@ -19,10 +19,10 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  4 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index b4a3e0c..9ed3719 100644
+index a961a66..5cc665e 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
-@@ -79,7 +79,6 @@ bool ItemUpdateManager::processPackage()
+@@ -85,7 +85,6 @@ bool ItemUpdateManager::processPackage()
  
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();
@@ -31,10 +31,10 @@ index b4a3e0c..9ed3719 100644
      auto packageSpan = packageMap->getChars();
      packageDataStream =
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index d7f78c8..4446dee 100644
+index 0166741..a263d36 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
-@@ -186,7 +186,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -195,7 +195,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();
  
@@ -43,7 +43,7 @@ index d7f78c8..4446dee 100644
      {
          const auto& fwDeviceIDRecord =
 diff --git a/meson.build b/meson.build
-index f014e0e..b42502e 100644
+index 641295c..c7a3159 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -112,6 +112,7 @@ conf_data.set(

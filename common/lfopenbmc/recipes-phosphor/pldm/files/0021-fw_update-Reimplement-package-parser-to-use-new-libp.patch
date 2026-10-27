@@ -1,4 +1,4 @@
-From 09263fa126f7ef0fa66ab35f0bd03debf3810f5f Mon Sep 17 00:00:00 2001
+From 150cd63ab1b3d1eda2a986720b7730ff8cc781ae Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
 Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
@@ -27,19 +27,19 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
  fw-update/aggregate_update_manager.hpp        |   5 +-
  fw-update/device_updater.cpp                  | 212 ++++----
  fw-update/device_updater.hpp                  |  20 +-
- fw-update/item_update_manager.cpp             |  22 +-
+ fw-update/item_update_manager.cpp             |  34 +-
  fw-update/manager.hpp                         |   2 +-
  fw-update/package_parser.cpp                  | 476 +++++++++---------
  fw-update/package_parser.hpp                  | 113 ++---
- fw-update/test/device_updater_test.cpp        | 103 ++--
+ fw-update/test/device_updater_test.cpp        | 104 ++--
  .../test/firmware_inventory_manager_test.cpp  |   6 +-
  fw-update/test/firmware_inventory_test.cpp    |   3 +-
  fw-update/test/inventory_manager_test.cpp     |   2 +-
  fw-update/test/package_parser_test.cpp        | 247 +++++++--
- fw-update/test/update_manager_test.cpp        |   3 +-
- fw-update/update_manager.cpp                  | 322 ++++++++++--
- fw-update/update_manager.hpp                  |  37 +-
- 16 files changed, 1015 insertions(+), 607 deletions(-)
+ fw-update/test/update_manager_test.cpp        |  26 +-
+ fw-update/update_manager.cpp                  | 337 +++++++++++--
+ fw-update/update_manager.hpp                  |  44 +-
+ 16 files changed, 1057 insertions(+), 623 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index d8b925a..feaa802 100644
@@ -167,10 +167,10 @@ index 6a82238..f06cd70 100644
      {}
  
 diff --git a/fw-update/device_updater.cpp b/fw-update/device_updater.cpp
-index 85bb309..f00a9f8 100644
+index 5556169..2e198b4 100644
 --- a/fw-update/device_updater.cpp
 +++ b/fw-update/device_updater.cpp
-@@ -10,6 +10,9 @@
+@@ -11,6 +11,9 @@
  
  #include <functional>
  
@@ -180,7 +180,7 @@ index 85bb309..f00a9f8 100644
  PHOSPHOR_LOG2_USING;
  
  namespace pldm
-@@ -92,24 +95,45 @@ void UpdateProgress::reportFwUpdate(uint32_t amountUpdated)
+@@ -93,27 +96,48 @@ void UpdateProgress::reportFwUpdate(uint32_t amountUpdated)
  }
  
  DeviceUpdater::DeviceUpdater(
@@ -188,11 +188,14 @@ index 85bb309..f00a9f8 100644
 -    const FirmwareDeviceIDRecord& fwDeviceIDRecord,
 +    mctp_eid_t eid, const DeviceIDRecord& deviceIDRecord,
      const ComponentImageInfos& compImageInfos, const ComponentInfo& compInfo,
-     uint32_t maxTransferSize, UpdateManagerBase* updateManager) :
+     uint32_t maxTransferSize, UpdateManagerBase* updateManager,
+     std::string_view pkgVersion,
+     std::optional<sdbusplus::object_path> targetPath) :
 -    eid(eid), package(package), fwDeviceIDRecord(fwDeviceIDRecord),
 -    compImageInfos(compImageInfos), compInfo(compInfo),
 +    eid(eid), compImageInfos(compImageInfos), compInfo(compInfo),
      maxTransferSize(maxTransferSize), updateManager(updateManager),
+     pkgVersion(pkgVersion), targetPath(std::move(targetPath)),
      activationComplete{false}
  {
 -    const auto& applicableComponents =
@@ -235,7 +238,7 @@ index 85bb309..f00a9f8 100644
      }
  }
  
-@@ -121,20 +145,11 @@ void DeviceUpdater::startFwUpdateFlow()
+@@ -125,20 +149,11 @@ void DeviceUpdater::startFwUpdateFlow()
          throw pldm::InstanceIdError(instanceIdResult.error());
      }
      auto instanceId = instanceIdResult.value();
@@ -258,7 +261,7 @@ index 85bb309..f00a9f8 100644
  
      Request request(
          sizeof(pldm_msg_hdr) + sizeof(struct pldm_request_update_req) +
-@@ -143,7 +158,7 @@ void DeviceUpdater::startFwUpdateFlow()
+@@ -147,7 +162,7 @@ void DeviceUpdater::startFwUpdateFlow()
  
      auto rc = encode_request_update_req(
          instanceId, maxTransferSize, applicableComponents.size(),
@@ -267,7 +270,7 @@ index 85bb309..f00a9f8 100644
          PLDM_STR_TYPE_ASCII, compImgSetVerStrInfo.length, &compImgSetVerStrInfo,
          requestMsg,
          sizeof(struct pldm_request_update_req) + compImgSetVerStrInfo.length);
-@@ -224,10 +239,8 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
+@@ -228,10 +243,8 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
          throw pldm::InstanceIdError(instanceIdResult.error());
      }
      auto instanceId = instanceIdResult.value();
@@ -279,7 +282,7 @@ index 85bb309..f00a9f8 100644
      if (applicableComponents.size() == 1)
      {
          transferFlag = PLDM_START_AND_END;
-@@ -244,14 +257,12 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
+@@ -248,14 +261,12 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
      {
          transferFlag = PLDM_MIDDLE;
      }
@@ -300,7 +303,7 @@ index 85bb309..f00a9f8 100644
      // ComponentClassificationIndex
      auto compKey = std::make_pair(compClassification, compIdentifier);
      auto compInfoIter = compInfo.find(compKey);
-@@ -266,16 +277,13 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
+@@ -270,16 +281,13 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
          return;
      }
      CompClassificationIndex compClassificationIndex = compInfoIter->second;
@@ -323,7 +326,7 @@ index 85bb309..f00a9f8 100644
  
      Request request(
          sizeof(pldm_msg_hdr) + sizeof(struct pldm_pass_component_table_req) +
-@@ -352,8 +360,6 @@ bool DeviceUpdater::passCompTable(mctp_eid_t eid, const pldm_msg* response,
+@@ -356,8 +364,6 @@ bool DeviceUpdater::passCompTable(mctp_eid_t eid, const pldm_msg* response,
      }
      // Handle ComponentResponseCode
  
@@ -332,7 +335,7 @@ index 85bb309..f00a9f8 100644
      if (componentIndex == applicableComponents.size() - 1)
      {
          componentIndex = 0;
-@@ -382,16 +388,15 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
+@@ -386,16 +392,15 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
          throw pldm::InstanceIdError(instanceIdResult.error());
      }
      auto instanceId = instanceIdResult.value();
@@ -358,7 +361,7 @@ index 85bb309..f00a9f8 100644
      // ComponentClassificationIndex
      auto compKey = std::make_pair(compClassification, compIdentifier);
      auto compInfoIter = compInfo.find(compKey);
-@@ -407,14 +412,13 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
+@@ -411,14 +416,13 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
      }
      CompClassificationIndex compClassificationIndex = compInfoIter->second;
  
@@ -378,7 +381,7 @@ index 85bb309..f00a9f8 100644
  
      Request request(
          sizeof(pldm_msg_hdr) + sizeof(struct pldm_update_component_req) +
-@@ -423,9 +427,7 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
+@@ -427,9 +431,7 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
  
      auto rc = encode_update_component_req(
          instanceId, compClassification, compIdentifier, compClassificationIndex,
@@ -389,7 +392,7 @@ index 85bb309..f00a9f8 100644
          updateOptionFlags, PLDM_STR_TYPE_ASCII, compVerStrInfo.length,
          &compVerStrInfo, requestMsg,
          sizeof(pldm_update_component_req) + compVerStrInfo.length);
-@@ -494,17 +496,14 @@ bool DeviceUpdater::updateComponent(mctp_eid_t eid, const pldm_msg* response,
+@@ -498,17 +500,14 @@ bool DeviceUpdater::updateComponent(mctp_eid_t eid, const pldm_msg* response,
          return false;
      }
  
@@ -410,25 +413,25 @@ index 85bb309..f00a9f8 100644
  
      if (compCompatibilityResp != PLDM_CCR_COMP_CAN_BE_UPDATED &&
          compCompatibilityResp != PLDM_CCR_COMP_CANNOT_BE_UPDATED)
-@@ -518,7 +517,7 @@ bool DeviceUpdater::updateComponent(mctp_eid_t eid, const pldm_msg* response,
+@@ -522,7 +521,7 @@ bool DeviceUpdater::updateComponent(mctp_eid_t eid, const pldm_msg* response,
      {
          info(
              "Component at endpoint ID '{EID}' with version '{COMPONENT_VERSION}' cannot be updated, response code '{RESP_CODE}', skipping",
 -            "EID", eid, "COMPONENT_VERSION", compVersion, "RESP_CODE",
 +            "EID", eid, "COMPONENT_VERSION", componentVersion, "RESP_CODE",
              compCompatibilityRespCode);
+         events::generateUpdateNotApplicable(targetPath, pkgVersion);
          componentUpdateStatus[componentIndex] = ComponentUpdateStatus::Failed;
- 
-@@ -553,7 +552,7 @@ bool DeviceUpdater::updateComponent(mctp_eid_t eid, const pldm_msg* response,
+@@ -558,7 +557,7 @@ bool DeviceUpdater::updateComponent(mctp_eid_t eid, const pldm_msg* response,
  
      info(
          "Component at endpoint ID '{EID}' with version '{COMPONENT_VERSION}' can be updated",
 -        "EID", eid, "COMPONENT_VERSION", compVersion);
 +        "EID", eid, "COMPONENT_VERSION", componentVersion);
+     events::generateTransferringToComponent(targetPath, pkgVersion);
      componentUpdateStatus[componentIndex] = ComponentUpdateStatus::Accepted;
      createRequestFwDataTimer();
-     return true;
-@@ -595,11 +594,10 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+@@ -602,11 +601,10 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
          return response;
      }
  
@@ -444,7 +447,7 @@ index 85bb309..f00a9f8 100644
      debug("Decoded fw request data at offset '{OFFSET}' and length '{LENGTH}' ",
            "OFFSET", offset, "LENGTH", length);
      if (length < PLDM_FWUP_BASELINE_TRANSFER_SIZE || length > maxTransferSize)
-@@ -616,7 +614,8 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+@@ -623,7 +621,8 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
          return response;
      }
  
@@ -454,7 +457,7 @@ index 85bb309..f00a9f8 100644
      {
          rc = encode_request_firmware_data_resp(
              request->hdr.instance_id, PLDM_FWUP_DATA_OUT_OF_RANGE, responseMsg,
-@@ -630,24 +629,10 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+@@ -637,24 +636,10 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
          return response;
      }
  
@@ -481,7 +484,7 @@ index 85bb309..f00a9f8 100644
      }
  
      if (componentIndex < progress.size())
-@@ -663,11 +648,8 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+@@ -670,11 +655,8 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
  
      response.resize(sizeof(pldm_msg_hdr) + sizeof(completionCode) + length);
      responseMsg = new (response.data()) pldm_msg;
@@ -495,7 +498,7 @@ index 85bb309..f00a9f8 100644
      rc = encode_request_firmware_data_resp(
          request->hdr.instance_id, completionCode, responseMsg,
          sizeof(completionCode));
-@@ -736,22 +718,21 @@ Response DeviceUpdater::transferComplete(const pldm_msg* request,
+@@ -743,23 +725,22 @@ Response DeviceUpdater::transferComplete(const pldm_msg* request,
          return response;
      }
  
@@ -513,6 +516,7 @@ index 85bb309..f00a9f8 100644
              "Component endpoint ID '{EID}' and version '{COMPONENT_VERSION}' transfer complete.",
 -            "EID", eid, "COMPONENT_VERSION", compVersion);
 +            "EID", eid, "COMPONENT_VERSION", componentVersion);
+         events::generateVerifyingAtComponent(targetPath, pkgVersion);
      }
      else
      {
@@ -521,9 +525,9 @@ index 85bb309..f00a9f8 100644
 -            "EID", eid, "COMPONENT_VERSION", compVersion, "RESULT",
 +            "EID", eid, "COMPONENT_VERSION", componentVersion, "RESULT",
              transferResult);
+         events::generateTransferFailed(targetPath, pkgVersion);
          updateManager->updateDeviceCompletion(eid, false);
-         componentUpdateStatus[componentIndex] = ComponentUpdateStatus::Failed;
-@@ -797,10 +778,9 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
+@@ -806,10 +787,9 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
          return response;
      }
  
@@ -537,12 +541,13 @@ index 85bb309..f00a9f8 100644
      if (componentIndex < progress.size())
      {
          progress[componentIndex].updateState(UpdateProgress::state::Verify);
-@@ -813,13 +793,13 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
+@@ -822,14 +802,14 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
      {
          info(
              "Component endpoint ID '{EID}' and version '{COMPONENT_VERSION}' verification complete.",
 -            "EID", eid, "COMPONENT_VERSION", compVersion);
 +            "EID", eid, "COMPONENT_VERSION", componentVersion);
+         events::generateInstallingOnComponent(targetPath, pkgVersion);
      }
      else
      {
@@ -551,9 +556,9 @@ index 85bb309..f00a9f8 100644
 -            "EID", eid, "COMPONENT_VERSION", compVersion, "RESULT",
 +            "EID", eid, "COMPONENT_VERSION", componentVersion, "RESULT",
              verifyResult);
+         events::generateVerificationFailed(targetPath, pkgVersion);
          updateManager->updateDeviceCompletion(eid, false);
-         componentUpdateStatus[componentIndex] = ComponentUpdateStatus::Failed;
-@@ -867,17 +847,16 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
+@@ -878,17 +858,16 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
          return response;
      }
  
@@ -575,7 +580,7 @@ index 85bb309..f00a9f8 100644
          if (componentIndex < progress.size())
          {
              progress[componentIndex].updateState(UpdateProgress::state::Apply);
-@@ -918,7 +897,8 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
+@@ -929,7 +908,8 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
      {
          error(
              "Failed to apply component endpoint ID '{EID}' and version '{COMPONENT_VERSION}', error - {ERROR}",
@@ -584,8 +589,8 @@ index 85bb309..f00a9f8 100644
 +            applyResult);
          if (updateManager != nullptr)
          {
-             updateManager->updateDeviceCompletion(eid, false);
-@@ -1095,8 +1075,6 @@ void DeviceUpdater::cancelUpdateComponent(
+             events::generateActivateFailed(targetPath, pkgVersion);
+@@ -1110,8 +1090,6 @@ void DeviceUpdater::cancelUpdateComponent(
          return;
      }
  
@@ -595,10 +600,10 @@ index 85bb309..f00a9f8 100644
      if (componentIndex == applicableComponents.size() - 1)
      {
 diff --git a/fw-update/device_updater.hpp b/fw-update/device_updater.hpp
-index d37f258..9b60a8d 100644
+index decc60d..76bf238 100644
 --- a/fw-update/device_updater.hpp
 +++ b/fw-update/device_updater.hpp
-@@ -137,9 +137,7 @@ class DeviceUpdater
+@@ -142,9 +142,7 @@ class DeviceUpdater
      /** @brief Constructor
       *
       *  @param[in] eid - Endpoint ID of the firmware device
@@ -609,17 +614,17 @@ index d37f258..9b60a8d 100644
       *  @param[in] compImageInfos - Component image information for all the
       *                              components in the fw update package
       *  @param[in] compInfo - Component info for the components in this FD
-@@ -149,8 +147,7 @@ class DeviceUpdater
-      *  @param[in] updateManager - To update the status of fw update of the
-      *                             device
+@@ -159,8 +157,7 @@ class DeviceUpdater
+      *                          report against, nullopt to report none
       */
--    explicit DeviceUpdater(mctp_eid_t eid, std::istream& package,
--                           const FirmwareDeviceIDRecord& fwDeviceIDRecord,
-+    explicit DeviceUpdater(mctp_eid_t eid, const DeviceIDRecord& deviceIDRecord,
-                            const ComponentImageInfos& compImageInfos,
-                            const ComponentInfo& compInfo,
-                            uint32_t maxTransferSize,
-@@ -342,13 +339,14 @@ class DeviceUpdater
+     explicit DeviceUpdater(
+-        mctp_eid_t eid, std::istream& package,
+-        const FirmwareDeviceIDRecord& fwDeviceIDRecord,
++        mctp_eid_t eid, const DeviceIDRecord& deviceIDRecord,
+         const ComponentImageInfos& compImageInfos,
+         const ComponentInfo& compInfo, uint32_t maxTransferSize,
+         UpdateManagerBase* updateManager, std::string_view pkgVersion = {},
+@@ -352,13 +349,14 @@ class DeviceUpdater
      /** @brief Endpoint ID of the firmware device */
      mctp_eid_t eid;
  
@@ -641,10 +646,10 @@ index d37f258..9b60a8d 100644
      /** @brief Component image information for all the components in the fw
       *         update package
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 9ed3719..94bfd38 100644
+index 5cc665e..59c23b4 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
-@@ -51,23 +51,21 @@ bool ItemUpdateManager::processPackage()
+@@ -53,18 +53,10 @@ bool ItemUpdateManager::processPackage()
          return failInvalidPackage();
      }
  
@@ -654,6 +659,7 @@ index 9ed3719..94bfd38 100644
 -    if (parser == nullptr)
 -    {
 -        error("Invalid PLDM package header information");
+-        events::generateVerificationFailed(firmwareInventoryPath, {});
 -        return failInvalidPackage();
 -    }
      try
@@ -664,18 +670,28 @@ index 9ed3719..94bfd38 100644
      }
      catch (const std::exception& e)
      {
-         error("Invalid PLDM package header, error - {ERROR}", "ERROR", e);
+@@ -72,6 +64,12 @@ bool ItemUpdateManager::processPackage()
+         events::generateVerificationFailed(firmwareInventoryPath, {});
          return failInvalidPackage();
      }
 +    if (parser == nullptr)
 +    {
 +        error("Invalid PLDM package header information");
++        events::generateVerificationFailed(firmwareInventoryPath, {});
 +        return failInvalidPackage();
 +    }
  
      auto deviceIdRecordOffset =
          associatePkgToDevice(parser->getFwDeviceIDRecords(), descriptors);
-@@ -80,11 +78,8 @@ bool ItemUpdateManager::processPackage()
+@@ -79,21 +77,19 @@ bool ItemUpdateManager::processPackage()
+     {
+         error("Failed to associate package to device");
+         events::generateUpdateNotApplicable(firmwareInventoryPath,
+-                                            parser->pkgVersion);
++                                            parser->packageVersion);
+         return failInvalidPackage();
+     }
+ 
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();
  
@@ -685,10 +701,26 @@ index 9ed3719..94bfd38 100644
      deviceUpdater = std::make_unique<DeviceUpdater>(
 -        eid, *packageDataStream, fwDeviceIDRecords[*deviceIdRecordOffset],
 +        eid, DeviceIDRecord{fwDeviceIDRecords[*deviceIdRecordOffset]},
-         compImageInfos, componentInfo, MAXIMUM_TRANSFER_SIZE, this);
+         compImageInfos, componentInfo, MAXIMUM_TRANSFER_SIZE, this,
+-        parser->pkgVersion, firmwareInventoryPath);
+-    events::generateTargetDetermined(firmwareInventoryPath, parser->pkgVersion);
++        parser->packageVersion, firmwareInventoryPath);
++    events::generateTargetDetermined(firmwareInventoryPath,
++                                     parser->packageVersion);
      inProgressActivation->activation(software::Activation::Activations::Ready);
      if (!preConditionPath.empty())
-@@ -260,6 +255,7 @@ void ItemUpdateManager::teardownUpdate()
+     {
+@@ -257,7 +253,8 @@ void ItemUpdateManager::completeUpdate(bool status)
+     if (status)
+     {
+         events::generateUpdateSuccessful(
+-            firmwareInventoryPath, parser ? parser->pkgVersion : std::string{});
++            firmwareInventoryPath,
++            parser ? parser->packageVersion : std::string{});
+     }
+     inProgressActivation->activation(
+         status ? software::Activation::Activations::Active
+@@ -273,6 +270,7 @@ void ItemUpdateManager::teardownUpdate()
  {
      deviceUpdater.reset();
      packageDataStream.reset();
@@ -1434,21 +1466,18 @@ index 3aeb2b2..aca9f54 100644
  } // namespace fw_update
  
 diff --git a/fw-update/test/device_updater_test.cpp b/fw-update/test/device_updater_test.cpp
-index a7ae6dd..dbb45fd 100644
+index f6fed56..3ddfe5d 100644
 --- a/fw-update/test/device_updater_test.cpp
 +++ b/fw-update/test/device_updater_test.cpp
-@@ -7,10 +7,8 @@
+@@ -11,7 +11,6 @@
  
  #include <gmock/gmock.h>
  #include <gtest/gtest.h>
 -
  using namespace pldm;
  using namespace pldm::fw_update;
--
- class DeviceUpdaterTest : public testing::Test
- {
-   protected:
-@@ -26,48 +24,66 @@ class DeviceUpdaterTest : public testing::Test
+ 
+@@ -42,48 +41,66 @@ class DeviceUpdaterTest : public testing::Test
                                     0x15, 0x95, 0xF4, 0x48, 0x70, 0x1D, 0x49,
                                     0xD6, 0x75}}},
              {}};
@@ -1537,7 +1566,7 @@ index a7ae6dd..dbb45fd 100644
      constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
                                        sizeof(pldm_request_firmware_data_req)>
          reqFwDataReq{0x8A, 0x05, 0x15, 0x00, 0x00, 0x00,
-@@ -78,7 +94,6 @@ TEST_F(DeviceUpdaterTest, ReadPackage512B)
+@@ -94,7 +111,6 @@ TEST_F(DeviceUpdaterTest, ReadPackage512B)
      auto requestMsg = reinterpret_cast<const pldm_msg*>(reqFwDataReq.data());
      auto response = deviceUpdater.requestFwData(
          requestMsg, sizeof(pldm_request_firmware_data_req));
@@ -1545,7 +1574,7 @@ index a7ae6dd..dbb45fd 100644
      EXPECT_EQ(response.size(),
                sizeof(pldm_msg_hdr) + sizeof(completionCode) + length);
      auto responeMsg = reinterpret_cast<const pldm_msg*>(response.data());
-@@ -87,7 +102,6 @@ TEST_F(DeviceUpdaterTest, ReadPackage512B)
+@@ -103,7 +119,6 @@ TEST_F(DeviceUpdaterTest, ReadPackage512B)
      EXPECT_EQ(responeMsg->hdr.type, PLDM_FWUP);
      EXPECT_EQ(responeMsg->hdr.command, PLDM_REQUEST_FIRMWARE_DATA);
      EXPECT_EQ(response[sizeof(pldm_msg_hdr)], completionCode);
@@ -1553,7 +1582,7 @@ index a7ae6dd..dbb45fd 100644
      const std::vector<uint8_t> compFirst512B{
          0x0A, 0x05, 0x15, 0x00, 0x48, 0xD2, 0x1E, 0x80, 0x2E, 0x77, 0x71, 0x2C,
          0x8E, 0xE3, 0x1F, 0x6F, 0x30, 0x76, 0x65, 0x08, 0xB8, 0x1B, 0x4B, 0x03,
-@@ -138,8 +152,8 @@ TEST_F(DeviceUpdaterTest, ReadPackage512B)
+@@ -154,8 +169,8 @@ TEST_F(DeviceUpdaterTest, ReadPackage512B)
  
  TEST_F(DeviceUpdaterTest, UnhandledResponsesReportedToCaller)
  {
@@ -1564,7 +1593,7 @@ index a7ae6dd..dbb45fd 100644
  
      // A missing response cannot be handled, so the handlers report it to their
      // caller, which abandons the update with CancelUpdate.
-@@ -162,8 +176,8 @@ TEST_F(DeviceUpdaterTest, UnhandledResponsesReportedToCaller)
+@@ -178,8 +193,8 @@ TEST_F(DeviceUpdaterTest, UnhandledResponsesReportedToCaller)
  
  TEST_F(DeviceUpdaterTest, RejectWrappedOffsetBeforeComponent)
  {
@@ -1575,7 +1604,7 @@ index a7ae6dd..dbb45fd 100644
  
      // The component starts at byte 139. In the affected implementation,
      // compOffset + offset wraps to zero and offset + length wraps to 373.
-@@ -181,8 +195,8 @@ TEST_F(DeviceUpdaterTest, RejectWrappedOffsetBeforeComponent)
+@@ -197,8 +212,8 @@ TEST_F(DeviceUpdaterTest, RejectWrappedOffsetBeforeComponent)
  
  TEST_F(DeviceUpdaterTest, AllowBaselinePaddingAtComponentEnd)
  {
@@ -1586,7 +1615,7 @@ index a7ae6dd..dbb45fd 100644
  
      constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
                                        sizeof(pldm_request_firmware_data_req)>
-@@ -201,8 +215,8 @@ TEST_F(DeviceUpdaterTest, AllowBaselinePaddingAtComponentEnd)
+@@ -217,8 +232,8 @@ TEST_F(DeviceUpdaterTest, AllowBaselinePaddingAtComponentEnd)
  
  TEST_F(DeviceUpdaterTest, RejectOffsetPastComponentEnd)
  {
@@ -1597,7 +1626,16 @@ index a7ae6dd..dbb45fd 100644
  
      constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
                                        sizeof(pldm_request_firmware_data_req)>
-@@ -218,8 +232,8 @@ TEST_F(DeviceUpdaterTest, RejectOffsetPastComponentEnd)
+@@ -244,7 +259,7 @@ TEST_F(DeviceUpdaterTest, CompInfoOutlivesInventoryEntry)
+ 
+     // Bind to the map-owned entry, as UpdateManager::processStream does
+     ComponentInfoMap componentInfoMap{{eid, compInfo}};
+-    DeviceUpdater deviceUpdater(eid, package, fwDeviceIDRecord, compImageInfos,
++    DeviceUpdater deviceUpdater(eid, fwDeviceIDRecord, compImageInfos,
+                                 componentInfoMap.at(eid), 512, &updateManager);
+ 
+     // InventoryManager::removeFDs() erases the entry mid-update
+@@ -268,8 +283,8 @@ TEST_F(DeviceUpdaterTest, CompInfoOutlivesInventoryEntry)
  
  TEST_F(DeviceUpdaterTest, FullUpdateProgress)
  {
@@ -1608,7 +1646,7 @@ index a7ae6dd..dbb45fd 100644
  
      constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
                                        sizeof(pldm_request_firmware_data_req)>
-@@ -264,3 +278,20 @@ TEST_F(DeviceUpdaterTest, FullUpdateProgress)
+@@ -314,3 +329,20 @@ TEST_F(DeviceUpdaterTest, FullUpdateProgress)
      deviceUpdater.activateFirmware(0, activateMsg, 3);
      EXPECT_EQ(deviceUpdater.getProgress(), 100);
  }
@@ -1669,7 +1707,7 @@ index beb17ec..9f4a167 100644
      FirmwareInventoryTest inventory(
          softwareIdentifier, expectedSoftwarePath, expectedSoftwareHash,
 diff --git a/fw-update/test/inventory_manager_test.cpp b/fw-update/test/inventory_manager_test.cpp
-index 0b0672f..19124ad 100644
+index 1e47b80..6cf9ffc 100644
 --- a/fw-update/test/inventory_manager_test.cpp
 +++ b/fw-update/test/inventory_manager_test.cpp
 @@ -22,7 +22,7 @@ class InventoryManagerTest : public testing::Test
@@ -2013,10 +2051,10 @@ index b8dc1e0..bab9f36 100644
 +    EXPECT_THROW(PackageParser{fwPkgHdr}, InternalFailure);
  }
 diff --git a/fw-update/test/update_manager_test.cpp b/fw-update/test/update_manager_test.cpp
-index fd1c622..42e5a1a 100644
+index 627d8d3..7271db7 100644
 --- a/fw-update/test/update_manager_test.cpp
 +++ b/fw-update/test/update_manager_test.cpp
-@@ -22,7 +22,7 @@ class UpdateManagerTest : public testing::Test
+@@ -26,7 +26,7 @@ class UpdateManagerTest : public testing::Test
          package("./test_pkg", std::ios::binary | std::ios::in | std::ios::ate),
          packageSize(package.tellg()),
          updateManager(event, handler, instanceIdDb, descriptorMap,
@@ -2025,7 +2063,7 @@ index fd1c622..42e5a1a 100644
      {
          // Process the test package, which matches the device with eid, so
          // that the update is in progress.
-@@ -71,6 +71,7 @@ class UpdateManagerTest : public testing::Test
+@@ -75,6 +75,7 @@ class UpdateManagerTest : public testing::Test
                                  0x75}}}}};
      const ComponentInfoMap componentInfoMap{
          {eid, {{std::make_pair(10, 100), 1}}}};
@@ -2033,8 +2071,78 @@ index fd1c622..42e5a1a 100644
      Event event;
      TestInstanceIdDb instanceIdDb;
      requester::Handler<requester::Request> handler;
+@@ -241,6 +242,7 @@ class UpdateManagerCompInfoTest : public testing::Test
+          std::vector<uint8_t>{0x16, 0x20, 0x23, 0xC9, 0x3E, 0xC5, 0x41, 0x15,
+                               0x95, 0xF4, 0x48, 0x70, 0x1D, 0x49, 0xD6, 0x75}}};
+     DescriptorMap descriptorMap;
++    DownstreamDescriptorMap downstreamDescriptorMap;
+     ComponentInfoMap componentInfoMap;
+     Event event;
+     TestInstanceIdDb instanceIdDb;
+@@ -257,7 +259,7 @@ TEST_F(UpdateManagerCompInfoTest, skipDeviceMissingComponentInfo)
+     componentInfoMap = {{eidWithCompInfo, {{std::make_pair(10, 100), 1}}}};
+ 
+     UpdateManager manager(event, handler, instanceIdDb, descriptorMap,
+-                          componentInfoMap);
++                          downstreamDescriptorMap, componentInfoMap);
+     EXPECT_EQ(manager.processPackage(copyTestPackage()), 0);
+ 
+     // The device with component info is serviced by a DeviceUpdater
+@@ -282,7 +284,7 @@ TEST_F(UpdateManagerCompInfoTest, skipDeviceEmptyComponentInfo)
+                         {eidWithEmptyCompInfo, {}}};
+ 
+     UpdateManager manager(event, handler, instanceIdDb, descriptorMap,
+-                          componentInfoMap);
++                          downstreamDescriptorMap, componentInfoMap);
+     EXPECT_EQ(manager.processPackage(copyTestPackage()), 0);
+ 
+     // The device with component info is serviced by a DeviceUpdater
+@@ -310,16 +312,17 @@ TEST_F(UpdateManagerCompInfoTest, componentCountExcludesSkippedDevices)
+         {1, {0x00}, "VersionString2", uuidDescriptors, {}}};
+ 
+     UpdateManager manager(event, handler, instanceIdDb, descriptorMap,
+-                          componentInfoMap);
++                          downstreamDescriptorMap, componentInfoMap);
+     TotalComponentUpdates totalNumComponentUpdates = 0;
+     auto deviceUpdaterInfos = manager.associatePkgToDevices(
+-        fwDeviceIDRecords, descriptorMap, componentInfoMap,
+-        totalNumComponentUpdates);
++        fwDeviceIDRecords, {}, descriptorMap, downstreamDescriptorMap,
++        componentInfoMap, totalNumComponentUpdates);
+ 
+     // Only the device with non-empty component info is matched and counted
+     ASSERT_EQ(deviceUpdaterInfos.size(), 1);
+-    EXPECT_EQ(deviceUpdaterInfos[0].first, eidWithCompInfo);
+-    EXPECT_EQ(deviceUpdaterInfos[0].second, 0);
++    EXPECT_EQ(std::get<mctp_eid_t>(deviceUpdaterInfos[0]), eidWithCompInfo);
++    EXPECT_FALSE(std::get<IsDownstreamDeviceID>(deviceUpdaterInfos[0]));
++    EXPECT_EQ(std::get<DeviceIDRecordOffset>(deviceUpdaterInfos[0]), 0);
+     EXPECT_EQ(totalNumComponentUpdates, 1);
+ }
+ 
+@@ -329,8 +332,9 @@ TEST_F(UpdateManagerCompInfoTest, allDevicesMissingComponentInfoTerminates)
+     descriptorMap = {{eidWithoutCompInfo, uuidDescriptors}};
+ 
+     UpdateManager manager(event, handler, instanceIdDb, descriptorMap,
+-                          componentInfoMap);
+-    EXPECT_EQ(manager.processPackage(copyTestPackage()), -1);
++                          downstreamDescriptorMap, componentInfoMap);
++    // An incompatible package is consumed rather than reported as an error
++    EXPECT_EQ(manager.processPackage(copyTestPackage()), 0);
+ 
+     // The update must terminate as Invalid instead of wedging in Activating
+     ASSERT_NE(manager.activation, nullptr);
+@@ -347,7 +351,7 @@ TEST_F(UpdateManagerCompInfoTest, skippedDeviceFailsUpdate)
+     componentInfoMap = {{eidWithCompInfo, {{std::make_pair(10, 100), 1}}}};
+ 
+     UpdateManager manager(event, handler, instanceIdDb, descriptorMap,
+-                          componentInfoMap);
++                          downstreamDescriptorMap, componentInfoMap);
+     EXPECT_EQ(manager.processPackage(copyTestPackage()), 0);
+     manager.updateDeviceCompletion(eidWithCompInfo, true);
+ 
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index 4446dee..5565462 100644
+index a263d36..2981132 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
 @@ -5,14 +5,22 @@
@@ -2137,7 +2245,7 @@ index 4446dee..5565462 100644
          std::filesystem::remove(packageFilePath);
          return -1;
      }
-@@ -95,10 +112,134 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
+@@ -95,10 +112,148 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
      {
          error("Exception occurred while processing the package: {ERROR}",
                "ERROR", e);
@@ -2146,9 +2254,9 @@ index 4446dee..5565462 100644
 +        packageMMapHandler.reset();
 +        packageMap = nullptr;
 +        packageSize = 0;
-         std::filesystem::remove(packageFilePath);
-         return -1;
-     }
++        std::filesystem::remove(packageFilePath);
++        return -1;
++    }
 +    if (parser == nullptr)
 +    {
 +        error("Invalid PLDM package header information");
@@ -2156,9 +2264,9 @@ index 4446dee..5565462 100644
 +        packageMap = nullptr;
 +        packageSize = 0;
 +        parser.reset();
-+        std::filesystem::remove(packageFilePath);
-+        return -1;
-+    }
+         std::filesystem::remove(packageFilePath);
+         return -1;
+     }
 +
 +    // Populate object path with the hash of the package version
 +    size_t versionHash = std::hash<std::string>{}(parser->packageVersion);
@@ -2166,7 +2274,8 @@ index 4446dee..5565462 100644
 +
 +    auto deviceUpdaterInfos = associatePkgToDevices(
 +        parser->getFwDeviceIDRecords(), parser->getDownstreamDeviceIDRecords(),
-+        descriptorMap, downstreamDescriptorMap, totalNumComponentUpdates);
++        descriptorMap, downstreamDescriptorMap, componentInfoMap,
++        totalNumComponentUpdates);
 +
 +    auto markPackageInvalid = [this, &packageFilePath]() {
 +        activation = std::make_unique<Activation>(
@@ -2179,13 +2288,23 @@ index 4446dee..5565462 100644
 +        std::filesystem::remove(packageFilePath);
 +        deviceUpdaterMap.clear();
 +        deviceUpdateCompletionMap.clear();
++        skippedEids.clear();
 +        totalNumComponentUpdates = 0;
 +    };
 +
 +    if (!deviceUpdaterInfos.size())
 +    {
-+        error(
-+            "No matching devices found with the PLDM firmware update package");
++        if (skippedEids.empty())
++        {
++            error(
++                "No matching devices found with the PLDM firmware update package");
++        }
++        else
++        {
++            error(
++                "All {COUNT} endpoints matching the PLDM firmware update package were skipped",
++                "COUNT", skippedEids.size());
++        }
 +        markPackageInvalid();
 +        return 0;
 +    }
@@ -2209,6 +2328,8 @@ index 4446dee..5565462 100644
 +            deviceIDRecord = fwDeviceIDRecords[offset];
 +        }
 +        auto search = componentInfoMap.find(eid);
++        // associatePkgToDevices only returns EIDs with non-empty comp info
++        assert(search != componentInfoMap.end());
 +        try
 +        {
 +            auto [it, inserted] = deviceUpdaterMap.emplace(
@@ -2258,6 +2379,7 @@ index 4446dee..5565462 100644
 +        parser.reset();
 +        deviceUpdaterMap.clear();
 +        deviceUpdateCompletionMap.clear();
++        skippedEids.clear();
 +        totalNumComponentUpdates = 0;
 +        return -1;
 +    }
@@ -2273,7 +2395,7 @@ index 4446dee..5565462 100644
  }
  
  std::string UpdateManager::processStreamDefer(std::istream& package,
-@@ -146,34 +287,33 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -146,34 +301,34 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
      }
  
      package.seekg(0);
@@ -2315,14 +2437,15 @@ index 4446dee..5565462 100644
  
 -    auto deviceUpdaterInfos =
 -        associatePkgToDevices(parser->getFwDeviceIDRecords(), descriptorMap,
--                              totalNumComponentUpdates);
+-                              componentInfoMap, totalNumComponentUpdates);
 +    auto deviceUpdaterInfos = associatePkgToDevices(
 +        parser->getFwDeviceIDRecords(), parser->getDownstreamDeviceIDRecords(),
-+        descriptorMap, downstreamDescriptorMap, totalNumComponentUpdates);
++        descriptorMap, downstreamDescriptorMap, componentInfoMap,
++        totalNumComponentUpdates);
      if (!deviceUpdaterInfos.size())
      {
-         error(
-@@ -184,18 +324,52 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+         if (skippedEids.empty())
+@@ -193,20 +348,54 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
      }
  
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
@@ -2335,11 +2458,6 @@ index 4446dee..5565462 100644
 -        const auto& fwDeviceIDRecord =
 -            fwDeviceIDRecords[deviceUpdaterInfo.second];
 -        auto search = componentInfoMap.find(deviceUpdaterInfo.first);
--        deviceUpdaterMap.emplace(
--            deviceUpdaterInfo.first,
--            std::make_unique<DeviceUpdater>(
--                deviceUpdaterInfo.first, package, fwDeviceIDRecord,
--                compImageInfos, search->second, MAXIMUM_TRANSFER_SIZE, this));
 +        auto [eid, isDownstream, offset] = deviceUpdaterInfo;
 +
 +        DeviceIDRecord deviceIDRecord;
@@ -2352,6 +2470,13 @@ index 4446dee..5565462 100644
 +            deviceIDRecord = fwDeviceIDRecords[offset];
 +        }
 +        auto search = componentInfoMap.find(eid);
+         // associatePkgToDevices only returns EIDs with non-empty comp info
+         assert(search != componentInfoMap.end());
+-        deviceUpdaterMap.emplace(
+-            deviceUpdaterInfo.first,
+-            std::make_unique<DeviceUpdater>(
+-                deviceUpdaterInfo.first, package, fwDeviceIDRecord,
+-                compImageInfos, search->second, MAXIMUM_TRANSFER_SIZE, this));
 +        try
 +        {
 +            auto [it2, inserted2] = deviceUpdaterMap.emplace(
@@ -2383,17 +2508,17 @@ index 4446dee..5565462 100644
      }
  
      updateInProgress = true;
-@@ -212,7 +386,9 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -223,7 +412,9 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
  
  DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
      const FirmwareDeviceIDRecords& fwDeviceIDRecords,
 +    const DownstreamDeviceIDRecords& downstreamDeviceIDRecords,
      const DescriptorMap& descriptorMap,
 +    const DownstreamDescriptorMap& downstreamDescriptorMap,
+     const ComponentInfoMap& componentInfoMap,
      TotalComponentUpdates& totalNumComponentUpdates)
  {
-     DeviceUpdaterInfos deviceUpdaterInfos;
-@@ -220,19 +396,56 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
+@@ -232,11 +423,17 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
      {
          const auto& deviceIDDescriptors =
              std::get<Descriptors>(fwDeviceIDRecords[index]);
@@ -2412,6 +2537,12 @@ index 4446dee..5565462 100644
 +                              deviceIDDescriptorsVec.begin(),
 +                              deviceIDDescriptorsVec.end()))
              {
+                 // Skip endpoints without usable GetFirmwareParameters data
+                 auto compInfoSearch = componentInfoMap.find(eid);
+@@ -252,13 +449,44 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
+                     }
+                     continue;
+                 }
 -                deviceUpdaterInfos.emplace_back(std::make_pair(eid, index));
 +                deviceUpdaterInfos.emplace_back(
 +                    std::make_tuple(eid, false, index));
@@ -2454,9 +2585,9 @@ index 4446dee..5565462 100644
      return deviceUpdaterInfos;
  }
  
-@@ -421,10 +634,11 @@ void UpdateManager::releasePackage()
-     deviceUpdaterMap.clear();
+@@ -458,10 +686,11 @@ void UpdateManager::releasePackage()
      deviceUpdateCompletionMap.clear();
+     skippedEids.clear();
      parser.reset();
 -    if (package.is_open())
 -    {
@@ -2471,18 +2602,18 @@ index 4446dee..5565462 100644
  }
  
 diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
-index fa69b14..88bce88 100644
+index e7788fd..6a9137d 100644
 --- a/fw-update/update_manager.hpp
 +++ b/fw-update/update_manager.hpp
-@@ -21,6 +21,7 @@
- #include <filesystem>
+@@ -22,6 +22,7 @@
  #include <fstream>
  #include <functional>
+ #include <set>
 +#include <span>
  #include <unordered_map>
  #include <utility>
  
-@@ -37,7 +38,9 @@ using namespace sdeventplus::source;
+@@ -38,7 +39,9 @@ using namespace sdeventplus::source;
  using namespace pldm;
  
  using DeviceIDRecordOffset = size_t;
@@ -2493,7 +2624,7 @@ index fa69b14..88bce88 100644
  using DeviceUpdaterInfos = std::vector<DeviceUpdaterInfo>;
  using TotalComponentUpdates = size_t;
  
-@@ -88,16 +91,28 @@ class UpdateManager : public UpdateManagerBase
+@@ -89,16 +92,28 @@ class UpdateManager : public UpdateManagerBase
      UpdateManager& operator=(UpdateManager&&) = delete;
      virtual ~UpdateManager() = default;
  
@@ -2523,17 +2654,32 @@ index fa69b14..88bce88 100644
  #ifdef FW_UPDATE_INOTIFY_ENABLED
          watch(event.get(),
                [this](const std::string& packageFilePath) {
-@@ -165,7 +180,9 @@ class UpdateManager : public UpdateManagerBase
+@@ -166,16 +181,23 @@ class UpdateManager : public UpdateManagerBase
+      *         is missing or empty and recording them in skippedEids
+      *
+      *  @param[in] fwDeviceIDRecords - Device ID records in the package
++     *  @param[in] downstreamDeviceIDRecords - Downstream device ID records in
++     *                                         the package
+      *  @param[in] descriptorMap - Descriptors of the discovered devices
++     *  @param[in] downstreamDescriptorMap - Descriptors of the discovered
++     *                                       downstream devices
+      *  @param[in] componentInfoMap - Component info of the discovered devices
+      *  @param[out] totalNumComponentUpdates - Total component updates for the
+      *                                         matched devices
+      *
+-     *  @return Matched devices as pairs of EID and device ID record offset
++     *  @return Matched devices as tuples of EID, whether the record is a
++     *          downstream device ID record and the device ID record offset
       */
      DeviceUpdaterInfos associatePkgToDevices(
          const FirmwareDeviceIDRecords& fwDeviceIDRecords,
 +        const DownstreamDeviceIDRecords& downstreamDeviceIDRecords,
          const DescriptorMap& descriptorMap,
 +        const DownstreamDescriptorMap& downstreamDescriptorMap,
+         const ComponentInfoMap& componentInfoMap,
          TotalComponentUpdates& totalNumComponentUpdates);
  
-     /** @brief Generate a unique software ID based on current timestamp
-@@ -203,6 +220,8 @@ class UpdateManager : public UpdateManagerBase
+@@ -214,6 +236,8 @@ class UpdateManager : public UpdateManagerBase
  
      /** @brief Device identifiers of the managed FDs */
      const DescriptorMap& descriptorMap;
@@ -2542,7 +2688,7 @@ index fa69b14..88bce88 100644
      /** @brief Component information needed for the update of the managed FDs */
      const ComponentInfoMap& componentInfoMap;
  #ifdef FW_UPDATE_INOTIFY_ENABLED
-@@ -214,8 +233,20 @@ class UpdateManager : public UpdateManagerBase
+@@ -225,8 +249,20 @@ class UpdateManager : public UpdateManagerBase
      std::string objPath;
  
      std::filesystem::path fwPackageFilePath;

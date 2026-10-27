@@ -24,7 +24,9 @@ LIC_FILES_CHKSUM = "file://Licenses/README;md5=2ca5f2c35c8cc335f0a19756634782f1"
 PE = "1"
 
 BRANCH = "aspeed-master-v2023.10"
-SRC_URI = "git://github.com/AspeedTech-BMC/u-boot.git;protocol=https;branch=${BRANCH}"
+SRC_URI = "git://github.com/AspeedTech-BMC/u-boot.git;protocol=https;branch=${BRANCH} \
+           file://0001-rsa-handle-OpenSSL-builds-without-ENGINE-support.patch \
+"
 
 # Tag for v00.05.13
 SRCREV = "03a8c08746a657145b036ab61ba1d299394cce74"

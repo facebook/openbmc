@@ -26,7 +26,7 @@ SRC_URI = "gitsm://github.com/chipsalliance/caliptra-mcu-sw;protocol=https;branc
 
 SRCREV = "2b7837402328ab611968d40243075082469df7ae"
 
-inherit cargo
+inherit cargo perlnative
 
 # Using cargo to download packages
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
@@ -38,7 +38,10 @@ do_compile() {
     cd ${S}
 
     # Build xtask
-    cargo build -p xtask --release
+    # The pinned Rust OpenSSL fork requires the OpenSSL 3.5 source already
+    # vendored in Cargo.lock; cargo_common otherwise forces system OpenSSL 4.
+    # Keep OpenSSL's generated Makefile using Yocto's Perl wrapper.
+    PERL=perl OPENSSL_NO_VENDOR=0 cargo build -p xtask --release
 }
 
 do_install() {

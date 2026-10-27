@@ -29,7 +29,7 @@ SRCREV = "3c06158958aeac6b8aa537a3da67331e730e4562"
 
 DEPENDS += "caliptra-mcu-sw"
 
-inherit cargo
+inherit cargo perlnative
 
 # Using cargo to download packages
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
@@ -39,6 +39,9 @@ do_compile[network] = "1"
 
 do_compile() {
     cd ${S}
+    # The pinned Rust fork uses the OpenSSL 3.5 source from Cargo.lock.
+    # Keep its generated Makefile using Yocto's native Perl wrapper.
+    export OPENSSL_NO_VENDOR=0 PERL=perl
     # Build caliptra-auth-manifest-app
     cargo build -p ${CALIPTRA_AUTH_MANIFEST_APP} --release
 

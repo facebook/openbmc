@@ -1,0 +1,16 @@
+# Anacapa AINIC/Mortaro USB ACM Console Rules
+# VID:PID 0438:000a = AMD Mortaro
+#
+# Auto-start obmc-console-server when ttyACM devices appear
+
+SUBSYSTEM=="tty", KERNEL=="ttyACM0", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", \
+    TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM0.service"
+
+SUBSYSTEM=="tty", KERNEL=="ttyACM1", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", \
+    TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM1.service"
+
+SUBSYSTEM=="tty", KERNEL=="ttyACM2", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", \
+    TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM2.service"
+
+SUBSYSTEM=="tty", KERNEL=="ttyACM3", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", \
+    TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM3.service"

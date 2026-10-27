@@ -60,3 +60,8 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0420-ManagerDiagnosticData-report-Oem-Meta-Metrics-from-m.patch \
 "
+
+# Collect PortMetrics (Metric.Value) properties into MetricReports
+SRC_URI:append = " \
+    file://0440-MetricReportDefinition-accept-PortMetrics-properties.patch \
+"

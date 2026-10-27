@@ -1,0 +1,580 @@
+From 9ed799d63c80bfdeeb5661762120009bf96eb3fc Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Wed, 21 Oct 2026 15:26:58 -0700
+Subject: [PATCH] MetricReportDefinition: accept PortMetrics properties
+
+MetricReportDefinitions only accept sensor URIs, so the NIC counters
+that PortMetrics serves from xyz.openbmc_project.Metric.Value can't be
+collected into a report, or streamed from one.
+
+Accept MetricProperties of the form
+  /redfish/v1/Chassis/<c>/NetworkAdapters/<n>/Ports/<p>/Metrics#/<property>
+and resolve them by walking the same chassis -> adapter -> port ->
+measured_by associations the PortMetrics GET handler uses.  The
+mapping from Metric.Value object name to PortMetrics property moves
+into a table so the GET handler and the resolver share it.
+
+The telemetry service must also be able to read Metric.Value objects
+for such a report to be created.
+
+Signed-off-by: Pete O_o <pmb@meta.com>
+---
+ .../include/utils/telemetry_utils.hpp         |  22 +-
+ redfish-core/lib/metric_report_definition.hpp |  27 +-
+ redfish-core/lib/network_adapter.hpp          | 239 +++++++++---------
+ test/meson.build                              |   1 +
+ .../include/utils/telemetry_utils_test.cpp    |  48 ++++
+ .../redfish-core/lib/network_adapter_test.cpp |  40 +++
+ 6 files changed, 257 insertions(+), 120 deletions(-)
+ create mode 100644 test/redfish-core/lib/network_adapter_test.cpp
+
+diff --git a/redfish-core/include/utils/telemetry_utils.hpp b/redfish-core/include/utils/telemetry_utils.hpp
+index 4490a4a..8ff05f5 100644
+--- a/redfish-core/include/utils/telemetry_utils.hpp
++++ b/redfish-core/include/utils/telemetry_utils.hpp
+@@ -20,6 +20,7 @@
+ #include <span>
+ #include <string>
+ #include <string_view>
++#include <tuple>
+ #include <utility>
+ 
+ namespace redfish
+@@ -69,9 +70,13 @@ struct IncorrectMetricUri
+     size_t index;
+ };
+ 
++// (chassis, network adapter, port) named by a PortMetrics MetricProperties URI
++using PortMetricsNode = std::tuple<std::string, std::string, std::string>;
++
+ inline std::optional<IncorrectMetricUri> getChassisSensorNode(
+     std::span<const std::string> uris,
+-    boost::container::flat_set<std::pair<std::string, std::string>>& matched)
++    boost::container::flat_set<std::pair<std::string, std::string>>& matched,
++    boost::container::flat_set<PortMetricsNode>& matchedPorts)
+ {
+     size_t uriIdx = 0;
+     for (const std::string& uri : uris)
+@@ -98,6 +103,21 @@ inline std::optional<IncorrectMetricUri> getChassisSensorNode(
+             continue;
+         }
+ 
++        // The property itself is the URI fragment, e.g. "Metrics#/RXBytes",
++        // and is validated when the port's metrics are looked up.
++        std::string adapter;
++        std::string port;
++        if (crow::utility::readUrlSegments(
++                *parsed, "redfish", "v1", "Chassis", std::ref(chassis),
++                "NetworkAdapters", std::ref(adapter), "Ports", std::ref(port),
++                "Metrics"))
++        {
++            matchedPorts.emplace(std::move(chassis), std::move(adapter),
++                                 std::move(port));
++            uriIdx++;
++            continue;
++        }
++
+         // Those 2 segments cannot be validated here, as we don't know which
+         // sensors exist at the moment of parsing.
+         std::string ignoredSenorId;
+diff --git a/redfish-core/lib/metric_report_definition.hpp b/redfish-core/lib/metric_report_definition.hpp
+index 812ae18..aefa8fd 100644
+--- a/redfish-core/lib/metric_report_definition.hpp
++++ b/redfish-core/lib/metric_report_definition.hpp
+@@ -12,6 +12,7 @@
+ #include "http_request.hpp"
+ #include "http_response.hpp"
+ #include "logging.hpp"
++#include "network_adapter.hpp"
+ #include "query.hpp"
+ #include "registries/privilege_registry.hpp"
+ #include "sensors.hpp"
+@@ -666,12 +667,13 @@ inline bool getUserParameters(crow::Response& res, const crow::Request& req,
+ inline bool getChassisSensorNodeFromMetrics(
+     const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+     std::span<const AddReportArgs::MetricArgs> metrics,
+-    boost::container::flat_set<std::pair<std::string, std::string>>& matched)
++    boost::container::flat_set<std::pair<std::string, std::string>>& matched,
++    boost::container::flat_set<PortMetricsNode>& matchedPorts)
+ {
+     for (const auto& metric : metrics)
+     {
+         std::optional<IncorrectMetricUri> error =
+-            getChassisSensorNode(metric.uris, matched);
++            getChassisSensorNode(metric.uris, matched, matchedPorts);
+         if (error)
+         {
+             messages::propertyValueIncorrect(
+@@ -1220,6 +1222,7 @@ inline void setReportMetrics(
+ 
+             boost::container::flat_set<std::pair<std::string, std::string>>
+                 chassisSensors;
++            boost::container::flat_set<telemetry::PortMetricsNode> ports;
+ 
+             size_t index = 0;
+             for (std::variant<nlohmann::json::object_t, std::nullptr_t>&
+@@ -1256,8 +1259,8 @@ inline void setReportMetrics(
+                     return;
+                 }
+ 
+-                std::optional<IncorrectMetricUri> error =
+-                    getChassisSensorNode(metricArgs.uris, chassisSensors);
++                std::optional<IncorrectMetricUri> error = getChassisSensorNode(
++                    metricArgs.uris, chassisSensors, ports);
+ 
+                 if (error)
+                 {
+@@ -1290,6 +1293,13 @@ inline void setReportMetrics(
+                         updateMetricsReq->insert(uriToDbus);
+                     });
+             }
++
++            for (const auto& [chassis, adapter, port] : ports)
++            {
++                getPortMetricsUriToDbusMap(
++                    chassis, adapter, port,
++                    std::bind_front(&UpdateMetrics::insert, updateMetricsReq));
++            }
+         });
+ }
+ 
+@@ -1426,8 +1436,9 @@ inline void handleMetricReportDefinitionsPost(
+ 
+     boost::container::flat_set<std::pair<std::string, std::string>>
+         chassisSensors;
++    boost::container::flat_set<telemetry::PortMetricsNode> ports;
+     if (!telemetry::getChassisSensorNodeFromMetrics(asyncResp, args.metrics,
+-                                                    chassisSensors))
++                                                    chassisSensors, ports))
+     {
+         return;
+     }
+@@ -1440,6 +1451,12 @@ inline void handleMetricReportDefinitionsPost(
+                              std::bind_front(afterRetrieveUriToDbusMap,
+                                              asyncResp, addReportReq));
+     }
++    for (const auto& [chassis, adapter, port] : ports)
++    {
++        getPortMetricsUriToDbusMap(
++            chassis, adapter, port,
++            std::bind_front(&telemetry::AddReport::insert, addReportReq));
++    }
+ }
+ 
+ inline void handleMetricReportHead(
+diff --git a/redfish-core/lib/network_adapter.hpp b/redfish-core/lib/network_adapter.hpp
+index 9619c24..75c2f2f 100644
+--- a/redfish-core/lib/network_adapter.hpp
++++ b/redfish-core/lib/network_adapter.hpp
+@@ -19,7 +19,9 @@
+ #include <array>
+ #include <format>
+ #include <functional>
++#include <map>
+ #include <memory>
++#include <optional>
+ #include <string>
+ #include <string_view>
+ #include <utility>
+@@ -30,6 +32,58 @@ static constexpr std::array<std::string_view, 1> networkAdapterInterface = {
+ namespace redfish
+ {
+ 
++struct NicMetricProperty
++{
++    std::string_view dbusName;
++    std::string_view jsonPointer;
++};
++
++// Metric.Value objects named .../nic/<dbusName>, and the PortMetrics property
++// each one populates.
++inline constexpr std::array<NicMetricProperty, 21> nicMetricProperties{{
++    {"rx_bytes", "/RXBytes"},
++    {"tx_bytes", "/TXBytes"},
++    {"rx_multicast_frames", "/Networking/RXMulticastFrames"},
++    {"tx_multicast_frames", "/Networking/TXMulticastFrames"},
++    {"rx_broadcast_frames", "/Networking/RXBroadcastFrames"},
++    {"tx_broadcast_frames", "/Networking/TXBroadcastFrames"},
++    {"rx_unicast_frames", "/Networking/RXUnicastFrames"},
++    {"tx_unicast_frames", "/Networking/TXUnicastFrames"},
++    {"rx_fcs_errors", "/Networking/RXFCSErrors"},
++    {"rx_frame_alignment_errors", "/Networking/RXFrameAlignmentErrors"},
++    {"rx_false_carrier_errors", "/Networking/RXFalseCarrierErrors"},
++    {"rx_undersize_frames", "/Networking/RXUndersizeFrames"},
++    {"rx_oversize_frames", "/Networking/RXOversizeFrames"},
++    {"rx_pause_xon_frames", "/Networking/RXPauseXONFrames"},
++    {"rx_pause_xoff_frames", "/Networking/RXPauseXOFFFrames"},
++    {"tx_pause_xon_frames", "/Networking/TXPauseXONFrames"},
++    {"tx_pause_xoff_frames", "/Networking/TXPauseXOFFFrames"},
++    {"tx_single_collisions", "/Networking/TXSingleCollisions"},
++    {"tx_multiple_collisions", "/Networking/TXMultipleCollisions"},
++    {"tx_late_collisions", "/Networking/TXLateCollisions"},
++    {"tx_excessive_collisions", "/Networking/TXExcessiveCollisions"},
++}};
++
++// Returns the PortMetrics JSON pointer for a Metric.Value object path, or
++// nothing if the object isn't a NIC metric that PortMetrics carries.
++inline std::optional<std::string_view> getNicMetricJsonPointer(
++    const sdbusplus::object_path& path)
++{
++    if (path.parent_path().filename() != "nic")
++    {
++        return std::nullopt;
++    }
++    const std::string name = path.filename();
++    for (const NicMetricProperty& property : nicMetricProperties)
++    {
++        if (property.dbusName == name)
++        {
++            return property.jsonPointer;
++        }
++    }
++    return std::nullopt;
++}
++
+ inline void handleNetworkAdapterPortMetricsPathsPortMetricsGet(
+     const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+     const boost::system::error_code& ec,
+@@ -49,124 +103,16 @@ inline void handleNetworkAdapterPortMetricsPathsPortMetricsGet(
+             continue;
+         }
+ 
+-        sdbusplus::object_path objectPah(path);
+-
+-        const std::string metricType = objectPah.parent_path().filename();
+-        const std::string metricName = objectPah.filename();
+-
+-        if (metricType != "nic")
++        std::optional<std::string_view> jsonPointer =
++            getNicMetricJsonPointer(sdbusplus::object_path(path));
++        if (!jsonPointer)
+         {
+             continue;
+         }
+ 
+-        const auto& serviceName = service.begin()->first;
+-
+-        if (metricName == "rx_bytes")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/RXBytes"_json_pointer);
+-        }
+-        else if (metricName == "tx_bytes")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/TXBytes"_json_pointer);
+-        }
+-        else if (metricName == "rx_multicast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXMulticastFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_multicast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXMulticastFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_broadcast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXBroadcastFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_broadcast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXBroadcastFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_unicast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXUnicastFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_unicast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXUnicastFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_fcs_errors")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXFCSErrors"_json_pointer);
+-        }
+-        else if (metricName == "rx_frame_alignment_errors")
+-        {
+-            getMetricProperty(
+-                asyncResp, serviceName, path,
+-                "/Networking/RXFrameAlignmentErrors"_json_pointer);
+-        }
+-        else if (metricName == "rx_false_carrier_errors")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXFalseCarrierErrors"_json_pointer);
+-        }
+-        else if (metricName == "rx_undersize_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXUndersizeFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_oversize_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXOversizeFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_pause_xon_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXPauseXONFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_pause_xoff_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXPauseXOFFFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_pause_xon_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXPauseXONFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_pause_xoff_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXPauseXOFFFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_single_collisions")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXSingleCollisions"_json_pointer);
+-        }
+-        else if (metricName == "tx_multiple_collisions")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXMultipleCollisions"_json_pointer);
+-        }
+-        else if (metricName == "tx_late_collisions")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXLateCollisions"_json_pointer);
+-        }
+-        else if (metricName == "tx_excessive_collisions")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXExcessiveCollisions"_json_pointer);
+-        }
++        getMetricProperty(
++            asyncResp, service.begin()->first, path,
++            nlohmann::json::json_pointer(std::string(*jsonPointer)));
+     }
+ }
+ 
+@@ -509,6 +455,71 @@ inline void handleNetworkAdapterPortCollectionGet(
+                                           chassisId, networkAdapterId));
+ }
+ 
++using PortMetricsUriToDbusCallback =
++    std::function<void(const std::map<std::string, std::string>&)>;
++
++inline void afterPortMetricsUriToDbusMap(
++    const std::string& metricsUri, const PortMetricsUriToDbusCallback& callback,
++    const boost::system::error_code& ec,
++    const dbus::utility::MapperGetSubTreeResponse& object)
++{
++    std::map<std::string, std::string> uriToDbus;
++    if (ec)
++    {
++        BMCWEB_LOG_ERROR("DBus response error on GetAssociatedSubTree {}", ec);
++        callback(uriToDbus);
++        return;
++    }
++
++    for (const auto& [path, service] : object)
++    {
++        std::optional<std::string_view> jsonPointer =
++            getNicMetricJsonPointer(sdbusplus::object_path(path));
++        if (service.size() != 1 || !jsonPointer)
++        {
++            continue;
++        }
++        uriToDbus.emplace(std::format("{}#{}", metricsUri, *jsonPointer), path);
++    }
++    callback(uriToDbus);
++}
++
++inline void getPortMetricsUriToDbusMapFromPort(
++    const std::string& metricsUri, const PortMetricsUriToDbusCallback& callback,
++    const std::string& portPath, const std::string& /*serviceName*/)
++{
++    dbus::utility::getAssociatedSubTree(
++        sdbusplus::object_path(portPath) / "measured_by",
++        sdbusplus::object_path("/xyz/openbmc_project/metric"), 0,
++        std::array<std::string_view, 1>{"xyz.openbmc_project.Metric.Value"},
++        std::bind_front(afterPortMetricsUriToDbusMap, metricsUri, callback));
++}
++
++// Maps each PortMetrics property of one port, as
++// "<Metrics URI>#<JSON pointer>", to the Metric.Value object behind it.  Used
++// to resolve MetricReportDefinition MetricProperties.  If the adapter or port
++// doesn't exist the callback is never invoked, and the caller reports the
++// URIs as not found.
++inline void getPortMetricsUriToDbusMap(
++    const std::string& chassisId, const std::string& networkAdapterId,
++    const std::string& portId, PortMetricsUriToDbusCallback&& callback)
++{
++    // Lookup failures must not write to the caller's response.
++    auto lookupResp = std::make_shared<bmcweb::AsyncResp>();
++    std::string metricsUri =
++        boost::urls::format(
++            "/redfish/v1/Chassis/{}/NetworkAdapters/{}/Ports/{}/Metrics",
++            chassisId, networkAdapterId, portId)
++            .buffer();
++
++    getNetworkAdapterPath(
++        lookupResp, chassisId, networkAdapterId,
++        std::bind_front(
++            getAssociatedPortPath, lookupResp, portId,
++            std::bind_front(getPortMetricsUriToDbusMapFromPort,
++                            std::move(metricsUri), std::move(callback))));
++}
++
+ inline void requestRoutesChassisNetworkAdapter(App& app)
+ {
+     BMCWEB_ROUTE(app, "/redfish/v1/Chassis/<str>/NetworkAdapters/")
+diff --git a/test/meson.build b/test/meson.build
+index 57caf93..3a537b1 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -67,6 +67,7 @@ srcfiles_unittest = files(
+     'redfish-core/lib/memory_test.cpp',
+     'redfish-core/lib/metadata_test.cpp',
+     'redfish-core/lib/metric_report_definition_test.cpp',
++    'redfish-core/lib/network_adapter_test.cpp',
+     'redfish-core/lib/openbmc_managers_test.cpp',
+     'redfish-core/lib/pcie_test.cpp',
+     'redfish-core/lib/power_subsystem_test.cpp',
+diff --git a/test/redfish-core/include/utils/telemetry_utils_test.cpp b/test/redfish-core/include/utils/telemetry_utils_test.cpp
+index d910a1f..6779172 100644
+--- a/test/redfish-core/include/utils/telemetry_utils_test.cpp
++++ b/test/redfish-core/include/utils/telemetry_utils_test.cpp
+@@ -3,13 +3,16 @@
+ #include "generated/enums/metric_report_definition.hpp"
+ #include "utils/telemetry_utils.hpp"
+ 
++#include <boost/container/flat_set.hpp>
+ #include <nlohmann/json.hpp>
+ 
+ #include <optional>
+ #include <stdexcept>
+ #include <string>
++#include <utility>
+ #include <vector>
+ 
++#include <gmock/gmock.h>
+ #include <gtest/gtest.h>
+ 
+ namespace redfish::telemetry
+@@ -17,6 +20,9 @@ namespace redfish::telemetry
+ namespace
+ {
+ 
++using ::testing::ElementsAre;
++using ::testing::IsEmpty;
++
+ TEST(GetDbusReportPath, AppendsIdToReportsCollection)
+ {
+     EXPECT_EQ(getDbusReportPath("TestReport"),
+@@ -212,5 +218,47 @@ TEST(ToRedfishCollectionFunctions, SingleUnknownValueDiscardsWholeArray)
+     EXPECT_EQ(toRedfishCollectionFunctions(emptyString), std::nullopt);
+ }
+ 
++TEST(GetChassisSensorNode, SensorUri)
++{
++    boost::container::flat_set<std::pair<std::string, std::string>> sensors;
++    boost::container::flat_set<PortMetricsNode> ports;
++    std::vector<std::string> uris = {
++        "/redfish/v1/Chassis/MB/Sensors/temperature_MB_INLET_TEMP_C"};
++
++    EXPECT_EQ(getChassisSensorNode(uris, sensors, ports), std::nullopt);
++    EXPECT_THAT(sensors, ElementsAre(std::make_pair("MB", "Sensors")));
++    EXPECT_THAT(ports, IsEmpty());
++}
++
++TEST(GetChassisSensorNode, PortMetricsUri)
++{
++    boost::container::flat_set<std::pair<std::string, std::string>> sensors;
++    boost::container::flat_set<PortMetricsNode> ports;
++    std::vector<std::string> uris = {
++        "/redfish/v1/Chassis/MB/NetworkAdapters/NIC3/Ports/0/Metrics#/RXBytes",
++        "/redfish/v1/Chassis/MB/NetworkAdapters/NIC3/Ports/0/Metrics#/Networking/RXFCSErrors",
++        "/redfish/v1/Chassis/MB/NetworkAdapters/NIC3/Ports/1/Metrics#/TXBytes"};
++
++    EXPECT_EQ(getChassisSensorNode(uris, sensors, ports), std::nullopt);
++    EXPECT_THAT(sensors, IsEmpty());
++    EXPECT_THAT(ports, ElementsAre(PortMetricsNode{"MB", "NIC3", "0"},
++                                   PortMetricsNode{"MB", "NIC3", "1"}));
++}
++
++TEST(GetChassisSensorNode, IncorrectUri)
++{
++    boost::container::flat_set<std::pair<std::string, std::string>> sensors;
++    boost::container::flat_set<PortMetricsNode> ports;
++    std::vector<std::string> uris = {
++        "/redfish/v1/Chassis/MB/Sensors/temperature_MB_INLET_TEMP_C",
++        "/redfish/v1/Chassis/MB/NetworkAdapters/NIC3/Ports/0#/RXBytes"};
++
++    std::optional<IncorrectMetricUri> error =
++        getChassisSensorNode(uris, sensors, ports);
++    ASSERT_TRUE(error);
++    EXPECT_EQ(error->uri, uris[1]);
++    EXPECT_EQ(error->index, 1U);
++}
++
+ } // namespace
+ } // namespace redfish::telemetry
+diff --git a/test/redfish-core/lib/network_adapter_test.cpp b/test/redfish-core/lib/network_adapter_test.cpp
+new file mode 100644
+index 0000000..f002ac7
+--- /dev/null
++++ b/test/redfish-core/lib/network_adapter_test.cpp
+@@ -0,0 +1,40 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++#include "network_adapter.hpp"
++
++#include <sdbusplus/message/native_types.hpp>
++
++#include <optional>
++#include <string_view>
++
++#include <gtest/gtest.h>
++
++namespace redfish
++{
++namespace
++{
++
++TEST(GetNicMetricJsonPointer, MapsNicMetrics)
++{
++    EXPECT_EQ(getNicMetricJsonPointer(sdbusplus::object_path(
++                  "/xyz/openbmc_project/metric/port_0/nic/rx_bytes")),
++              std::optional<std::string_view>("/RXBytes"));
++    EXPECT_EQ(getNicMetricJsonPointer(sdbusplus::object_path(
++                  "/xyz/openbmc_project/metric/port_0/nic/rx_fcs_errors")),
++              std::optional<std::string_view>("/Networking/RXFCSErrors"));
++}
++
++TEST(GetNicMetricJsonPointer, IgnoresOtherMetrics)
++{
++    // Not under a "nic" parent.
++    EXPECT_EQ(getNicMetricJsonPointer(sdbusplus::object_path(
++                  "/xyz/openbmc_project/metric/port_0/pcie/rx_bytes")),
++              std::nullopt);
++    // Not a PortMetrics property.
++    EXPECT_EQ(getNicMetricJsonPointer(sdbusplus::object_path(
++                  "/xyz/openbmc_project/metric/port_0/nic/rdma_tx_bytes")),
++              std::nullopt);
++}
++
++} // namespace
++} // namespace redfish
+-- 
+2.53.0-Meta
+

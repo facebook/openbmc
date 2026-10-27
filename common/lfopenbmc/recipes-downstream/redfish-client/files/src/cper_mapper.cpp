@@ -103,6 +103,39 @@ std::optional<std::string> cperOemNvidiaHandler(const nlohmann::json& entryJson)
                 }
             }
         }
+        // NvidiaEvent is an OEM event format supported in NVIDIA VERA systems.
+        else if (cperOemNvidia.contains("NvidiaEvent"))
+        {
+            const auto& nvEvent = cperOemNvidia.at("NvidiaEvent");
+
+            if (!nvEvent.contains("EventHeader") || !nvEvent.contains("EventInfo"))
+            {
+                return std::nullopt;
+            }
+
+            const auto& eventHeader = nvEvent.at("EventHeader");
+            const auto& eventInfo = nvEvent.at("EventInfo");
+
+            if (!eventHeader.contains("SourceDeviceType"))
+            {
+                return std::nullopt;
+            }
+
+            if (eventHeader["SourceDeviceType"] == "CPU")
+            {
+                if (!eventInfo.contains("Cpu")) {
+                    return std::nullopt;
+                }
+                if (!eventInfo["Cpu"].contains("SocketNum")) {
+                    return std::nullopt;
+                }
+                return std::format("CPU{}", eventInfo["Cpu"]["SocketNum"].get<int>());
+            }
+            else if (eventHeader["SourceDeviceType"] == "GPU")
+            {
+                return std::string("GPU");
+            }
+        }
     }
     catch (...)
     {

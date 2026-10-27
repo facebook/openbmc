@@ -27,6 +27,9 @@ from utils.shell_util import run_cmd, run_shell_cmd
 
 
 class BaseDimmUtilTest(object):
+    # Accept "NO DIMM" lines in --raw output (empty DIMM slots)
+    RAW_ALLOW_NO_DIMM = False
+
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.dimm_info = self.extraceDimmNum()
@@ -204,6 +207,8 @@ class BaseDimmUtilTest(object):
         pattern = (
             r"$|" + r"^DIMM [A-Z]{1}[0-9]{1}.*$|" + r"^[a-f0-9]{3}:( [0-9a-f]{2}){16}$"
         )
+        if self.RAW_ALLOW_NO_DIMM:
+            pattern += r"|^NO DIMM$"
         if self.FRU == "all":
             pattern = r"^[Ff][Rr][Uu]: [a-z0-9]+" + pattern
         else:

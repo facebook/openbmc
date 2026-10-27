@@ -26,6 +26,8 @@ from utils.test_utils import qemu_check
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class AllDimmUtilTest(BaseDimmUtilTest, unittest.TestCase):
     FRU = "all"
+    # fby2 sleds can have unpopulated DIMM slots
+    RAW_ALLOW_NO_DIMM = True
 
     @unittest.skip("not available")
     def testSerialJson(self):

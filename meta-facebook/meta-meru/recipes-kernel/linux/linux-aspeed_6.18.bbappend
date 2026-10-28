@@ -25,4 +25,5 @@ SRC_URI:append = " \
     file://1002-mtd-spi-nor-gigadevice-add-support-for-GD25B512.patch \
     file://1003-add-ssif-node-for-meru-AST2600.patch \
     file://1004-i2c-aspeed-acknowledge-TX-ACK-late.patch \
+    file://1005-mtd-spi-nor-macronix-add-lock-support-for-mx25u51245g.patch \
 "

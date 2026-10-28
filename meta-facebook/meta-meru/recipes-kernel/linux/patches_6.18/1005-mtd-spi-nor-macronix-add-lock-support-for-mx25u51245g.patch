@@ -1,0 +1,28 @@
+From: Krzysztof Kościuszkiewicz <k.kosciuszkiewicz@arista.com>
+Date: Tue, 05 May 2026 20:47:32 +0200
+Subject: [PATCH] mtd: spi-nor: macronix: add lock support for mx25u51245g
+
+The MX25U51245G has 4 block-protection bits (BP0-BP3) in SR1[5:2].
+The TB (Top/Bottom) bit lives in Configuration Register 1, not SR1, so
+SPI_NOR_HAS_TB is not needed. Add SPI_NOR_HAS_LOCK | SPI_NOR_4BIT_BP so
+that the MTD MEMUNLOCK ioctl succeeds and write-protect can be lifted.
+
+Upstream-Status: Pending
+Signed-off-by: Krzysztof Kościuszkiewicz <k.kosciuszkiewicz@arista.com>
+---
+ drivers/mtd/spi-nor/macronix.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mtd/spi-nor/macronix.c b/drivers/mtd/spi-nor/macronix.c
+--- a/drivers/mtd/spi-nor/macronix.c
++++ b/drivers/mtd/spi-nor/macronix.c
+@@ -199,6 +199,7 @@ static const struct flash_info macronix_nor_parts[] = {
+ 		.id = SNOR_ID(0xc2, 0x25, 0x3a),
+ 		.name = "mx25u51245g",
+ 		.size = SZ_64M,
++		.flags = SPI_NOR_HAS_LOCK | SPI_NOR_4BIT_BP,
+ 		.no_sfdp_flags = SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ,
+ 		.fixup_flags = SPI_NOR_4B_OPCODES,
+ 		.fixups = &macronix_qpp4b_fixups,
+-- 
+2.47.3

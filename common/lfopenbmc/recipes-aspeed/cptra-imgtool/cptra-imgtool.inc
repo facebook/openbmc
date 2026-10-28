@@ -5,16 +5,14 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
 BRANCH = "master"
-SRC_URI = "git://github.com/AspeedTech-BMC/cptra_imgtool;protocol=https;branch=${BRANCH} \
-           file://0001-ufmt-macros-fix-lifetimes-for-rust-1.94.patch;patchdir=${UNPACKDIR}/ufmt \
-           "
+SRC_URI = "git://github.com/AspeedTech-BMC/cptra_imgtool;protocol=https;branch=${BRANCH}"
 
-# Tag for v00.01.05
-SRCREV = "3c06158958aeac6b8aa537a3da67331e730e4562"
+# Tag for v00.01.06
+SRCREV = "4bfcd71ecdeab7c1743abdb69a3b4a36e6c619d5"
 
 DEPENDS += "caliptra-mcu-sw"
 
-inherit cargo cargo-update-recipe-crates perlnative
+inherit cargo cargo-update-recipe-crates
 
 # crates.io may reject the API download endpoint used by BitBake's crate
 # fetcher; prefer the static crate tarball location first.
@@ -24,9 +22,15 @@ PREMIRRORS:prepend = " \
 
 do_compile() {
     cd ${S}
-    # The pinned Rust fork uses the OpenSSL 3.5 source from Cargo.lock.
-    # Keep its generated Makefile using Yocto's native Perl wrapper.
-    export OPENSSL_NO_VENDOR=0 PERL=perl
+
+    # openssl-sys needs the vendored OpenSSL 3.x,
+    # but oe_cargo_fix_env forces OPENSSL_NO_VENDOR=1
+    unset OPENSSL_NO_VENDOR
+
+    # Cargo does not cap lints for vendored path crates; prevent new rustc
+    # warnings from failing ufmt-macros, which uses #![deny(warnings)].
+    export RUSTFLAGS="--cap-lints=warn"
+
     # Build caliptra-auth-manifest-app
     cargo build --offline -p ${CALIPTRA_AUTH_MANIFEST_APP} --release
 

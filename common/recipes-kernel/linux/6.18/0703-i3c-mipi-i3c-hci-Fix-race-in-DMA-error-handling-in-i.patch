@@ -81,7 +81,7 @@ index 3fa7f46ab2c2..516c14b99c2b 100644
  static void hci_dma_xfer_done(struct i3c_hci *hci, struct hci_rh_data *rh)
  {
  	u32 op1_val, op2_val, resp, *ring_resp;
-@@ -818,29 +823,8 @@ static bool hci_dma_irq_handler(struct i3c_hci *hci)
+@@ -813,29 +818,8 @@ static bool hci_dma_irq_handler(struct i3c_hci *hci)
  			hci_dma_xfer_done(hci, rh);
  		if (status & INTR_RING_OP)
  			complete(&rh->op_done);
@@ -113,7 +113,7 @@ index 3fa7f46ab2c2..516c14b99c2b 100644
  		if (status & INTR_IBI_RING_FULL)
  			dev_err_ratelimited(&hci->master.dev,
  				"Ring %d: IBI Ring Full Condition\n", i);
-@@ -856,6 +840,7 @@ const struct hci_io_ops mipi_i3c_hci_dma = {
+@@ -851,6 +835,7 @@ const struct hci_io_ops mipi_i3c_hci_dma = {
  	.cleanup		= hci_dma_cleanup,
  	.queue_xfer		= hci_dma_queue_xfer,
  	.dequeue_xfer		= hci_dma_dequeue_xfer,

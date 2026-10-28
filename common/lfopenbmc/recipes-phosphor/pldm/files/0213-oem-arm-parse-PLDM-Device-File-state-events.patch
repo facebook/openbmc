@@ -1,0 +1,190 @@
+From 4dac4c9a79ecfc51ce9839c9af2aa742349e18b1 Mon Sep 17 00:00:00 2001
+From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Date: Wed, 19 Aug 2026 16:52:15 +0530
+Subject: [PATCH] oem: arm: parse PLDM Device File state events
+
+Decode Arm OEM state sensor event payloads and recognize the Device
+File sensors used as crashlog file-ready notifications. This keeps the
+event parsing visible as its own step before the crashlog collector
+consumes the parsed event.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/93723]
+
+Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Change-Id: I121a386c2eb9dc8cc80fdd5daa12bb027eae28a6
+---
+ oem/arm/event/oem_event_manager.cpp | 104 ++++++++++++++++++++++++++--
+ oem/arm/event/oem_event_manager.hpp |  15 ++++
+ 2 files changed, 112 insertions(+), 7 deletions(-)
+
+diff --git a/oem/arm/event/oem_event_manager.cpp b/oem/arm/event/oem_event_manager.cpp
+index 85dc0da..3d0d731 100644
+--- a/oem/arm/event/oem_event_manager.cpp
++++ b/oem/arm/event/oem_event_manager.cpp
+@@ -25,8 +25,18 @@ namespace
+ 
+ using BootRawValue = std::tuple<std::vector<uint8_t>, std::vector<uint8_t>>;
+ 
++enum class StateSensorEventType
++{
++    PLDM_FILE_STATE_SENSOR_CRASHLOG,
++    PLDM_FILE_STATE_SENSOR_UNSUPPORTED,
++};
++
+ constexpr auto bootProgressTerminusName = "PHX";
+ constexpr uint16_t bootProgressSensorId = 1;
++constexpr uint16_t firstCrashlogStateSensorId = 2;
++constexpr uint8_t crashlogStateSensorStride = 2;
++constexpr uint8_t deviceFileNotChangedState = 1;
++constexpr uint8_t deviceFileUpdatedState = 2;
+ constexpr auto bootRawObjectPath = "/xyz/openbmc_project/state/boot/raw0";
+ constexpr auto bootRawInterface = "xyz.openbmc_project.State.Boot.Raw";
+ constexpr auto bootRawProperty = "Value";
+@@ -38,6 +48,27 @@ constexpr auto bootProgressProperty = "BootProgress";
+ constexpr auto bootProgressStageOem =
+     "xyz.openbmc_project.State.Boot.Progress.ProgressStages.OEM";
+ 
++bool isCrashlogFileStateSensor(uint16_t sensorId)
++{
++    if (sensorId < firstCrashlogStateSensorId)
++    {
++        return false;
++    }
++
++    auto offset = sensorId - firstCrashlogStateSensorId;
++    return (offset % crashlogStateSensorStride) == 0;
++}
++
++StateSensorEventType getStateSensorEventType(uint16_t sensorId)
++{
++    if (isCrashlogFileStateSensor(sensorId))
++    {
++        return StateSensorEventType::PLDM_FILE_STATE_SENSOR_CRASHLOG;
++    }
++
++    return StateSensorEventType::PLDM_FILE_STATE_SENSOR_UNSUPPORTED;
++}
++
+ std::vector<uint8_t> bootProgressToBytes(uint64_t presentReading)
+ {
+     return {
+@@ -140,11 +171,6 @@ int OemEventManager::decodeSensorEvent(pldm_tid_t tid, const uint8_t* eventData,
+                "TID", tid, "SID", sensorId, "CLASS", sensorEventClassType,
+                "OFFSET", eventClassDataOffset);
+ 
+-    if (sensorEventClassType != PLDM_NUMERIC_SENSOR_STATE)
+-    {
+-        return PLDM_SUCCESS;
+-    }
+-
+     if (eventClassDataOffset > eventDataSize)
+     {
+         lg2::error("Invalid Arm sensor event data. Class data offset {OFFSET} "
+@@ -156,8 +182,19 @@ int OemEventManager::decodeSensorEvent(pldm_tid_t tid, const uint8_t* eventData,
+     const auto* sensorData = eventData + eventClassDataOffset;
+     auto sensorDataLength = eventDataSize - eventClassDataOffset;
+ 
+-    return processNumericSensorEvent(tid, sensorId, sensorData,
+-                                     sensorDataLength);
++    if (sensorEventClassType == PLDM_NUMERIC_SENSOR_STATE)
++    {
++        return processNumericSensorEvent(tid, sensorId, sensorData,
++                                         sensorDataLength);
++    }
++
++    if (sensorEventClassType == PLDM_STATE_SENSOR_STATE)
++    {
++        return processStateSensorEvent(tid, sensorId, sensorData,
++                                       sensorDataLength);
++    }
++
++    return PLDM_SUCCESS;
+ }
+ 
+ int OemEventManager::processNumericSensorEvent(
+@@ -216,6 +253,59 @@ int OemEventManager::processNumericSensorEvent(
+     }
+ }
+ 
++int OemEventManager::processStateSensorEvent(pldm_tid_t tid, uint16_t sensorId,
++                                             const uint8_t* sensorData,
++                                             size_t sensorDataLength)
++{
++    uint8_t sensorOffset = 0;
++    uint8_t eventState = 0;
++    uint8_t previousEventState = 0;
++    auto rc =
++        decode_state_sensor_data(sensorData, sensorDataLength, &sensorOffset,
++                                 &eventState, &previousEventState);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to decode Arm state sensor event for terminus {TID}, "
++            "sensor {SID}, error {RC}",
++            "TID", tid, "SID", sensorId, "RC", rc);
++        return rc;
++    }
++
++    switch (getStateSensorEventType(sensorId))
++    {
++        case StateSensorEventType::PLDM_FILE_STATE_SENSOR_CRASHLOG:
++            if (eventState == deviceFileNotChangedState)
++            {
++                lg2::debug("Device File state reset to NotChanged from "
++                           "terminus {TID}, sensor {SID}",
++                           "TID", tid, "SID", sensorId);
++                return PLDM_SUCCESS;
++            }
++
++            if (eventState == deviceFileUpdatedState)
++            {
++                lg2::info("Crashlog Device File state event from terminus "
++                          "{TID}, sensor {SID}",
++                          "TID", tid, "SID", sensorId);
++                return PLDM_SUCCESS;
++            }
++
++            lg2::debug("Ignoring unsupported Device File state {STATE} from "
++                       "terminus {TID}, sensor {SID}",
++                       "STATE", eventState, "TID", tid, "SID", sensorId);
++            return PLDM_SUCCESS;
++        case StateSensorEventType::PLDM_FILE_STATE_SENSOR_UNSUPPORTED:
++            lg2::debug(
++                "Ignoring unsupported Arm state sensor event from terminus "
++                "{TID}, sensor {SID}",
++                "TID", tid, "SID", sensorId);
++            return PLDM_SUCCESS;
++    }
++
++    return PLDM_SUCCESS;
++}
++
+ int OemEventManager::updateBootProgress(uint64_t presentReading) const
+ {
+     auto postCode = bootProgressToBytes(presentReading);
+diff --git a/oem/arm/event/oem_event_manager.hpp b/oem/arm/event/oem_event_manager.hpp
+index 99545aa..4cf43e2 100644
+--- a/oem/arm/event/oem_event_manager.hpp
++++ b/oem/arm/event/oem_event_manager.hpp
+@@ -79,6 +79,21 @@ class OemEventManager
+                                   const uint8_t* sensorData,
+                                   size_t sensorDataLength);
+ 
++    /** @brief Decode and route Arm OEM state sensor events.
++     *
++     * Device File state sensor events are parsed so the Arm OEM path can react
++     * to crashlog file-ready notifications.
++     *
++     * @param[in] tid Terminus ID that emitted the event.
++     * @param[in] sensorId State sensor ID.
++     * @param[in] sensorData State sensor payload bytes.
++     * @param[in] sensorDataLength Number of payload bytes.
++     * @return PLDM completion code.
++     */
++    int processStateSensorEvent(pldm_tid_t tid, uint16_t sensorId,
++                                const uint8_t* sensorData,
++                                size_t sensorDataLength);
++
+     /** @brief Update boot progress D-Bus properties
+      *
+      *  @param[in] presentReading - Boot progress reading from the sensor event

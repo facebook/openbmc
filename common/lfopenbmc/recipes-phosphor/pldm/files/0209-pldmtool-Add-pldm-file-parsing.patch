@@ -1,0 +1,459 @@
+From 8f5d179ffa88ebd11c67825c7342d865b8103e47 Mon Sep 17 00:00:00 2001
+From: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+Date: Fri, 12 Jun 2026 12:41:23 +0530
+Subject: [PATCH] pldmtool: Add pldm file parsing
+
+Add pldm file parsing logic and commands to read file.
+
+The D-Bus interface is part of the patch under review [1].
+
+[1]: https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/81694
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/91246]
+
+Change-Id: I734cf5e307ef64a54cbc5a4b5eda5ea14669c65d
+Signed-off-by: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+---
+ pldmtool/meson.build       |   1 +
+ pldmtool/pldm_file_cmd.cpp | 376 +++++++++++++++++++++++++++++++++++++
+ pldmtool/pldm_file_cmd.hpp |  15 ++
+ pldmtool/pldmtool.cpp      |   2 +
+ 4 files changed, 394 insertions(+)
+ create mode 100644 pldmtool/pldm_file_cmd.cpp
+ create mode 100644 pldmtool/pldm_file_cmd.hpp
+
+diff --git a/pldmtool/meson.build b/pldmtool/meson.build
+index 2e9cc4d..91435e6 100644
+--- a/pldmtool/meson.build
++++ b/pldmtool/meson.build
+@@ -7,6 +7,7 @@ sources = [
+     'pldm_bios_cmd.cpp',
+     'pldm_fru_cmd.cpp',
+     'pldm_fw_update_cmd.cpp',
++    'pldm_file_cmd.cpp',
+     'pldmtool.cpp',
+ ]
+ 
+diff --git a/pldmtool/pldm_file_cmd.cpp b/pldmtool/pldm_file_cmd.cpp
+new file mode 100644
+index 0000000..f26a6c1
+--- /dev/null
++++ b/pldmtool/pldm_file_cmd.cpp
+@@ -0,0 +1,376 @@
++#include "pldm_file_cmd.hpp"
++
++#include "common/utils.hpp"
++
++#include <poll.h>
++#include <unistd.h>
++
++#include <CLI/CLI.hpp>
++#include <sdbusplus/bus.hpp>
++#include <sdbusplus/message.hpp>
++
++#include <cerrno>
++#include <cstring>
++#include <format>
++#include <fstream>
++#include <iomanip>
++#include <iostream>
++#include <string>
++#include <variant>
++#include <vector>
++
++namespace pldmtool
++{
++namespace file
++{
++
++namespace
++{
++
++constexpr const char* PLDMService = "xyz.openbmc_project.PLDM";
++constexpr const char* FileInterface = "xyz.openbmc_project.PLDM.File";
++constexpr const char* FileRootPath = "/xyz/openbmc_project/pldm/file";
++constexpr const char* DBusProperties = "org.freedesktop.DBus.Properties";
++
++/** @brief Hex-dump bytes to stdout, 16 bytes per row */
++static void hexDump(const std::vector<uint8_t>& data)
++{
++    constexpr size_t rowWidth = 16;
++    for (size_t i = 0; i < data.size(); i += rowWidth)
++    {
++        std::cout << std::hex << std::setw(8) << std::setfill('0') << i << "  ";
++        for (size_t j = i; j < i + rowWidth; ++j)
++        {
++            if (j < data.size())
++            {
++                std::cout << std::hex << std::setw(2) << std::setfill('0')
++                          << static_cast<int>(data[j]) << " ";
++            }
++            else
++            {
++                std::cout << "   ";
++            }
++            if (j == i + 7)
++            {
++                std::cout << " ";
++            }
++        }
++        std::cout << " |";
++        for (size_t j = i; j < i + rowWidth && j < data.size(); ++j)
++        {
++            char c = static_cast<char>(data[j]);
++            std::cout << (std::isprint(c) ? c : '.');
++        }
++        std::cout << "|\n";
++    }
++    std::cout << std::dec;
++}
++
++/** @brief Fetch a single string property via D-Bus Properties.Get */
++static std::string getStringProp(
++    sdbusplus::bus_t& bus, const std::string& objPath, const std::string& prop)
++{
++    try
++    {
++        auto m = bus.new_method_call(PLDMService, objPath.c_str(),
++                                     DBusProperties, "Get");
++        m.append(FileInterface, prop);
++        auto reply = bus.call(m);
++        std::variant<std::string> val;
++        reply.read(val);
++        return std::get<std::string>(val);
++    }
++    catch (...)
++    {
++        return {};
++    }
++}
++
++/** @brief Fetch a single uint64 property via D-Bus Properties.Get */
++static uint64_t getUint64Prop(sdbusplus::bus_t& bus, const std::string& objPath,
++                              const std::string& prop)
++{
++    try
++    {
++        auto m = bus.new_method_call(PLDMService, objPath.c_str(),
++                                     DBusProperties, "Get");
++        m.append(FileInterface, prop);
++        auto reply = bus.call(m);
++        std::variant<uint64_t> val;
++        reply.read(val);
++        return std::get<uint64_t>(val);
++    }
++    catch (...)
++    {
++        return 0;
++    }
++}
++
++/** @brief Get all PLDM File object paths via the ObjectMapper subtree query */
++static std::vector<std::string> listFileObjects()
++{
++    pldm::utils::DBusHandler handler;
++    try
++    {
++        auto subtree = handler.getSubtree(FileRootPath, 0, {FileInterface});
++        std::vector<std::string> paths;
++        paths.reserve(subtree.size());
++        for (const auto& [objPath, _] : subtree)
++        {
++            paths.emplace_back(objPath);
++        }
++        return paths;
++    }
++    catch (const std::exception& e)
++    {
++        std::cerr << "Failed to list PLDM file objects: " << e.what() << "\n";
++        return {};
++    }
++}
++
++/** @brief Print a numbered list of files with Name, Purpose and Size */
++static std::vector<std::string> printFileList()
++{
++    auto bus = sdbusplus::bus::new_default();
++    auto paths = listFileObjects();
++
++    if (paths.empty())
++    {
++        std::cout << "No PLDM file objects found.\n";
++        return paths;
++    }
++
++    std::cout << std::left << std::setw(4) << "#" << std::setw(24) << "Name"
++              << std::setw(20) << "Purpose" << std::setw(12) << "Size"
++              << "Object Path\n";
++    std::cout << std::string(80, '-') << "\n";
++
++    int idx = 0;
++    for (const auto& path : paths)
++    {
++        auto name = getStringProp(bus, path, "Name");
++        auto purpose = getStringProp(bus, path, "Purpose");
++        auto size = getUint64Prop(bus, path, "CurrentSize");
++
++        // strip the enum prefix (e.g.
++        // "xyz.openbmc_project.PLDM.File.PurposeType.")
++        auto dot = purpose.rfind('.');
++        if (dot != std::string::npos)
++        {
++            purpose = purpose.substr(dot + 1);
++        }
++
++        std::cout << std::left << std::setw(4) << idx++ << std::setw(24)
++                  << (name.empty() ? "(unknown)" : name) << std::setw(20)
++                  << (purpose.empty() ? "-" : purpose) << std::setw(12) << size
++                  << path << "\n";
++    }
++    return paths;
++}
++
++/** @brief Open a file session and stream data to stdout (hex) or a file */
++static void doRead(const std::string& objPath, uint32_t offset, uint32_t length,
++                   bool exclusivity, const std::string& outputFile)
++{
++    auto bus = sdbusplus::bus::new_default();
++
++    auto method = bus.new_method_call(PLDMService, objPath.c_str(),
++                                      FileInterface, "Open");
++    method.append(offset, length, exclusivity);
++
++    sdbusplus::message_t reply;
++    try
++    {
++        reply = bus.call(method);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        std::cerr << "D-Bus call to Open() failed: " << e.what() << "\n";
++        return;
++    }
++
++    sdbusplus::message::unix_fd socketFd;
++    try
++    {
++        reply.read(socketFd);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        std::cerr << "Failed to read unix_fd from reply: " << e.what() << "\n";
++        return;
++    }
++
++    std::vector<uint8_t> data;
++    uint8_t buf[4096];
++    bool readError = false;
++    bool done = false;
++    while (!done)
++    {
++        struct pollfd pfd = {};
++        pfd.fd = socketFd.fd;
++        pfd.events = POLLIN;
++        int ret = poll(&pfd, 1, -1);
++        if (ret < 0)
++        {
++            std::cerr << "poll() failed: " << std::strerror(errno) << "\n";
++            readError = true;
++            break;
++        }
++        if (pfd.revents & (POLLERR | POLLNVAL))
++        {
++            std::cerr << "Socket error on poll\n";
++            readError = true;
++            break;
++        }
++        // Drain all available data (POLLIN or POLLHUP may both carry data)
++        while (!done)
++        {
++            ssize_t n = read(socketFd.fd, buf, sizeof(buf));
++            if (n > 0)
++            {
++                data.insert(data.end(), buf, buf + n);
++            }
++            else if (n == 0)
++            {
++                done = true; // EOF: server closed its end
++            }
++            else
++            {
++                if (errno == EAGAIN || errno == EWOULDBLOCK)
++                {
++                    break; // no more data right now, go back to poll
++                }
++                std::cerr << "Error reading from socket: "
++                          << std::strerror(errno) << "\n";
++                readError = true;
++                done = true;
++            }
++        }
++        if (!done && (pfd.revents & POLLHUP))
++        {
++            done = true; // peer hung up and we drained all data above
++        }
++    }
++    if (readError)
++    {
++        return;
++    }
++
++    std::cerr << "Read " << data.size() << " bytes from " << objPath << "\n";
++
++    if (!outputFile.empty())
++    {
++        std::ofstream ofs(outputFile, std::ios::binary);
++        if (!ofs)
++        {
++            std::cerr << "Failed to open output file: " << outputFile << "\n";
++            return;
++        }
++        ofs.write(reinterpret_cast<const char*>(data.data()),
++                  static_cast<std::streamsize>(data.size()));
++        std::cerr << "Data written to " << outputFile << "\n";
++    }
++    else
++    {
++        hexDump(data);
++    }
++}
++
++} // namespace
++
++/** @brief ListFiles: show all available PLDM file objects */
++class ListFiles
++{
++  public:
++    ListFiles() = delete;
++    explicit ListFiles(CLI::App* app)
++    {
++        app->callback([&]() { printFileList(); });
++    }
++};
++
++/** @brief ReadFile: read by D-Bus object path or by index from ListFiles */
++class ReadFile
++{
++  public:
++    ReadFile() = delete;
++    explicit ReadFile(CLI::App* app)
++    {
++        app->add_option("-p,--object-path", objPath,
++                        "D-Bus object path of the PLDM File");
++        app->add_option(
++            "-i,--index", index,
++            "Index from 'pldmtool file ListFiles' (use instead of -p)");
++        app->add_option("-o,--offset", offset,
++                        "Byte offset to start reading from (default: 0)");
++        app->add_option(
++            "-l,--length", length,
++            "Number of bytes to read, 0 means whole file (default: 0)");
++        app->add_option(
++            "-f,--output-file", outputFile,
++            "Write raw bytes to this path instead of hex-dumping to stdout");
++        app->add_flag("-x,--exclusive", exclusivity,
++                      "Request exclusive access to the file");
++
++        app->callback([&]() { exec(); });
++    }
++
++  private:
++    std::string objPath;
++    int index = -1;
++    uint32_t offset = 0;
++    uint32_t length = 0;
++    std::string outputFile;
++    bool exclusivity = false;
++
++    void exec()
++    {
++        std::string target = objPath;
++
++        if (target.empty())
++        {
++            if (index < 0)
++            {
++                // No path and no index: print the list and prompt
++                auto paths = printFileList();
++                if (paths.empty())
++                {
++                    return;
++                }
++                std::cout << "\nEnter index to read: ";
++                std::cin >> index;
++            }
++
++            // Resolve index to path
++            auto paths = listFileObjects();
++            if (index < 0 || static_cast<size_t>(index) >= paths.size())
++            {
++                std::cerr << "Index " << index << " is out of range (0.."
++                          << paths.size() - 1 << ")\n";
++                return;
++            }
++            target = paths[index];
++        }
++
++        doRead(target, offset, length, exclusivity, outputFile);
++    }
++};
++
++void registerCommand(CLI::App& app)
++{
++    auto file = app.add_subcommand(
++        "file", "PLDM File Transfer (DSP0242 v1.0.0) commands");
++    file->require_subcommand(1);
++
++    auto listFiles = file->add_subcommand(
++        "ListFiles", "List all PLDM File Descriptor objects on D-Bus");
++    static ListFiles listFilesCmd(listFiles);
++
++    auto readFile = file->add_subcommand(
++        "ReadFile", "Read data from a PLDM File Descriptor "
++                    "(-p <path> | -i <index from ListFiles>)");
++    static ReadFile readFileCmd(readFile);
++}
++
++} // namespace file
++} // namespace pldmtool
+diff --git a/pldmtool/pldm_file_cmd.hpp b/pldmtool/pldm_file_cmd.hpp
+new file mode 100644
+index 0000000..9376896
+--- /dev/null
++++ b/pldmtool/pldm_file_cmd.hpp
+@@ -0,0 +1,15 @@
++#pragma once
++
++#include <CLI/CLI.hpp>
++
++namespace pldmtool
++{
++
++namespace file
++{
++
++void registerCommand(CLI::App& app);
++
++} // namespace file
++
++} // namespace pldmtool
+diff --git a/pldmtool/pldmtool.cpp b/pldmtool/pldmtool.cpp
+index d230eaa..5242a07 100644
+--- a/pldmtool/pldmtool.cpp
++++ b/pldmtool/pldmtool.cpp
+@@ -1,6 +1,7 @@
+ #include "pldm_base_cmd.hpp"
+ #include "pldm_bios_cmd.hpp"
+ #include "pldm_cmd_helper.hpp"
++#include "pldm_file_cmd.hpp"
+ #include "pldm_fru_cmd.hpp"
+ #include "pldm_fw_update_cmd.hpp"
+ #include "pldm_platform_cmd.hpp"
+@@ -74,6 +75,7 @@ int main(int argc, char** argv)
+     pldmtool::platform::registerCommand(app);
+     pldmtool::fru::registerCommand(app);
+     pldmtool::fw_update::registerCommand(app);
++    pldmtool::file::registerCommand(app);
+ 
+ #ifdef OEM_IBM
+     pldmtool::oem_ibm::registerCommand(app);

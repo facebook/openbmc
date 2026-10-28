@@ -1,0 +1,1192 @@
+From 6f2f89d8917d7ea1e73d4afbe041043e736a105a Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Thu, 26 Jun 2025 04:03:02 +0000
+Subject: [PATCH] platform-mc: Create File Descriptor class
+
+This commit adds File Descriptor class to represent File Descriptor PDR
+objects to D-Bus. This initially parses PDR fields to member variables,
+supports properties and methods specified in the `PLDM.File` D-Bus
+interface patch under-review [1], except for `Size` property. The
+result from a `Open` method call will be:
+
+1. A socketpair is setup and has the client side immediately returned
+to
+   callers.
+2. An asynchronous task is triggered to interact with the actual file
+   and write file data to the server side of the socketpair
+3. The socketpair will be closed when the asynchronous task is done or
+   when error happens.
+
+Detail information about the design of this implementation is in the
+patch under review `pldm-stack: PLDM File Transfer` [2].
+
+This currently support one session opened to a file via Open() at a
+time. New new session can only be opened after the previous session is
+closed, which means the desired file data has been read from the actual
+file and  written to the socket pair.
+
+This commit supports a function in FileDescriptor class to get current
+file size. The file size is the current reading of the File Size
+Monitoring Sensor associated with this file. If the sensor is not
+found, `FileMaximumSize` field in the File Descriptor PDR will be
+returned as the file size (according to DSP0242 v1.0.0 Section 8.8.3
+File Size Monitoring Sensor). The callback function of calling to get
+the property Size on D-Bus of the file object will end up calling to
+this function and return the value returned by this function. Before
+DfRead to a file, FileDescriptor class will get file size first to
+check if the file is currently empty to bypass the read call.
+
+[1]: https://gerrit.openbmc.org/c/openbmc/
+     phosphor-dbus-interfaces/+/81694
+[2]: https://gerrit.openbmc.org/c/openbmc/docs/+/76960
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/82472]
+
+Change-Id: If9e58bf25ce58a9fe1bc151f823940e1e8e40e38
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+(cherry picked from commit ed2f50988f24e3d9a7bb28a9a586015e75cdfadf)
+---
+ common/types.hpp                           |   9 +
+ meson.build                                |   1 +
+ platform-mc/file_descriptor.cpp            | 535 +++++++++++++++++++++
+ platform-mc/file_descriptor.hpp            | 164 +++++++
+ platform-mc/terminus.cpp                   |  23 +-
+ platform-mc/terminus.hpp                   |  11 +-
+ platform-mc/terminus_manager.cpp           |   3 +-
+ platform-mc/test/event_manager_test.cpp    |   6 +-
+ platform-mc/test/meson.build               |   2 +
+ platform-mc/test/platform_manager_test.cpp |  10 +-
+ platform-mc/test/sensor_manager_test.cpp   |   3 +-
+ platform-mc/test/terminus_manager_test.cpp |   2 +-
+ platform-mc/test/terminus_test.cpp         |  63 ++-
+ pldmd/pldmd.cpp                            |   3 +
+ 14 files changed, 798 insertions(+), 37 deletions(-)
+ create mode 100644 platform-mc/file_descriptor.cpp
+ create mode 100644 platform-mc/file_descriptor.hpp
+
+diff --git a/common/types.hpp b/common/types.hpp
+index 1e387ae..d97ad8d 100644
+--- a/common/types.hpp
++++ b/common/types.hpp
+@@ -289,6 +289,15 @@ namespace file_transfer
+ {
+ using FileID = uint16_t;
+ using CRC32Type = uint32_t;
++using DfOpenFD = uint16_t;
++using TransferOp = uint8_t;
++using TransferHandle = uint32_t;
++using SectionOffset = uint32_t;
++using Checksum = uint32_t;
++using Interval = uint32_t;
++using PartSize = uint16_t;
++using FileSize = uint32_t;
++using FDCount = uint8_t;
+ 
+ enum class FileClassification : uint8_t
+ {
+diff --git a/meson.build b/meson.build
+index af9e2a9..01e2d4c 100644
+--- a/meson.build
++++ b/meson.build
+@@ -325,6 +325,7 @@ executable(
+     'platform-mc/numeric_sensor.cpp',
+     'platform-mc/event_manager.cpp',
+     'platform-mc/file_cmds.cpp',
++    'platform-mc/file_descriptor.cpp',
+     'platform-mc/dbus_to_terminus_effecters.cpp',
+     oem_files,
+     'requester/mctp_endpoint_discovery.cpp',
+diff --git a/platform-mc/file_descriptor.cpp b/platform-mc/file_descriptor.cpp
+new file mode 100644
+index 0000000..e5805ab
+--- /dev/null
++++ b/platform-mc/file_descriptor.cpp
+@@ -0,0 +1,535 @@
++#include "file_descriptor.hpp"
++
++#include "file_cmds.hpp"
++
++#include <libpldm/edac.h>
++#include <libpldm/entity.h>
++#include <sys/socket.h>
++#include <unistd.h>
++
++#include <phosphor-logging/elog-errors.hpp>
++#include <phosphor-logging/elog.hpp>
++#include <phosphor-logging/lg2.hpp>
++#include <xyz/openbmc_project/Common/error.hpp>
++
++#include <cstring>
++#include <iostream>
++#include <string>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm
++{
++namespace platform_mc
++{
++using namespace file_cmds;
++using namespace phosphor::logging;
++using namespace sdbusplus::xyz::openbmc_project::Common::Error;
++using NotAllowedMetaData = xyz::openbmc_project::Common::NotAllowed;
++using PurposeType =
++    sdbusplus::common::xyz::openbmc_project::pldm::File::PurposeType;
++
++// Maximum retry allowed to tolerate failures in polling for the server socket
++// readiness, or tolerate EAGAIN/EWOULDBLOCK in writing data to it.
++constexpr auto MAX_SOCKET_POLL_RETRY = 5;
++
++// Timeout in microsecond used in select() for the server socket.
++constexpr auto SOCKET_SELECT_TIMEOUT_US = 2000;
++
++// The transfer part size to be negotiated with File Host.
++constexpr auto REQUESTER_PART_SIZE = 0x100;
++
++// The interval to send DfHeartbeat to File Host for regular file type.
++constexpr auto REQUESTER_MAX_INTERVAL_MS = 500;
++
++// Table 108 – File Descriptor PDR DSP0248 v1.3.0 - FileClassification field.
++std::map<FileClassification, PurposeType> filePurposeMap = {
++    {FileClassification::OEM, PurposeType::OEM},
++    {FileClassification::BootLog, PurposeType::BootLog},
++    {FileClassification::SerialTxFIFO, PurposeType::SerialTxFIFO},
++    {FileClassification::SerialRxFIFO, PurposeType::SerialRxFIFO},
++    {FileClassification::DiagnosticLog, PurposeType::DiagnosticLog},
++    {FileClassification::CrashDumpFile, PurposeType::CrashDump},
++    {FileClassification::SecurityLog, PurposeType::Security},
++    {FileClassification::FRUDataFile, PurposeType::FRU},
++    {FileClassification::TelemetryDataFile, PurposeType::TelemetryDataFile},
++    {FileClassification::TelemetryDataLog, PurposeType::TelemetryDataLog},
++    {FileClassification::FileDirectory, PurposeType::Directory}};
++
++FileDescriptor::FileDescriptor(
++    sdbusplus::bus_t& bus, const std::string& path, const pldm_tid_t tid,
++    const bool fileDisabled,
++    std::shared_ptr<pldm_platform_file_descriptor_pdr> pdr,
++    TerminusManager& terminusManager) :
++    FileInterface(bus, path.c_str()), tid(tid), terminusManager(terminusManager)
++{
++    if (!pdr || fileDisabled)
++    {
++        lg2::error(
++            "Terminus ID {TID}: File Descriptor Constructor does not have valid pdr ptr.",
++            "TID", tid);
++        return;
++    }
++
++    entityInfo = std::make_tuple(
++        static_cast<EntityType>(pdr->container.entity_type),
++        static_cast<EntityInstance>(pdr->container.entity_instance_num),
++        static_cast<ContainerID>(pdr->container.entity_container_id));
++    isDirectory = ((pdr->container.entity_type & 0x7FFF) ==
++                   PLDM_ENTITY_DEVICE_FILE_DIRECTORY);
++    isRegular = (pdr->file_capabilities.bits.bit3 == 0);
++    exReadPermitted = (pdr->file_capabilities.bits.bit0 == 1);
++    identifier = pdr->file_identifier;
++    supDirIdentifier = pdr->superior_directory_file_identifier;
++    maxSize = pdr->file_maximum_size;
++    maxFdCount = pdr->file_maximum_file_descriptor_count;
++    std::string fileName(reinterpret_cast<const char*>(pdr->file_name.ptr),
++                         pdr->file_name.length);
++    name(fileName);
++    source(SourceType::ComputerSystem);
++    if (pdr->oem_file_classification)
++    {
++        oemClassName.assign(reinterpret_cast<const char*>(
++                                pdr->oem_file_classification_name.ptr),
++                            pdr->oem_file_classification_name.length);
++    }
++    setPurpose(static_cast<FileClassification>(pdr->file_classification));
++}
++
++void FileDescriptor::setPurpose(FileClassification classification)
++{
++    auto it = filePurposeMap.find(classification);
++    if (it != filePurposeMap.end())
++    {
++        purpose(it->second);
++    }
++    else
++    {
++        purpose(PurposeType::Unknown);
++    }
++}
++
++exec::task<int> FileDescriptor::writeDataToSocket(
++    size_t dataSize, const uint8_t* const data, int socket, int maxFd)
++{
++    fd_set wfd;
++    struct timeval tv;
++    uint8_t retries = 0;
++    size_t remaining = dataSize;
++
++    while (remaining > 0)
++    {
++        if (retries > MAX_SOCKET_POLL_RETRY)
++        {
++            lg2::error(
++                "Failed to write to output socket for terminus ID {TID}, FileIdentifier {ID} after {RETRY} retries.",
++                "TID", tid, "ID", identifier, "RETRY", retries);
++            co_return PLDM_ERROR;
++        }
++        FD_ZERO(&wfd);
++        FD_SET(socket, &wfd);
++        tv.tv_sec = 0;
++        tv.tv_usec = SOCKET_SELECT_TIMEOUT_US;
++
++        int retval = select(maxFd + 1, nullptr, &wfd, nullptr, &tv);
++        if (retval < 0)
++        {
++            lg2::error(
++                "Failed to select output socket for terminus ID {TID}, FileIdentifier {ID}, error number - {ERR}.",
++                "TID", tid, "ID", identifier, "ERR", errno);
++            co_return PLDM_ERROR;
++        }
++        if (retval == 0)
++        {
++            lg2::error(
++                "Select timeout for terminus ID {TID}, FileIdentifier {ID}, error number - {ERR}.",
++                "TID", tid, "ID", identifier, "ERR", errno);
++            retries++;
++            continue;
++        }
++        if ((retval > 0) && (FD_ISSET(socket, &wfd)))
++        {
++            int bytes = write(socket, data, remaining);
++            if (bytes < 0)
++            {
++                lg2::error(
++                    "Failed to write to output socket for terminus ID {TID}, FileIdentifier {ID}, error number - {ERR}.",
++                    "TID", tid, "ID", identifier, "ERR", errno);
++                if (errno == EAGAIN || errno == EWOULDBLOCK)
++                {
++                    retries++;
++                    continue;
++                }
++                co_return PLDM_ERROR;
++            }
++            remaining -= bytes;
++            retries = 0;
++        }
++        else
++        {
++            lg2::debug(
++                "Write socket FD is not set for terminus ID {TID}, FileIdentifier {ID}.",
++                "TID", tid, "ID", identifier);
++            retries++;
++            continue;
++        }
++    }
++
++    co_return PLDM_SUCCESS;
++}
++
++exec::task<int> FileDescriptor::readFileBySection(
++    DfOpenFD fd, SectionOffset offset, SectionOffset length,
++    std::vector<uint8_t>& readBuffer)
++{
++    int rc;
++
++    TransferOp transferOp = PLDM_XFER_FIRST_PART;
++    DfOpenFD transferCtx = fd;
++    TransferHandle dataTransferHandle = 0;
++    SectionOffset requestSectionOffset = offset;
++    SectionOffset requestSectionLength = length;
++
++    bool isEnd = false;
++
++    int maxFd = (sockets[SERVER_IDX] > sockets[CLIENT_IDX])
++                    ? sockets[SERVER_IDX]
++                    : sockets[CLIENT_IDX];
++
++    while (!isEnd)
++    {
++        Checksum dataIntegrityChecksum = 0;
++
++        const struct pldm_base_multipart_receive_req reqData = {
++            PLDM_FILE,          transferOp,           transferCtx,
++            dataTransferHandle, requestSectionOffset, requestSectionLength};
++        struct pldm_base_multipart_receive_resp respData = {};
++
++        rc = co_await sendMultipartReceive(terminusManager, tid, &reqData,
++                                           &respData, dataIntegrityChecksum);
++
++        if (rc)
++        {
++            lg2::error(
++                "Failed to send MultipartReceive request for {LEN} bytes at offset {OFF} for TID {TID}, file descriptor {FD} with error {RC}",
++                "LEN", requestSectionLength, "OFF", requestSectionOffset, "TID",
++                tid, "FD", fd, "RC", rc);
++            co_return rc;
++        }
++
++        std::vector<uint8_t> buffer;
++        buffer.insert(buffer.end(), respData.data.ptr,
++                      respData.data.ptr + respData.data.length);
++
++        if (buffer.size())
++        {
++            readBuffer.insert(readBuffer.end(), buffer.begin(), buffer.end());
++        }
++
++        if (respData.transfer_flag !=
++            PLDM_BASE_MULTIPART_RECEIVE_TRANSFER_FLAG_ACK_COMPLETION)
++        {
++            auto calculatedCRC =
++                pldm_edac_crc32(readBuffer.data(), readBuffer.size());
++            if (calculatedCRC != dataIntegrityChecksum)
++            {
++                lg2::info(
++                    "Checksum mismatched while sending MultipartReceive request for TID {TID}, file descriptor {FD}.\nRe-requesting current part",
++                    "TID", tid, "FD", fd);
++
++                readBuffer.resize(readBuffer.size() - buffer.size());
++                // dataTransferHandle remains the handle previously requested
++                transferOp = PLDM_XFER_CURRENT_PART;
++                requestSectionOffset = 0;
++                requestSectionLength = 0;
++                continue;
++            }
++
++            rc = co_await writeDataToSocket(buffer.size(), buffer.data(),
++                                            sockets[SERVER_IDX], maxFd);
++            if (rc)
++            {
++                lg2::error(
++                    "Failed to write part data of {LEN} bytes to the output socket {SOCKET} with error {RC}",
++                    "LEN", buffer.size(), "SOCKET", sockets[SERVER_IDX], "RC",
++                    rc);
++                co_return rc;
++            }
++        }
++
++        switch (respData.transfer_flag)
++        {
++            case PLDM_BASE_MULTIPART_RECEIVE_TRANSFER_FLAG_START:
++            case PLDM_BASE_MULTIPART_RECEIVE_TRANSFER_FLAG_MIDDLE:
++                transferOp = PLDM_XFER_NEXT_PART;
++                dataTransferHandle = respData.next_transfer_handle;
++                requestSectionOffset = 0;
++                requestSectionLength = 0;
++                break;
++            case PLDM_BASE_MULTIPART_RECEIVE_TRANSFER_FLAG_END:
++            case PLDM_BASE_MULTIPART_RECEIVE_TRANSFER_FLAG_START_AND_END:
++                // Leave the decision of whether to request another section
++                // to the caller
++                transferOp = PLDM_XFER_COMPLETE;
++                dataTransferHandle = 0;
++                requestSectionOffset = 0;
++                requestSectionLength = 0;
++                break;
++            case PLDM_BASE_MULTIPART_RECEIVE_TRANSFER_FLAG_ACK_COMPLETION:
++                isEnd = true;
++                break;
++            default:
++                lg2::error(
++                    "Received bad transfer flag {FLAG} while sending MultipartReceive request for TID {TID}, file descriptor {FD}.",
++                    "FLAG", respData.transfer_flag, "TID", tid, "FD", fd);
++                co_return PLDM_ERROR;
++        }
++    }
++
++    co_return rc;
++}
++
++exec::task<int> FileDescriptor::readFileByLength(DfOpenFD fd, size_t offset,
++                                                 size_t readLength)
++{
++    std::vector<uint8_t> readBuffer{};
++    int rc;
++
++    if (isRegular)
++    {
++        rc = co_await readFileBySection(fd, offset, readLength, readBuffer);
++        if (rc)
++        {
++            lg2::error(
++                "Failed to read {LEN} bytes at offset {OFF} from terminus ID {TID}, file descriptor {FD}, error {RC}.",
++                "LEN", readLength, "OFF", offset, "TID", tid, "FD", fd, "RC",
++                rc);
++            co_return PLDM_ERROR;
++        }
++        co_return PLDM_SUCCESS;
++    }
++
++    PartSize reqPartSize = REQUESTER_PART_SIZE;
++    PartSize respPartSize = 0;
++    bitfield8_t reqProtocol[8];
++    memset(&reqProtocol, 0, sizeof(reqProtocol));
++    reqProtocol[0].bits.bit0 = 1;
++    reqProtocol[0].bits.bit7 = 1;
++
++    struct pldm_base_negotiate_transfer_params_req negoParamsReq = {};
++    negoParamsReq.requester_part_size = reqPartSize;
++    memcpy(negoParamsReq.requester_protocol_support, reqProtocol,
++           8 * sizeof(*reqProtocol));
++    struct pldm_base_negotiate_transfer_params_resp negoParamsResp = {};
++    rc = co_await negotiateTransferParameters(terminusManager, tid,
++                                              &negoParamsReq, &negoParamsResp);
++    if (rc)
++    {
++        respPartSize = REQUESTER_PART_SIZE;
++        lg2::info(
++            "Failed to negotiate part size {PARTSIZE} for terminus ID {TID}, use {DEFAULT}",
++            "PARTSIZE", reqPartSize, "TID", tid, "DEFAULT", respPartSize);
++    }
++    else
++    {
++        respPartSize = negoParamsResp.responder_part_size;
++    }
++
++    rc = 0;
++    uint32_t remaining = readLength;
++    bool lastRead = false;
++
++    while ((remaining > 0) && !lastRead)
++    {
++        std::vector<uint8_t> buff{};
++        PartSize partSize = respPartSize;
++
++        if (partSize > remaining)
++        {
++            partSize = remaining;
++            lastRead = true;
++        }
++
++        rc = co_await readFileBySection(fd, 0, partSize, buff);
++
++        if (rc)
++        {
++            lg2::error(
++                "Failed to read {LEN} bytes at offset 0 from terminus ID {TID}, file descriptor {FD}, error {RC}.",
++                "LEN", partSize, "TID", tid, "FD", fd, "RC", rc);
++            co_return PLDM_ERROR;
++        }
++
++        readBuffer.insert(readBuffer.end(), buff.begin(), buff.end());
++
++        if (buff.size() < partSize)
++        {
++            lastRead = true;
++        }
++
++        remaining -= buff.size();
++    }
++
++    co_return PLDM_SUCCESS;
++}
++
++exec::task<int> FileDescriptor::readTask(size_t offset, size_t length,
++                                         bool exclusivity)
++{
++    int rc;
++    DfOpenFD curFd;
++    bitfield16_t reqAttr;
++    reqAttr.value = 0;
++    if (isRegular)
++    {
++        reqAttr.bits.bit1 = exclusivity ? 1 : 0;
++    }
++    else
++    {
++        reqAttr.bits.bit2 = 1;
++    }
++
++    struct pldm_file_df_open_req openReq = {identifier, reqAttr};
++    struct pldm_file_df_open_resp openResp = {};
++    rc = co_await dfOpen(terminusManager, tid, &openReq, &openResp);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to open file session from terminus ID {TID}, FileIdentifier {ID}, error {RC}.",
++            "TID", tid, "ID", identifier, "RC", rc);
++        co_return rc;
++    }
++
++    curFd = openResp.file_descriptor;
++    if (isRegular)
++    {
++        Interval requesterMaxInterval = REQUESTER_MAX_INTERVAL_MS;
++        const struct pldm_file_df_heartbeat_req heartBeatReq = {
++            curFd, requesterMaxInterval};
++        struct pldm_file_df_heartbeat_resp heartBeatResp = {};
++        rc = co_await dfHeartbeat(terminusManager, tid, &heartBeatReq,
++                                  &heartBeatResp);
++    }
++
++    FileSize fileSize = getFileSize();
++
++    if (fileSize > 0)
++    {
++        auto readLength = (length > 0) ? length : fileSize;
++
++        rc = co_await readFileByLength(curFd, offset, readLength);
++        if (rc)
++        {
++            lg2::error(
++                "Failed to read {LEN} bytes at offset {OFF} for terminus ID {TID}, FileIdentifier {ID}, error {RC}.",
++                "LEN", readLength, "OFF", offset, "TID", tid, "ID", identifier,
++                "RC", rc);
++            // No return here as we still need to call DfClose.
++        }
++    }
++
++    const struct pldm_file_df_close_req closeReq = {
++        curFd, static_cast<bitfield16_t>(0)};
++    rc = co_await dfClose(terminusManager, tid, &closeReq);
++    if (rc)
++    {
++        lg2::error(
++            "Failed to close file session from terminus ID {TID}, FileIdentifier {ID}, error {RC}.",
++            "TID", tid, "ID", identifier, "RC", rc);
++    }
++
++    co_return rc;
++}
++
++sdbusplus::message::unix_fd FileDescriptor::open(size_t offset, size_t length,
++                                                 bool exclusivity)
++{
++    if (isDirectory)
++    {
++        elog<NotAllowed>(
++            NotAllowedMetaData::REASON("Reading a directory is not allowed"));
++    }
++
++    if (exclusivity)
++    {
++        if ((isRegular && !exReadPermitted) || !isRegular)
++        {
++            elog<NotAllowed>(NotAllowedMetaData::REASON(
++                "File does not support exclusive read"));
++        }
++    }
++
++    /* Create a socketpair */
++    if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, sockets) == -1)
++    {
++        lg2::error(
++            "Failed to setup socketpair for terminus ID {TID}, FileIdentifier {ID}, error number {ERR}.",
++            "TID", tid, "ID", identifier, "ERR", errno);
++        elog<InternalFailure>();
++    }
++
++    // TODO: Support multiple task handles based on
++    // FileMaximumFileDescriptorCount
++    if (taskHandle.has_value())
++    {
++        auto& [scope, rcOpt] = *taskHandle;
++        if (!rcOpt.has_value())
++        {
++            lg2::error(
++                "Failed to read from terminus ID {TID}, FileIdentifier {ID} - file is busy.",
++                "TID", tid, "ID", identifier);
++            elog<Unavailable>();
++        }
++        stdexec::sync_wait(scope.on_empty());
++        taskHandle.reset();
++    }
++    auto& [scope, rcOpt] = taskHandle.emplace();
++    scope.spawn(
++        readTask(offset, length, exclusivity) | stdexec::then([&](int rc) {
++            lg2::info(
++                "Read finishes for terminus ID {TID}, FileIdentifier {ID}, return code {RC}.",
++                "TID", tid, "ID", identifier, "RC", rc);
++            rcOpt.emplace(rc);
++            close(sockets[SERVER_IDX]);
++            close(sockets[CLIENT_IDX]);
++            sockets[SERVER_IDX] = -1;
++            sockets[CLIENT_IDX] = -1;
++        }),
++        exec::default_task_context<void>(stdexec::inline_scheduler{}));
++
++    return sockets[CLIENT_IDX];
++}
++
++FileSize FileDescriptor::getFileSize() const
++{
++    if (!sizeSensor)
++    {
++        sizeSensor =
++            terminusManager.getFileSizeMonitoringSensor(tid, entityInfo);
++        if (!sizeSensor)
++        {
++            /*
++             * DSP0242 v1.0.0 Section 8.8.3 File Size Monitoring Sensor:
++             * If the File PDR does not have an associated File Size Monitoring
++             * Sensor, then the File Size is the number of bytes indicated by
++             * the File PDR FileMaximumSize field;
++             */
++            lg2::error(
++                "No size sensor available for terminus ID {TID}, FileIdentifier {ID}",
++                "TID", tid, "ID", identifier);
++            return maxSize;
++        }
++    }
++
++    double fileSize = sizeSensor->getSensorValue();
++    if (std::isfinite(fileSize))
++    {
++        return fileSize;
++    }
++    else
++    {
++        return maxSize;
++    }
++}
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/file_descriptor.hpp b/platform-mc/file_descriptor.hpp
+new file mode 100644
+index 0000000..161d55b
+--- /dev/null
++++ b/platform-mc/file_descriptor.hpp
+@@ -0,0 +1,164 @@
++#pragma once
++
++#include "common/types.hpp"
++#include "common/utils.hpp"
++#include "numeric_sensor.hpp"
++#include "requester/handler.hpp"
++
++#include <libpldm/platform.h>
++#include <libpldm/pldm.h>
++
++#include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/server/object.hpp>
++#include <xyz/openbmc_project/PLDM/File/server.hpp>
++
++#include <string>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm
++{
++namespace platform_mc
++{
++
++class TerminusManager;
++
++using FileInterface = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::PLDM::server::File>;
++
++using namespace pldm::pdr;
++using namespace pldm::file_transfer;
++
++enum SocketIndex
++{
++    SERVER_IDX = 0,
++    CLIENT_IDX = 1,
++    SOCKET_CNT
++};
++
++/**
++ * @brief FileDescriptor
++ *
++ * This class represents a File Descriptor object introduced by File Descriptor
++ * PDR to D-Bus.
++ */
++class FileDescriptor : virtual public FileInterface
++{
++  public:
++    FileDescriptor(sdbusplus::bus_t& bus, const std::string& path,
++                   const pldm_tid_t tid, const bool fileDisabled,
++                   std::shared_ptr<pldm_platform_file_descriptor_pdr> pdr,
++                   TerminusManager& terminusManager);
++
++    ~FileDescriptor() = default;
++
++  private:
++    bool isDirectory = false;
++    bool isRegular = false;
++    bool exReadPermitted = false;
++    pldm_tid_t tid;
++    EntityInfo entityInfo;
++    FileID identifier;
++    FileID supDirIdentifier;
++    FileSize maxSize;
++    FDCount maxFdCount;
++    std::string oemClassName;
++    TerminusManager& terminusManager;
++
++    mutable std::shared_ptr<NumericSensor> sizeSensor;
++
++    // TODO: support multiple socket pairs based on
++    // FileMaximumFileDescriptorCount
++    /** @brief A socket pair to stream file data out upon an Open call.*/
++    int sockets[SOCKET_CNT] = {-1, -1};
++
++    /** @brief Coroutine handler for tasks.*/
++    std::optional<std::pair<exec::async_scope, std::optional<int>>> taskHandle;
++
++    /** @brief Set value to D-Bus Purpose property from FileClassification
++     * field specified in the PDR
++     *
++     *  @param[in] classification - FileClassification field value
++     */
++    void setPurpose(FileClassification classification);
++
++    /** @brief Write data of certain length to a unix socket
++     *
++     *  @param[in] dataSize - Data length to be written
++     *  @param[in] data - Pointer to the array of data
++     *  @param[in] socket - The socket fd
++     *  @param[in] maxfd - Highest-num fd of all the fd set. maxfd + 1 will be
++     *                     passed as nfds argument to select()
++     *
++     *  @return coroutine task returning int
++     */
++    exec::task<int> writeDataToSocket(
++        size_t dataSize, const uint8_t* const data, int socket, int maxFd);
++
++    /** @brief Call DfRead(s) to read a section of certain length to a buffer.
++     *  With reponse data from each part, write it to the socket pair
++     *
++     *  @param[in] fd - fd to a session of a PLDM file open with DfOpen
++     *  @param[in] offset - The desired section offset
++     *  @param[in] length - The desired section length
++     *  @param[in,out] readBuffer - The output buffer
++     *
++     *  @return coroutine task returning int
++     */
++    exec::task<int> readFileBySection(DfOpenFD fd, SectionOffset offset,
++                                      SectionOffset length,
++                                      std::vector<uint8_t>& readBuffer);
++
++    /** @brief Read a certain length of data based on file type
++     *
++     *  @param[in] fd - fd to a session of a PLDM file open with DfOpen
++     *  @param[in] offset - The offset to start reading at
++     *  @param[in] readLength - The desired length to read from the file
++     *
++     *  @return coroutine task returning int
++     */
++    exec::task<int> readFileByLength(DfOpenFD fd, size_t offset,
++                                     size_t readLength);
++
++    /** @brief Open, read and close the actual file and write to the socket pair
++     * as a request from the Open() method to the D-Bus file object
++     *
++     *  @param[in] fd - fd to a session of a PLDM file open with DfOpen
++     *  @param[in] offset - The offset to start reading at
++     *  @param[in] readSize - The desired length to read from the file
++     *
++     *  @return coroutine task returning int
++     */
++    exec::task<int> readTask(size_t offset, size_t length, bool exclusivity);
++
++    /** @brief Override the handler of D-Bus Open() method that returns a
++     * socket, and before that, spawn a task to interact with the actual file
++     * and write data to the socket
++     *
++     *  @param[in] offset - The offset to start reading at
++     *  @param[in] readSize - The desired length to read from the file
++     *  @param[in] exclusivity - Whether to call DfOpen for an exclusive session
++     *
++     *  @return coroutine task returning int
++     */
++    sdbusplus::message::unix_fd open(size_t offset, size_t length,
++                                     bool exclusivity) override;
++
++    /** @brief Override the handler of D-Bus call to get Size property
++     *
++     *  @return current file size
++     */
++    size_t currentSize() const override
++    {
++        return getFileSize();
++    }
++
++    /** @brief Get current file size from the current reading of the associated
++     * File Size Monitoring sensor
++     *
++     *  @return current file size
++     */
++    FileSize getFileSize() const;
++};
++} // namespace platform_mc
++} // namespace pldm
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index 78d850e..784186d 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -21,10 +21,12 @@ static const std::regex objPathAntiPattern("[^a-zA-Z0-9_/]+");
+ static constexpr FileID virtualTopMostFileId = 0xFFFF;
+ 
+ Terminus::Terminus(pldm_tid_t tid, uint64_t supportedTypes,
+-                   sdeventplus::Event& event) :
++                   sdeventplus::Event& event,
++                   TerminusManager& terminusManager) :
+     initialized(false), maxBufferSize(PLDM_PLATFORM_EVENT_MSG_MAX_BUFFER_SIZE),
+     synchronyConfigurationSupported(0), tid(tid),
+-    supportedTypes(supportedTypes), event(event)
++    supportedTypes(supportedTypes), event(event),
++    terminusManager(terminusManager)
+ {}
+ 
+ bool Terminus::doesSupportType(uint8_t type)
+@@ -1187,8 +1189,21 @@ void Terminus::buildFileHierarchy()
+             continue;
+         }
+ 
+-        lg2::debug("Constructing file descriptor object {PATH}.", "PATH",
+-                   file.second->objPath);
++        auto& bus = pldm::utils::DBusHandler::getBus();
++        try
++        {
++            auto fileObject = std::make_shared<FileDescriptor>(
++                bus, fileInfo->objPath, tid, false, fileInfo->pdr,
++                terminusManager);
++            lg2::info("Created File Descriptor object {NAME}", "NAME",
++                      fileInfo->name);
++            fileDescriptors.emplace_back(std::move(fileObject));
++        }
++        catch (const sdbusplus::exception_t& e)
++        {
++            lg2::error("Failed to create FileDescriptor {NAME}. error - {ERR}",
++                       "NAME", fileInfo->name, "ERR", e);
++        }
+     }
+ }
+ } // namespace platform_mc
+diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
+index 2b8ef56..1ed92d3 100644
+--- a/platform-mc/terminus.hpp
++++ b/platform-mc/terminus.hpp
+@@ -2,6 +2,7 @@
+ 
+ #include "common/types.hpp"
+ #include "dbus_impl_fru.hpp"
++#include "file_descriptor.hpp"
+ #include "numeric_sensor.hpp"
+ 
+ #include <libpldm/fru.h>
+@@ -21,6 +22,8 @@ namespace pldm
+ namespace platform_mc
+ {
+ 
++class TerminusManager;
++
+ using namespace pldm::pdr;
+ using namespace pldm::file_transfer;
+ 
+@@ -45,7 +48,7 @@ class Terminus
+ {
+   public:
+     Terminus(pldm_tid_t tid, uint64_t supportedPLDMTypes,
+-             sdeventplus::Event& event);
++             sdeventplus::Event& event, TerminusManager& terminusManager);
+ 
+     /** @brief Check if the terminus supports the PLDM type message
+      *
+@@ -181,6 +184,9 @@ class Terminus
+     /** @brief A list of numericSensors */
+     std::vector<std::shared_ptr<NumericSensor>> numericSensors{};
+ 
++    /** @brief A list of File Descriptors */
++    std::vector<std::shared_ptr<FileDescriptor>> fileDescriptors{};
++
+     /** @brief The flag indicates that the terminus FIFO contains a large
+      *         message that will require a multipart transfer via the
+      *         PollForPlatformEvent command
+@@ -417,6 +423,9 @@ class Terminus
+ 
+     /** @brief Iteration to loop through sensor PDRs when adding sensors */
+     SensorID sensorPdrIt = 0;
++
++    /** @brief TerminusManager reference object */
++    TerminusManager& terminusManager;
+ };
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+index a133818..ecb8fb6 100644
+--- a/platform-mc/terminus_manager.cpp
++++ b/platform-mc/terminus_manager.cpp
+@@ -751,7 +751,8 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
+ 
+     try
+     {
+-        termini[tid] = std::make_shared<Terminus>(tid, supportedTypes, event);
++        termini[tid] =
++            std::make_shared<Terminus>(tid, supportedTypes, event, *this);
+     }
+     catch (const sdbusplus::exception_t& e)
+     {
+diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
+index 74e1de5..29f4d02 100644
+--- a/platform-mc/test/event_manager_test.cpp
++++ b/platform-mc/test/event_manager_test.cpp
+@@ -46,7 +46,7 @@ TEST_F(EventManagerTest, processNumericSensorEventTest)
+     static constexpr uint8_t WARNING_HIGH = 45;
+     pldm_tid_t tid = 1;
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, terminusManager);
+     std::vector<uint8_t> pdr1{
+         0x1,
+         0x0,
+@@ -175,7 +175,7 @@ TEST_F(EventManagerTest, SetEventReceiverTest)
+         pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, terminusManager);
+     auto terminus = termini[tid];
+ 
+     /* Set supported command by terminus */
+@@ -408,7 +408,7 @@ TEST_F(EventManagerTest, pollForPlatformEventTaskMultipartTransferTest)
+         pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, terminusManager);
+     auto terminus = termini[tid];
+ 
+     // queue pollForPlatformEventMessage first part response
+diff --git a/platform-mc/test/meson.build b/platform-mc/test/meson.build
+index e2411db..ed3ddd4 100644
+--- a/platform-mc/test/meson.build
++++ b/platform-mc/test/meson.build
+@@ -7,6 +7,8 @@ test_src = declare_dependency(
+         '../sensor_manager.cpp',
+         '../numeric_sensor.cpp',
+         '../event_manager.cpp',
++        '../file_descriptor.cpp',
++        '../file_cmds.cpp',
+         '../dbus_to_terminus_effecters.cpp',
+         '../../requester/mctp_endpoint_discovery.cpp',
+     ],
+diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
+index 4253766..dc47e65 100644
+--- a/platform-mc/test/platform_manager_test.cpp
++++ b/platform-mc/test/platform_manager_test.cpp
+@@ -37,7 +37,7 @@ TEST_F(PlatformManagerTest, initTerminusTest)
+         pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     auto terminus = termini[tid];
+ 
+     /* Set supported command by terminus */
+@@ -205,7 +205,7 @@ TEST_F(PlatformManagerTest, parseTerminusNameTest)
+         pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     auto terminus = termini[tid];
+ 
+     /* Set supported command by terminus */
+@@ -368,7 +368,7 @@ TEST_F(PlatformManagerTest, initTerminusDontSupportGetPDRTest)
+         pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     auto terminus = termini[tid];
+ 
+     /* Set supported command by terminus */
+@@ -488,7 +488,7 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
+         pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE, event);
++        tid, 1 << PLDM_BASE, event, mockTerminusManager);
+     auto terminus = termini[tid];
+ 
+     stdexec::sync_wait(platformManager.initTerminus());
+@@ -507,7 +507,7 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest2)
+         pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     auto terminus = termini[tid];
+ 
+     // queue getPDRRepositoryInfo response cc=PLDM_ERROR
+diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
+index aa2167a..c7e3e42 100644
+--- a/platform-mc/test/sensor_manager_test.cpp
++++ b/platform-mc/test/sensor_manager_test.cpp
+@@ -135,7 +135,8 @@ TEST_F(SensorManagerTest, sensorPollingTest)
+ {
+     uint64_t seconds = 10;
+     pldm_tid_t tid = 1;
+-    termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(tid, 0, event);
++    termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
++        tid, 0, event, terminusManager);
+     termini[tid]->pdrs.push_back(pdr1);
+     termini[tid]->pdrs.push_back(pdr2);
+     termini[tid]->parseTerminusPDRs();
+diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
+index 41a0eca..c0949dc 100644
+--- a/platform-mc/test/terminus_manager_test.cpp
++++ b/platform-mc/test/terminus_manager_test.cpp
+@@ -569,7 +569,7 @@ TEST_F(TerminusManagerTest, getActiveEidByNameTest)
+     auto mappedTid = mockTerminusManager.mapTid(mctpInfo);
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+-        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     auto terminus = termini[tid];
+ 
+     auto mappedTid1 = terminusManager.mapTid(mctpInfo);
+diff --git a/platform-mc/test/terminus_test.cpp b/platform-mc/test/terminus_test.cpp
+index 56f519c..c0d58db 100644
+--- a/platform-mc/test/terminus_test.cpp
++++ b/platform-mc/test/terminus_test.cpp
+@@ -1,24 +1,49 @@
+ #include "common/utils.hpp"
++#include "mock_terminus_manager.hpp"
+ #include "platform-mc/dbus_impl_fru.hpp"
++#include "platform-mc/numeric_sensor.hpp"
+ #include "platform-mc/terminus.hpp"
++#include "test/test_instance_id.hpp"
+ 
+ #include <libpldm/entity.h>
+ #include <libpldm/fru.h>
+ 
+ #include <sdbusplus/bus.hpp>
++#include <sdeventplus/event.hpp>
+ 
+ #include <string>
+ #include <utility>
+ #include <vector>
+ 
++#include <gmock/gmock.h>
+ #include <gtest/gtest.h>
+ 
+-TEST(TerminusTest, supportedTypeTest)
++using namespace ::testing;
++
++class TerminusTest : public testing::Test
+ {
+-    auto event = sdeventplus::Event::get_default();
+-    auto t1 = pldm::platform_mc::Terminus(1, 1 << PLDM_BASE, event);
++  protected:
++    TerminusTest() :
++        event(sdeventplus::Event::get_default()), instanceIdDb(),
++        reqHandler(pldmTransport, event, instanceIdDb, false,
++                   std::chrono::seconds(1), 2, std::chrono::milliseconds(100)),
++        mockTerminusManager(event, reqHandler, instanceIdDb, termini, nullptr)
++    {}
++
++    PldmTransport* pldmTransport = nullptr;
++    sdeventplus::Event event;
++    TestInstanceIdDb instanceIdDb;
++    pldm::requester::Handler<pldm::requester::Request> reqHandler;
++    pldm::platform_mc::MockTerminusManager mockTerminusManager;
++    std::map<pldm_tid_t, std::shared_ptr<pldm::platform_mc::Terminus>> termini;
++};
++
++TEST_F(TerminusTest, supportedTypeTest)
++{
++    auto t1 = pldm::platform_mc::Terminus(1, 1 << PLDM_BASE, event,
++                                          mockTerminusManager);
+     auto t2 = pldm::platform_mc::Terminus(
+-        2, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        2, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+ 
+     EXPECT_EQ(true, t1.doesSupportType(PLDM_BASE));
+     EXPECT_EQ(false, t1.doesSupportType(PLDM_PLATFORM));
+@@ -26,20 +51,19 @@ TEST(TerminusTest, supportedTypeTest)
+     EXPECT_EQ(true, t2.doesSupportType(PLDM_PLATFORM));
+ }
+ 
+-TEST(TerminusTest, getTidTest)
++TEST_F(TerminusTest, getTidTest)
+ {
+-    auto event = sdeventplus::Event::get_default();
+     const pldm_tid_t tid = 1;
+-    auto t1 = pldm::platform_mc::Terminus(tid, 1 << PLDM_BASE, event);
++    auto t1 = pldm::platform_mc::Terminus(tid, 1 << PLDM_BASE, event,
++                                          mockTerminusManager);
+ 
+     EXPECT_EQ(tid, t1.getTid());
+ }
+ 
+-TEST(TerminusTest, parseSensorAuxiliaryNamesPDRTest)
++TEST_F(TerminusTest, parseSensorAuxiliaryNamesPDRTest)
+ {
+-    auto event = sdeventplus::Event::get_default();
+     auto t1 = pldm::platform_mc::Terminus(
+-        1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     std::vector<uint8_t> pdr1{
+         0x0,
+         0x0,
+@@ -119,11 +143,10 @@ TEST(TerminusTest, parseSensorAuxiliaryNamesPDRTest)
+     EXPECT_EQ("S0", t1.getTerminusName().value());
+ }
+ 
+-TEST(TerminusTest, parseSensorAuxiliaryMultiNamesPDRTest)
++TEST_F(TerminusTest, parseSensorAuxiliaryMultiNamesPDRTest)
+ {
+-    auto event = sdeventplus::Event::get_default();
+     auto t1 = pldm::platform_mc::Terminus(
+-        1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     std::vector<uint8_t> pdr1{
+         0x0,
+         0x0,
+@@ -239,11 +262,10 @@ TEST(TerminusTest, parseSensorAuxiliaryMultiNamesPDRTest)
+     EXPECT_EQ("S0", t1.getTerminusName().value());
+ }
+ 
+-TEST(TerminusTest, parseSensorAuxiliaryNamesMultiSensorsPDRTest)
++TEST_F(TerminusTest, parseSensorAuxiliaryNamesMultiSensorsPDRTest)
+ {
+-    auto event = sdeventplus::Event::get_default();
+     auto t1 = pldm::platform_mc::Terminus(
+-        1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     std::vector<uint8_t> pdr1{
+         0x0,
+         0x0,
+@@ -361,7 +383,7 @@ TEST(TerminusTest, parseSensorAuxiliaryNamesMultiSensorsPDRTest)
+     EXPECT_EQ("S0", t1.getTerminusName().value());
+ }
+ 
+-TEST(TerminusTest, createPldmEntityTest)
++TEST_F(TerminusTest, createPldmEntityTest)
+ {
+     auto& bus = pldm::utils::DBusHandler::getBus();
+     std::string basePath = "/xyz/openbmc_project/inventory/test/";
+@@ -583,11 +605,10 @@ TEST(TerminusTest, fruDecoratorsCreationFailureRemovesCreatedTest)
+     EXPECT_EQ("B1", first.getRevision()->version());
+ }
+ 
+-TEST(TerminusTest, parsePDRTestNoSensorPDR)
++TEST_F(TerminusTest, parsePDRTestNoSensorPDR)
+ {
+-    auto event = sdeventplus::Event::get_default();
+     auto t1 = pldm::platform_mc::Terminus(
+-        1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
++        1, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event, mockTerminusManager);
+     std::vector<uint8_t> pdr1{
+         0x1, 0x0, 0x0,
+         0x0,                             // record handle
+@@ -617,4 +638,4 @@ TEST(TerminusTest, parsePDRTestNoSensorPDR)
+ 
+     auto sensorAuxNames = t1.getSensorAuxiliaryNames(1);
+     EXPECT_EQ(nullptr, sensorAuxNames);
+-}
++}
+\ No newline at end of file
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 2865cdd..fc7025c 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -201,6 +201,9 @@ int main(int argc, char** argv)
+ 
+     InstanceIdDb instanceIdDb;
+ 
++    sdbusplus::server::manager_t fileManager(bus,
++                                             "/xyz/openbmc_project/pldm/file");
++
+     Invoker invoker{};
+     requester::Handler<requester::Request> reqHandler(&pldmTransport, event,
+                                                       instanceIdDb, verbose);

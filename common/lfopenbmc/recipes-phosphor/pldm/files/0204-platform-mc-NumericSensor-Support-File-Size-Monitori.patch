@@ -1,0 +1,41 @@
+From 77e18f9da2c718f6a41485b8df8e1f26ce84561b Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Wed, 17 Sep 2025 02:37:21 +0000
+Subject: [PATCH] platform-mc: NumericSensor: Support File Size Monitoring
+ sensors
+
+This commit supports creation of Numeric Sensor/ Compact Numeric Sensor
+objects that have units of BYTES and EntityType of DeviceFile without a
+D-Bus representation. This sensor type is internal to pldm and
+represents a File Size Monitoring Sensor of a PLDM File Descriptor PDR
+(DSP0242 v1.0.0 Section 8.8.3 File Size Monitoring Sensor). Therefore,
+this sensor type will be constructed as non-DBus NumericSensor objects.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/83780]
+
+Change-Id: I65e3d92e312f0ec0c4b14bf6b36b4c339bcb1653
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+(cherry picked from commit fc2c2b1e523b346384dbb2a5bbb023e260320565)
+---
+ platform-mc/numeric_sensor.cpp | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
+index 2b4e939..e3595db 100644
+--- a/platform-mc/numeric_sensor.cpp
++++ b/platform-mc/numeric_sensor.cpp
+@@ -113,7 +113,13 @@ inline double getRangeFieldValue(uint8_t range_field_format,
+ template <typename T>
+ bool validateSupportedSensorType([[maybe_unused]] const std::shared_ptr<T> pdr)
+ {
+-    // No supported case yet
++    constexpr uint16_t ENTITY_TYPE_MASK = 0x7FFF;
++    if ((pdr->base_unit == PLDM_SENSOR_UNIT_BYTES) &&
++        ((pdr->entity_type & ENTITY_TYPE_MASK) == PLDM_ENTITY_DEVICE_FILE))
++    {
++        // File Size Monitoring Sensor
++        return true;
++    }
+     return false;
+ }
+ 

@@ -42,6 +42,26 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0034-platform-mc-Add-option-to-control-terminus-D-Bus-obj.patch \
 "
 
+# ARM crashlog support, PLDM file transfer dependencies, and compatibility fixes
+SRC_URI:append:openbmc-fb-lf = " \
+    file://0201-platform-mc-NumericSensor-Don-t-update-thresholds-fo.patch \
+    file://0202-platform-mc-NumericSensor-Remove-useMetricInterface-.patch \
+    file://0203-platform-mc-NumericSensor-Introduce-non-DBus-impleme.patch \
+    file://0204-platform-mc-NumericSensor-Support-File-Size-Monitori.patch \
+    file://0205-platform-mc-Receive-File-Size-Monitoring-sensor-from.patch \
+    file://0206-platform-mc-Parse-File-Descriptor-PDR.patch \
+    file://0207-platform-mc-Support-PLDM-File-Transfer-commands.patch \
+    file://0208-platform-mc-Create-File-Descriptor-class.patch \
+    file://0209-pldmtool-Add-pldm-file-parsing.patch \
+    file://0210-platform-mc-Expose-internal-PLDM-file-transfer-API.patch \
+    file://0211-platform-mc-Increase-file-transfer-socket-wait-toler.patch \
+    file://0212-platform-mc-Fix-file-transfer-FD-lifetime.patch \
+    file://0213-oem-arm-parse-PLDM-Device-File-state-events.patch \
+    file://0214-oem-arm-collect-crashlog-files-as-a-system-dump.patch \
+    file://0215-platform-mc-update-object_path-namespace-for-sdbuspl.patch \
+    file://0216-platform-mc-NumericSensor-fix-rebase-of-useMetricInt.patch \
+"
+
 # Must apply after common/lfopenbmc pldm patches.
 SRC_URI:append:yosemite4 = " \
     file://0100-yosemite4-pldm-remove-firmware-update-entry.patch \

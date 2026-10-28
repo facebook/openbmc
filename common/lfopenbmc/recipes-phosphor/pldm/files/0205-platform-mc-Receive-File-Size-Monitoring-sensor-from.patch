@@ -1,0 +1,140 @@
+From b1f2f139a68b26c13ccc5448e9578bd65115ea61 Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Wed, 27 Aug 2025 08:53:55 +0000
+Subject: [PATCH] platform-mc: Receive File Size Monitoring sensor from entity
+ info
+
+DSP0242 v1.0.0 about PLDM File Transfer - Section 8.8.3 File Size
+Monitoring Sensor mentions that:
+
+"The File Size Monitoring Sensor shall match the monitored File PDR
+EntityType, EntityInstance, and ContainerID fields to establish its
+association to the monitored file."
+
+Therefore, with a known File Descriptor PDR, its File Size Monitoring
+sensor info can be achieved. This commits support a function to look
+for the NumericSensor object that is the File Size Monitoring sensor of
+a file, given a known entity information of the file and the terminus
+ID of the terminus it belongs to.
+
+TerminusManager is in charge of this task as it has all the information
+about Numeric Sensor objects of each terminus.
+
+Numeric Sensor also supports a new public function to check if an
+entity info is matching with the entity info of itself.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/83782]
+
+Change-Id: Iec2685fd5a97c15e0673b4738176f501081b829f
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+(cherry picked from commit 12f505eb552e70e3d65a2e76550e9d95c8c44f1a)
+---
+ platform-mc/numeric_sensor.hpp   | 25 +++++++++++++++++++++++++
+ platform-mc/terminus_manager.cpp | 20 ++++++++++++++++++++
+ platform-mc/terminus_manager.hpp | 13 +++++++++++++
+ 3 files changed, 58 insertions(+)
+
+diff --git a/platform-mc/numeric_sensor.hpp b/platform-mc/numeric_sensor.hpp
+index afc4c7b..524e12e 100644
+--- a/platform-mc/numeric_sensor.hpp
++++ b/platform-mc/numeric_sensor.hpp
+@@ -23,6 +23,8 @@ namespace pldm
+ namespace platform_mc
+ {
+ 
++using namespace pldm::pdr;
++
+ using SensorUnit = sdbusplus::xyz::openbmc_project::Sensor::server::Value::Unit;
+ using ValueIntf = sdbusplus::server::object_t<
+     sdbusplus::xyz::openbmc_project::Sensor::server::Value>;
+@@ -387,6 +389,29 @@ class NumericSensor
+                               pldm::utils::Direction direction, double rawValue,
+                               bool newAlarm, bool assert);
+ 
++    /** @brief Compare Entity info against the sensor's
++     *
++     *  @param[in] entityInfo - Entity info to be compared
++     *
++     *  @return true if matching, false otherwise
++     */
++    bool isEntityInfoMatching(const EntityInfo& entityInfo)
++    {
++        if (!valueIntf && !metricIntf)
++        {
++            return (std::tie(entityType, entityInstanceNum, containerId) ==
++                    entityInfo);
++        }
++        else
++        {
++            return (entityIntf &&
++                    (entityIntf->entityType() == std::get<0>(entityInfo)) &&
++                    (entityIntf->entityInstanceNumber() ==
++                     std::get<1>(entityInfo)) &&
++                    (entityIntf->containerID() == std::get<2>(entityInfo)));
++        }
++    }
++
+     /** @brief Get the current value of the sensor
+      *
+      *  @return The current sensor's value
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+index 59beff9..a133818 100644
+--- a/platform-mc/terminus_manager.cpp
++++ b/platform-mc/terminus_manager.cpp
+@@ -1222,5 +1222,25 @@ std::optional<mctp_eid_t> TerminusManager::getActiveEidByName(
+ 
+     return std::nullopt;
+ }
++
++std::shared_ptr<NumericSensor> TerminusManager::getFileSizeMonitoringSensor(
++    const pldm_tid_t& tid, const EntityInfo& entityInfo)
++{
++    auto it = termini.find(tid);
++    if (it == termini.end())
++    {
++        return nullptr;
++    }
++
++    for (const auto& sensor : it->second->numericSensors)
++    {
++        if (sensor->isEntityInfoMatching(entityInfo))
++        {
++            return sensor;
++        }
++    }
++
++    return nullptr;
++}
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
+index 003f0f7..3a60ac1 100644
+--- a/platform-mc/terminus_manager.hpp
++++ b/platform-mc/terminus_manager.hpp
+@@ -26,6 +26,8 @@ enum class SupportedTransportLayer
+ namespace platform_mc
+ {
+ 
++using namespace pldm::pdr;
++
+ /** @brief Size of TID Pool in pldmd */
+ constexpr size_t tidPoolSize = std::numeric_limits<pldm_tid_t>::max() + 1;
+ /** @brief Type definition for Requester request handler */
+@@ -192,6 +194,17 @@ class TerminusManager
+     std::optional<mctp_eid_t> getActiveEidByName(
+         const std::string& terminusName);
+ 
++    /** @brief Member functions to get the File Size Monitoring Sensor
++     *         of a File Descriptor object using its Entity info
++     *
++     *  @param[in] tid - Terminus ID that the file object belongs
++     *  @param[in] entityInfo - Entity info of the file object
++     *
++     *  @return Pointer to the sensor object - nullptr if not found
++     */
++    std::shared_ptr<NumericSensor> getFileSizeMonitoringSensor(
++        const pldm_tid_t& tid, const EntityInfo& entityInfo);
++
+   private:
+     struct MctpEndpointKey
+     {

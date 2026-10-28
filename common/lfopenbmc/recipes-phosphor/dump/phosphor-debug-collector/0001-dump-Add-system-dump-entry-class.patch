@@ -1,0 +1,225 @@
+From 5d1222d0a0d92f4160a310d1ffd8c410005cd758 Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Mon, 15 Jun 2026 10:48:43 +0000
+Subject: [PATCH] dump: Add system dump entry class
+
+Implement the Entry class for system dumps, supporting offload and
+deletion.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-debug-collector/+/91309]
+
+Change-Id: I8c9a5f65001ccb5f11a448e06520c55063875e30
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+Signed-off-by: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+---
+ meson.build           |   1 +
+ system_dump_entry.cpp |  70 +++++++++++++++++++++++++++
+ system_dump_entry.hpp | 110 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 181 insertions(+)
+ create mode 100644 system_dump_entry.cpp
+ create mode 100644 system_dump_entry.hpp
+
+diff --git a/meson.build b/meson.build
+index b9337fe..5586f56 100644
+--- a/meson.build
++++ b/meson.build
+@@ -296,6 +296,7 @@ phosphor_dump_manager_sources = [
+     'dump_offload.cpp',
+     'dump_manager_faultlog.cpp',
+     'faultlog_dump_entry.cpp',
++    'system_dump_entry.cpp',
+ ]
+ 
+ phosphor_dump_manager_dependency = [
+diff --git a/system_dump_entry.cpp b/system_dump_entry.cpp
+new file mode 100644
+index 0000000..67e3cbb
+--- /dev/null
++++ b/system_dump_entry.cpp
+@@ -0,0 +1,70 @@
++#include "system_dump_entry.hpp"
++
++#include "dump_offload.hpp"
++#include "dump_utils.hpp"
++
++#include <phosphor-logging/elog-errors.hpp>
++#include <phosphor-logging/lg2.hpp>
++#include <xyz/openbmc_project/Common/error.hpp>
++
++#include <fstream>
++#include <string>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace system
++{
++using namespace phosphor::logging;
++using namespace sdeventplus::source;
++
++using namespace sdbusplus::xyz::openbmc_project::Common::Error;
++
++void Entry::initiateOffload(std::string uri)
++{
++    lg2::info("System dump entry {ID} offload request to URI {URI}.", "ID", id,
++              "URI", uri);
++    if (offloaded())
++    {
++        lg2::info("System dump entry {ID} was already offloaded "
++                  "to URI {URI}.",
++                  "ID", id, "URI", offloadUri());
++        return;
++    }
++    phosphor::dump::Entry::initiateOffload(uri);
++    phosphor::dump::offload::requestOffload(file, id, uri);
++    offloaded(true);
++}
++
++void Entry::delete_()
++{
++    // Offload URI will be set during dump offload
++    // Prevent delete when offload is in progress
++    if ((!offloadUri().empty()) && (phosphor::dump::isHostRunning()))
++    {
++        lg2::error("Dump offload is in progress for entry {ID}.", "DUMP_ID",
++                   id);
++        elog<sdbusplus::xyz::openbmc_project::Common::Error::Unavailable>();
++    }
++
++    lg2::info("Delete system dump entry {ID}.", "DUMP_ID", id);
++    // Delete Dump file from Permanent location
++    try
++    {
++        std::filesystem::remove(file);
++    }
++    catch (const std::filesystem::filesystem_error& e)
++    {
++        // Log Error message and continue
++        lg2::error(
++            "Failed to delete system dump file {FILE}, errormsg: {ERROR}",
++            "FILE", file.string(), "ERROR", e);
++    }
++
++    // Remove Dump entry D-bus object
++    phosphor::dump::Entry::delete_();
++}
++} // namespace system
++} // namespace dump
++} // namespace phosphor
+diff --git a/system_dump_entry.hpp b/system_dump_entry.hpp
+new file mode 100644
+index 0000000..0b575a9
+--- /dev/null
++++ b/system_dump_entry.hpp
+@@ -0,0 +1,110 @@
++#pragma once
++
++#include "dump_entry.hpp"
++#include "xyz/openbmc_project/Dump/Entry/System/server.hpp"
++
++#include <memory>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace system
++{
++
++constexpr uint32_t INVALID_SOURCE_ID = 0xFFFFFFFF;
++
++using EntryIfaces = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::Dump::Entry::server::System>;
++
++using originatorTypes = sdbusplus::xyz::openbmc_project::Common::server::
++    OriginatedBy::OriginatorTypes;
++
++using OperationStatus =
++    sdbusplus::xyz::openbmc_project::Common::server::Progress::OperationStatus;
++
++class Manager;
++
++/** @class Entry
++ *  @brief System Dump Entry implementation.
++ *  @details A concrete implementation for the
++ *  xyz.openbmc_project.Dump.Entry DBus API
++ */
++class Entry : virtual public phosphor::dump::Entry, virtual public EntryIfaces
++{
++  public:
++    Entry() = delete;
++    Entry(const Entry&) = delete;
++    Entry& operator=(const Entry&) = delete;
++    Entry(Entry&&) = delete;
++    Entry& operator=(Entry&&) = delete;
++    ~Entry() = default;
++
++    /** @brief Constructor for the Dump Entry Object
++     *  @param[in] bus - Bus to attach to.
++     *  @param[in] objPath - Object path to attach to
++     *  @param[in] dumpId - Dump id.
++     *  @param[in] timeStamp - Dump creation timestamp
++     *             since the epoch.
++     *  @param[in] dumpSize - Dump size in bytes.
++     *  @param[in] sourceId - DumpId provided by the source.
++     *  @param[in] status - status  of the dump.
++     *  @param[in] originatorId - Id of the originator of the dump
++     *  @param[in] originatorType - Originator type
++     *  @param[in] parent - The dump entry's parent.
++     */
++    Entry(sdbusplus::bus_t& bus, const std::string& objPath, uint32_t dumpId,
++          uint64_t timeStamp, uint64_t dumpSize,
++          const std::filesystem::path& file, const uint32_t sourceId,
++          phosphor::dump::OperationStatus status, std::string originatorId,
++          originatorTypes originatorType, phosphor::dump::Manager& parent) :
++        phosphor::dump::Entry(bus, objPath.c_str(), dumpId, timeStamp, dumpSize,
++                              file, status, originatorId, originatorType,
++                              parent),
++        EntryIfaces(bus, objPath.c_str(), EntryIfaces::action::defer_emit)
++    {
++        sourceDumpId(sourceId);
++        // Emit deferred signal.
++        this->phosphor::dump::system::EntryIfaces::emit_object_added();
++    };
++
++    /** @brief Method to initiate the offload of dump
++     *  @param[in] uri - URI to offload dump.
++     */
++    void initiateOffload(std::string uri) override;
++
++    /**
++     * @brief Delete host system dump and it entry dbus object
++     */
++    void delete_() override;
++
++    /** @brief Method to update an existing dump entry
++     *  @param[in] dumpSize - Dump size in bytes.
++     *  @param[in] sourceId - DumpId provided by the source.
++     */
++    void update(uint64_t dumpSize, const uint32_t sourceId)
++    {
++        size(dumpSize);
++        sourceDumpId(sourceId);
++    }
++
++    void setLastStatus(uint64_t timeStamp, OperationStatus lastStatus)
++    {
++        elapsed(timeStamp);
++        status(lastStatus);
++        completedTime(timeStamp);
++    }
++
++    /** @brief Method to get the path to the dump file
++     *
++     *  @return Path to the dump file
++     */
++    std::filesystem::path getDumpFilePath()
++    {
++        return file;
++    }
++};
++
++} // namespace system
++} // namespace dump
++} // namespace phosphor

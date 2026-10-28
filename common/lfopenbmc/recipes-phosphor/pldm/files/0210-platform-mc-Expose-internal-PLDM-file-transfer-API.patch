@@ -1,0 +1,152 @@
+From 09b5d2f72eebef307a8cbedf11f0f5159a81c836 Mon Sep 17 00:00:00 2001
+From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Date: Sun, 9 Aug 2026 00:00:00 +0530
+Subject: [PATCH] platform-mc: Expose internal PLDM file transfer API
+
+FileDescriptor::open() is the D-Bus entry point used to start a PLDM
+file transfer. The actual protocol work is already implemented
+internally through the file descriptor object's transfer task.
+
+Expose that same path as startFileTransfer() so OEM code inside pldmd
+can initiate a transfer directly without making a D-Bus call back into
+the same service. Keep open() as a thin wrapper so existing D-Bus users
+continue using the same behavior.
+
+Also expose the discovered FileDescriptor objects from Manager by TID.
+This lets OEM handlers select the file object discovered from File
+Descriptor PDRs and call the internal transfer entry point directly.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/93720]
+
+Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Change-Id: I8bf86c58fb7ab84c58a56d73ff217a461ac98d2b
+---
+ platform-mc/file_descriptor.cpp | 14 ++++++++++----
+ platform-mc/file_descriptor.hpp | 32 +++++++++++++++++++++++++-------
+ platform-mc/manager.hpp         | 17 +++++++++++++++++
+ 3 files changed, 52 insertions(+), 11 deletions(-)
+
+diff --git a/platform-mc/file_descriptor.cpp b/platform-mc/file_descriptor.cpp
+index e5805ab..54e86c9 100644
+--- a/platform-mc/file_descriptor.cpp
++++ b/platform-mc/file_descriptor.cpp
+@@ -83,8 +83,8 @@ FileDescriptor::FileDescriptor(
+     supDirIdentifier = pdr->superior_directory_file_identifier;
+     maxSize = pdr->file_maximum_size;
+     maxFdCount = pdr->file_maximum_file_descriptor_count;
+-    std::string fileName(reinterpret_cast<const char*>(pdr->file_name.ptr),
+-                         pdr->file_name.length);
++    fileName.assign(reinterpret_cast<const char*>(pdr->file_name.ptr),
++                    pdr->file_name.length);
+     name(fileName);
+     source(SourceType::ComputerSystem);
+     if (pdr->oem_file_classification)
+@@ -441,8 +441,8 @@ exec::task<int> FileDescriptor::readTask(size_t offset, size_t length,
+     co_return rc;
+ }
+ 
+-sdbusplus::message::unix_fd FileDescriptor::open(size_t offset, size_t length,
+-                                                 bool exclusivity)
++sdbusplus::message::unix_fd FileDescriptor::startFileTransfer(
++    size_t offset, size_t length, bool exclusivity)
+ {
+     if (isDirectory)
+     {
+@@ -500,6 +500,12 @@ sdbusplus::message::unix_fd FileDescriptor::open(size_t offset, size_t length,
+     return sockets[CLIENT_IDX];
+ }
+ 
++sdbusplus::message::unix_fd FileDescriptor::open(size_t offset, size_t length,
++                                                 bool exclusivity)
++{
++    return startFileTransfer(offset, length, exclusivity);
++}
++
+ FileSize FileDescriptor::getFileSize() const
+ {
+     if (!sizeSensor)
+diff --git a/platform-mc/file_descriptor.hpp b/platform-mc/file_descriptor.hpp
+index 161d55b..6c3c062 100644
+--- a/platform-mc/file_descriptor.hpp
++++ b/platform-mc/file_descriptor.hpp
+@@ -52,6 +52,30 @@ class FileDescriptor : virtual public FileInterface
+ 
+     ~FileDescriptor() = default;
+ 
++    /** @brief Start a PLDM file transfer and return a stream FD.
++     *
++     * This is the internal equivalent of the D-Bus Open() method. It reuses
++     * the existing file-transfer task and state handling without requiring an
++     * in-process D-Bus method call.
++     *
++     *  @param[in] offset - The offset to start reading at
++     *  @param[in] length - The desired length to read
++     *  @param[in] exclusivity - Whether to call DfOpen exclusively
++     *
++     *  @return Unix file descriptor that streams the file data
++     */
++    sdbusplus::message::unix_fd startFileTransfer(size_t offset, size_t length,
++                                                  bool exclusivity);
++
++    /** @brief Get current file size from the associated size sensor. */
++    FileSize getFileSize() const;
++
++    /** @brief Get the PLDM file name from the File Descriptor PDR. */
++    const std::string& getFileName() const
++    {
++        return fileName;
++    }
++
+   private:
+     bool isDirectory = false;
+     bool isRegular = false;
+@@ -62,6 +86,7 @@ class FileDescriptor : virtual public FileInterface
+     FileID supDirIdentifier;
+     FileSize maxSize;
+     FDCount maxFdCount;
++    std::string fileName;
+     std::string oemClassName;
+     TerminusManager& terminusManager;
+ 
+@@ -152,13 +177,6 @@ class FileDescriptor : virtual public FileInterface
+     {
+         return getFileSize();
+     }
+-
+-    /** @brief Get current file size from the current reading of the associated
+-     * File Size Monitoring sensor
+-     *
+-     *  @return current file size
+-     */
+-    FileSize getFileSize() const;
+ };
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
+index 7d7230f..cea88d2 100644
+--- a/platform-mc/manager.hpp
++++ b/platform-mc/manager.hpp
+@@ -290,6 +290,23 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         return terminus->second->getTerminusName();
+     }
+ 
++    /** @brief Get the PLDM File Descriptor objects for a terminus.
++     *
++     *  @param[in] tid - Terminus ID
++     *  @return File Descriptor objects discovered for the terminus
++     */
++    std::vector<std::shared_ptr<FileDescriptor>> getFileDescriptors(
++        pldm_tid_t tid)
++    {
++        auto terminus = termini.find(tid);
++        if (terminus == termini.end() || !terminus->second)
++        {
++            return {};
++        }
++
++        return terminus->second->fileDescriptors;
++    }
++
+     /** @brief Register OEM flow to poll the PLDM Event use
+      *         PollForPlatformEventMessage command
+      *

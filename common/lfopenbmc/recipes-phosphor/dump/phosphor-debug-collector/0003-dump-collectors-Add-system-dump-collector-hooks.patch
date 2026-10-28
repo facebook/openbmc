@@ -1,0 +1,170 @@
+From 69ac232a2b0c233ab72c5d15a29a3c7fdd53b444 Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Mon, 15 Jun 2026 11:00:24 +0000
+Subject: [PATCH] dump-collectors: Add system dump collector hooks
+
+Add pluggable collector entry points for system dumps, with a no-op
+default implementation.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-debug-collector/+/91311]
+
+Change-Id: Ic1b37d7db5c12dba2871c41c98cfa8b32c618081
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+Signed-off-by: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+---
+ dump-collectors/meson.build               |  4 +++
+ dump-collectors/system_dump_collector.cpp | 32 +++++++++++++++++++++++
+ dump-collectors/system_dump_collector.hpp | 26 ++++++++++++++++++
+ dump_manager_system.cpp                   | 20 ++++++++++++++
+ meson.build                               |  3 +++
+ 5 files changed, 85 insertions(+)
+ create mode 100644 dump-collectors/meson.build
+ create mode 100644 dump-collectors/system_dump_collector.cpp
+ create mode 100644 dump-collectors/system_dump_collector.hpp
+
+diff --git a/dump-collectors/meson.build b/dump-collectors/meson.build
+new file mode 100644
+index 0000000..628ddfb
+--- /dev/null
++++ b/dump-collectors/meson.build
+@@ -0,0 +1,4 @@
++# SPDX-License-Identifier: Apache-2.0
++
++phosphor_dump_manager_incdir += ['dump-collectors']
++phosphor_dump_manager_sources += ['dump-collectors/system_dump_collector.cpp']
+diff --git a/dump-collectors/system_dump_collector.cpp b/dump-collectors/system_dump_collector.cpp
+new file mode 100644
+index 0000000..b2cc208
+--- /dev/null
++++ b/dump-collectors/system_dump_collector.cpp
+@@ -0,0 +1,32 @@
++#include "system_dump_collector.hpp"
++
++#include <phosphor-logging/elog-errors.hpp>
++#include <phosphor-logging/elog.hpp>
++#include <phosphor-logging/lg2.hpp>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace collector
++{
++namespace system
++{
++
++void collectDump([[maybe_unused]] Manager* manager,
++                 [[maybe_unused]] Entry* tmpEntry,
++                 [[maybe_unused]] sdbusplus::bus_t& bus,
++                 [[maybe_unused]] sdbusplus::slot_t& slot)
++{
++    lg2::info("Default handler for system dump collecting is not supported.");
++}
++
++bool handleNotifiedDump([[maybe_unused]] Entry* entry)
++{
++    lg2::info("Default handler for notified system dump is not supported.");
++    return false;
++}
++} // namespace system
++} // namespace collector
++} // namespace dump
++} // namespace phosphor
+diff --git a/dump-collectors/system_dump_collector.hpp b/dump-collectors/system_dump_collector.hpp
+new file mode 100644
+index 0000000..cbf42fd
+--- /dev/null
++++ b/dump-collectors/system_dump_collector.hpp
+@@ -0,0 +1,26 @@
++#pragma once
++#include "dump_manager_system.hpp"
++#include "system_dump_entry.hpp"
++
++#include <sdbusplus/bus.hpp>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace collector
++{
++namespace system
++{
++
++using Entry = phosphor::dump::system::Entry;
++using Manager = phosphor::dump::system::Manager;
++
++void collectDump(Manager* manager, Entry* tmpEntry, sdbusplus::bus_t& bus,
++                 sdbusplus::slot_t& slot);
++bool handleNotifiedDump(Entry* entry);
++
++} // namespace system
++} // namespace collector
++} // namespace dump
++} // namespace phosphor
+diff --git a/dump_manager_system.cpp b/dump_manager_system.cpp
+index 7493352..c7daf1a 100644
+--- a/dump_manager_system.cpp
++++ b/dump_manager_system.cpp
+@@ -2,6 +2,7 @@
+ 
+ #include "dump_manager_system.hpp"
+ 
++#include "system_dump_collector.hpp"
+ #include "system_dump_entry.hpp"
+ #include "xyz/openbmc_project/Common/error.hpp"
+ 
+@@ -80,6 +81,13 @@ void Manager::notify(uint32_t dumpId, uint64_t size)
+                   "ID", upEntry->getDumpId(), "SOURCE_ID", dumpId, "SIZE",
+                   size);
+         upEntry->update(size, dumpId);
++
++        auto lastStatus = phosphor::dump::OperationStatus::Completed;
++        if (!phosphor::dump::collector::system::handleNotifiedDump(upEntry))
++        {
++            lastStatus = phosphor::dump::OperationStatus::Failed;
++        }
++        upEntry->setLastStatus(timeStamp, lastStatus);
+         return;
+     }
+ 
+@@ -98,6 +106,14 @@ void Manager::notify(uint32_t dumpId, uint64_t size)
+             bus, objPath.c_str(), id, timeStamp, size, dumpPath, dumpId,
+             phosphor::dump::OperationStatus::InProgress, std::string(),
+             originatorTypes::Internal, *this);
++
++        auto lastStatus = phosphor::dump::OperationStatus::Completed;
++        if (!phosphor::dump::collector::system::handleNotifiedDump(
++                dynamic_cast<phosphor::dump::system::Entry*>(newEntry.get())))
++        {
++            lastStatus = phosphor::dump::OperationStatus::Failed;
++        }
++        newEntry->setLastStatus(timeStamp, lastStatus);
+         entries.insert(std::make_pair(id, std::move(newEntry)));
+     }
+     catch (const std::invalid_argument& e)
+@@ -172,6 +188,10 @@ sdbusplus::message::object_path Manager::createDump(
+         return std::string();
+     }
+ 
++    phosphor::dump::collector::system::collectDump(
++        this, dynamic_cast<phosphor::dump::system::Entry*>(entries[id].get()),
++        bus, _slot);
++
+     lastEntryId++;
+ 
+     return objPath.string();
+diff --git a/meson.build b/meson.build
+index 5a65193..689552e 100644
+--- a/meson.build
++++ b/meson.build
+@@ -327,6 +327,9 @@ subdir('host-transport-extensions')
+ #pick any architecture specific dumps
+ subdir('dump-extensions')
+ 
++#pick any dump collectors
++subdir('dump-collectors')
++
+ subdir('service_files')
+ 
+ phosphor_dump_monitor_sources = [

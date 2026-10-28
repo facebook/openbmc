@@ -1,0 +1,847 @@
+From da1d0ce86004ec4e9e3460c197a52ae44736075b Mon Sep 17 00:00:00 2001
+From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Date: Wed, 19 Aug 2026 16:52:33 +0530
+Subject: [PATCH] oem: arm: collect crashlog files as a system dump
+
+Collect crashlog files exposed by the Arm OEM path through PLDM File
+Transfer without invoking the PLDM File D-Bus Open() method.
+
+Handle Device File state sensor Updated events, discover crashlog
+FileDescriptor objects created from File Descriptor PDRs, wait for each
+file size, and start transfers with the internal FileDescriptor
+startFileTransfer() API.
+
+Collect all matching crashlog files for one event window into a single
+archive before notifying the System Dump manager.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/93724]
+
+Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Change-Id: Iaefea5b752d494a771688455cab7885149c994ac
+---
+ oem/arm/event/crashlog.cpp          | 665 ++++++++++++++++++++++++++++
+ oem/arm/event/crashlog.hpp          |  42 ++
+ oem/arm/event/meson.build           |   5 +-
+ oem/arm/event/oem_event_manager.cpp |  40 +-
+ oem/arm/event/oem_event_manager.hpp |   3 +-
+ 5 files changed, 716 insertions(+), 39 deletions(-)
+ create mode 100644 oem/arm/event/crashlog.cpp
+ create mode 100644 oem/arm/event/crashlog.hpp
+
+diff --git a/oem/arm/event/crashlog.cpp b/oem/arm/event/crashlog.cpp
+new file mode 100644
+index 0000000..df7269a
+--- /dev/null
++++ b/oem/arm/event/crashlog.cpp
+@@ -0,0 +1,665 @@
++#include "crashlog.hpp"
++
++#include "common/utils.hpp"
++#include "platform-mc/file_descriptor.hpp"
++#include "platform-mc/manager.hpp"
++
++#include <fcntl.h>
++#include <libpldm/base.h>
++#include <poll.h>
++#include <sys/wait.h>
++#include <unistd.h>
++
++#include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/bus.hpp>
++#include <sdbusplus/message.hpp>
++
++#include <algorithm>
++#include <array>
++#include <atomic>
++#include <chrono>
++#include <ctime>
++#include <exception>
++#include <filesystem>
++#include <fstream>
++#include <iomanip>
++#include <mutex>
++#include <optional>
++#include <sstream>
++#include <string>
++#include <thread>
++#include <vector>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm
++{
++namespace oem_arm
++{
++namespace crashlog
++{
++
++namespace fs = std::filesystem;
++
++namespace
++{
++
++constexpr uint16_t firstCrashlogStateSensorId = 2;
++constexpr uint8_t crashlogStateSensorStride = 2;
++constexpr uint8_t deviceFileNotChangedState = 1;
++constexpr uint8_t deviceFileUpdatedState = 2;
++constexpr auto crashlogFileName = "agi_cpu_crashdump";
++constexpr const char* dumpManagerService = "xyz.openbmc_project.Dump.Manager";
++constexpr const char* systemDumpPath = "/xyz/openbmc_project/dump/system";
++constexpr const char* systemDumpInterface = "xyz.openbmc_project.Dump.NewDump";
++constexpr const char* systemDumpStagingDir = "/tmp/system-dumps";
++constexpr const char* crashlogArchiveWorkDir = "/tmp";
++constexpr const char* tarCommand = "/usr/bin/tar";
++constexpr auto crashlogFileObjectRetryCount = 30;
++constexpr auto crashlogSizeRetryCount = 180;
++constexpr auto crashlogSizeRetryDelay = std::chrono::seconds(1);
++constexpr auto fileSocketPollTimeoutMs = 5000;
++std::atomic<uint32_t> nextCrashlogSourceId{1};
++std::mutex crashlogWorkerMutex;
++
++struct CollectedCrashlogFile
++{
++    std::string name;
++    uint64_t expectedSize;
++    uint64_t copiedSize;
++};
++
++/** @brief Check whether a state sensor is a Device File update sensor.
++ *
++ * The SoC exposes crashlog file-ready sensors starting at sensor ID 2 with a
++ * stride of 2. Any matching sensor is treated as a crashlog file update
++ * trigger; the actual files are discovered from File Descriptor PDR objects.
++ *
++ * @param[in] sensorId PLDM state sensor ID from the event.
++ * @return true when the event is from a crashlog file state sensor.
++ */
++bool isCrashlogFileStateSensor(uint16_t sensorId)
++{
++    if (sensorId < firstCrashlogStateSensorId)
++    {
++        return false;
++    }
++
++    auto offset = sensorId - firstCrashlogStateSensorId;
++    return (offset % crashlogStateSensorStride) == 0;
++}
++
++/** @brief Copy all bytes from a transfer stream FD into a local file.
++ *
++ * The PLDM FileDescriptor transfer task writes payload bytes to the read side
++ * returned by startFileTransfer(). This helper drains that FD and persists the
++ * payload into the temporary system dump staging file.
++ *
++ * @param[in] inputFd File descriptor returned by startFileTransfer().
++ * @param[in] outputFd Local file descriptor for the temporary staging file.
++ * @return Number of bytes copied, or std::nullopt on read/write failure.
++ */
++std::optional<size_t> copyFdToFile(int inputFd, int outputFd)
++{
++    std::array<uint8_t, 4096> buffer{};
++    size_t bytesRead = 0;
++
++    while (true)
++    {
++        ssize_t len = read(inputFd, buffer.data(), buffer.size());
++        if (len > 0)
++        {
++            size_t written = 0;
++            while (written < static_cast<size_t>(len))
++            {
++                ssize_t rc = write(outputFd, buffer.data() + written,
++                                   static_cast<size_t>(len) - written);
++                if (rc < 0)
++                {
++                    if (errno == EINTR)
++                    {
++                        continue;
++                    }
++                    lg2::error("Failed to write crashlog data, errno {ERRNO}",
++                               "ERRNO", errno);
++                    return std::nullopt;
++                }
++                written += static_cast<size_t>(rc);
++            }
++            bytesRead += static_cast<size_t>(len);
++            continue;
++        }
++
++        if (len == 0)
++        {
++            return bytesRead;
++        }
++
++        if (errno == EINTR)
++        {
++            continue;
++        }
++        if (errno == EAGAIN || errno == EWOULDBLOCK)
++        {
++            pollfd pollFd{inputFd, POLLIN, 0};
++            auto rc = poll(&pollFd, 1, fileSocketPollTimeoutMs);
++            if (rc > 0)
++            {
++                continue;
++            }
++            if (rc == 0)
++            {
++                lg2::error("Timed out waiting for PLDM file socket data");
++                return std::nullopt;
++            }
++            if (errno == EINTR)
++            {
++                continue;
++            }
++        }
++
++        lg2::error("Failed to read PLDM file socket, errno {ERRNO}", "ERRNO",
++                   errno);
++        return std::nullopt;
++    }
++}
++
++/** @brief Find crashlog PLDM FileDescriptor objects for a terminus.
++ *
++ * Selection is based on the file name exposed by File Descriptor PDRs. The
++ * returned list is sorted by name so multi-instance crashlog files are
++ * processed in a stable order.
++ *
++ * @param[in] manager Platform manager containing discovered termini.
++ * @param[in] tid Terminus ID that reported the Device File update event.
++ * @return Matching crashlog FileDescriptor objects.
++ */
++std::vector<std::shared_ptr<platform_mc::FileDescriptor>> findCrashlogFiles(
++    platform_mc::Manager& manager, pldm_tid_t tid)
++{
++    auto files = manager.getFileDescriptors(tid);
++    std::vector<std::shared_ptr<platform_mc::FileDescriptor>> crashlogFiles;
++
++    for (const auto& file : files)
++    {
++        if (!file)
++        {
++            continue;
++        }
++
++        auto fileName = file->getFileName();
++        if (fileName.find(crashlogFileName) == std::string::npos)
++        {
++            continue;
++        }
++
++        crashlogFiles.emplace_back(file);
++    }
++
++    std::sort(crashlogFiles.begin(), crashlogFiles.end(),
++              [](const auto& lhs, const auto& rhs) {
++                  return lhs->getFileName() < rhs->getFileName();
++              });
++    return crashlogFiles;
++}
++
++/** @brief Wait for crashlog FileDescriptor objects to be available.
++ *
++ * File Descriptor PDR discovery can race with the first file-ready event during
++ * bring-up. Retry briefly before declaring that no crashlog file exists.
++ *
++ * @param[in] manager Platform manager containing discovered file descriptors.
++ * @param[in] tid Terminus ID that reported the Device File update event.
++ * @return Matching crashlog files, or an empty vector on timeout.
++ */
++std::vector<std::shared_ptr<platform_mc::FileDescriptor>> waitForCrashlogFiles(
++    platform_mc::Manager& manager, pldm_tid_t tid)
++{
++    for (auto retry = 0; retry < crashlogFileObjectRetryCount; ++retry)
++    {
++        auto files = findCrashlogFiles(manager, tid);
++        if (!files.empty())
++        {
++            if (retry != 0)
++            {
++                lg2::info("Discovered {COUNT} crashlog PLDM file objects "
++                          "after {RETRY} retries",
++                          "COUNT", files.size(), "RETRY", retry);
++            }
++            return files;
++        }
++
++        if (retry == 0)
++        {
++            lg2::info("Crashlog PLDM file objects are not available; "
++                      "waiting for File Descriptor discovery");
++        }
++        std::this_thread::sleep_for(crashlogSizeRetryDelay);
++    }
++
++    return {};
++}
++
++/** @brief Wait until a crashlog file reports a non-zero size.
++ *
++ * The file-ready state event can arrive before the file size sensor has been
++ * updated. Poll the FileDescriptor size helper before initiating transfer.
++ *
++ * @param[in] file Crashlog FileDescriptor object.
++ * @return Non-zero file size, zero on timeout, or std::nullopt on read failure.
++ */
++std::optional<uint32_t> waitForNonZeroCurrentSize(
++    const std::shared_ptr<platform_mc::FileDescriptor>& file)
++{
++    std::optional<uint32_t> currentSize;
++    for (auto retry = 0; retry < crashlogSizeRetryCount; ++retry)
++    {
++        try
++        {
++            currentSize = file->getFileSize();
++        }
++        catch (const std::exception& e)
++        {
++            lg2::debug("Failed to read size from PLDM crashlog file "
++                       "{FILE}: {ERROR}",
++                       "FILE", file->getFileName(), "ERROR", e);
++        }
++
++        if (currentSize && *currentSize != 0)
++        {
++            if (retry != 0)
++            {
++                lg2::info("PLDM crashlog file {FILE} size became {SIZE} "
++                          "after {RETRY} retries",
++                          "FILE", file->getFileName(), "SIZE", *currentSize,
++                          "RETRY", retry);
++            }
++            return currentSize;
++        }
++
++        if (retry == 0)
++        {
++            lg2::info("PLDM crashlog file {FILE} size is not available; "
++                      "waiting for the file provider to publish size",
++                      "FILE", file->getFileName());
++        }
++        std::this_thread::sleep_for(crashlogSizeRetryDelay);
++    }
++
++    return currentSize;
++}
++
++/** @brief Return a compact UTC timestamp for crashlog archive naming.
++ *
++ * @return Timestamp formatted as YYYYMMDD-HHMMSSZ.
++ */
++std::string getUtcTimestamp()
++{
++    auto now = std::chrono::system_clock::now();
++    auto nowTime = std::chrono::system_clock::to_time_t(now);
++    std::tm utcTime = {};
++    gmtime_r(&nowTime, &utcTime);
++
++    std::ostringstream timestamp;
++    timestamp << std::put_time(&utcTime, "%Y%m%d-%H%M%SZ");
++    return timestamp.str();
++}
++
++/** @brief Transfer a PLDM crashlog file into a local file path.
++ *
++ * This calls FileDescriptor::startFileTransfer() directly, avoiding a D-Bus
++ * Open() method call while reusing the existing PLDM DfOpen/MultipartReceive/
++ * DfClose implementation in platform-mc.
++ *
++ * @param[in] file Crashlog FileDescriptor object to read.
++ * @param[in] outputPath Local file path to write.
++ * @param[in] expectedSize Number of bytes expected from the file.
++ * @param[out] totalBytes Number of bytes copied from PLDM transfer stream.
++ * @return true when the transfer completed and byte count matched.
++ */
++bool downloadPldmFileToPath(
++    const std::shared_ptr<platform_mc::FileDescriptor>& file,
++    const fs::path& outputPath, uint64_t expectedSize, uint64_t& totalBytes)
++{
++    fs::create_directories(outputPath.parent_path());
++
++    auto fd =
++        open(outputPath.c_str(), O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC, 0600);
++    if (fd < 0)
++    {
++        lg2::error("Failed to create crashlog file {PATH}, errno {ERRNO}",
++                   "PATH", outputPath.string(), "ERRNO", errno);
++        return false;
++    }
++    pldm::utils::CustomFD outputFd(fd);
++
++    std::optional<size_t> bytesRead;
++    try
++    {
++        auto socketFd = file->startFileTransfer(0, expectedSize, false);
++        bytesRead = copyFdToFile(socketFd.fd, outputFd());
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to download PLDM file {FILE}: {ERROR}", "FILE",
++                   file->getFileName(), "ERROR", e);
++    }
++
++    totalBytes = bytesRead.value_or(0);
++    if (totalBytes == 0)
++    {
++        fs::remove(outputPath);
++        return false;
++    }
++    if (expectedSize != 0 && totalBytes != expectedSize)
++    {
++        lg2::error("PLDM file {FILE} size mismatch: expected {EXPECTED}, "
++                   "downloaded {ACTUAL}",
++                   "FILE", file->getFileName(), "EXPECTED", expectedSize,
++                   "ACTUAL", totalBytes);
++        fs::remove(outputPath);
++        return false;
++    }
++
++    lg2::info("Downloaded {BYTES} bytes from PLDM file {FILE} to {PATH}",
++              "BYTES", totalBytes, "FILE", file->getFileName(), "PATH",
++              outputPath.string());
++    return true;
++}
++
++/** @brief Write metadata describing the crashlog archive contents.
++ *
++ * @param[in] manifestPath Path to manifest.txt in the archive work directory.
++ * @param[in] timestamp UTC timestamp associated with this crashlog incident.
++ * @param[in] tid Terminus ID that reported the crashlog event.
++ * @param[in] terminusName Terminus name that reported the crashlog event.
++ * @param[in] sourceId Source dump ID used for the final System Dump entry.
++ * @param[in] files Files collected into the archive.
++ * @return true when the manifest was written successfully.
++ */
++bool writeCrashlogManifest(const fs::path& manifestPath,
++                           const std::string& timestamp, pldm_tid_t tid,
++                           const std::string& terminusName, uint32_t sourceId,
++                           const std::vector<CollectedCrashlogFile>& files)
++{
++    std::ofstream manifest(manifestPath);
++    if (!manifest.good())
++    {
++        lg2::error("Failed to create crashlog manifest {PATH}", "PATH",
++                   manifestPath.string());
++        return false;
++    }
++
++    manifest << "timestamp_utc=" << timestamp << '\n';
++    manifest << "terminus_name=" << terminusName << '\n';
++    manifest << "terminus_id=" << static_cast<uint32_t>(tid) << '\n';
++    manifest << "source_id=" << sourceId << '\n';
++    manifest << "file_count=" << files.size() << '\n';
++
++    for (size_t index = 0; index < files.size(); ++index)
++    {
++        manifest << "file." << index << ".name=" << files[index].name << '\n';
++        manifest << "file." << index
++                 << ".expected_size=" << files[index].expectedSize << '\n';
++        manifest << "file." << index
++                 << ".copied_size=" << files[index].copiedSize << '\n';
++    }
++
++    return manifest.good();
++}
++
++/** @brief Create a gzip-compressed tar archive from a work directory.
++ *
++ * @param[in] workDir Directory containing files to archive.
++ * @param[in] archivePath Final archive path.
++ * @return true when tar exits successfully.
++ */
++bool createCrashlogArchive(const fs::path& workDir, const fs::path& archivePath)
++{
++    fs::create_directories(archivePath.parent_path());
++    fs::remove(archivePath);
++
++    auto pid = fork();
++    if (pid < 0)
++    {
++        lg2::error("Failed to fork tar for crashlog archive, errno {ERRNO}",
++                   "ERRNO", errno);
++        return false;
++    }
++
++    if (pid == 0)
++    {
++        execl(tarCommand, "tar", "-czf", archivePath.c_str(), "-C",
++              workDir.c_str(), ".", static_cast<char*>(nullptr));
++        _exit(127);
++    }
++
++    int status = 0;
++    if (waitpid(pid, &status, 0) < 0)
++    {
++        lg2::error("Failed to wait for tar, errno {ERRNO}", "ERRNO", errno);
++        return false;
++    }
++
++    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
++    {
++        lg2::error("Failed to create crashlog archive {PATH}, status {STATUS}",
++                   "PATH", archivePath.string(), "STATUS", status);
++        fs::remove(archivePath);
++        return false;
++    }
++
++    return true;
++}
++
++/** @brief Notify phosphor-debug-collector about a completed system dump.
++ *
++ * The worker thread uses its own D-Bus connection to avoid sharing pldmd's
++ * main bus connection across threads while the file-transfer worker is active.
++ *
++ * @param[in] sourceId Source dump ID used in the system dump entry.
++ * @param[in] size Downloaded dump size in bytes.
++ * @return PLDM_SUCCESS when Notify accepts the entry.
++ */
++int notifySystemDump(uint32_t sourceId, uint64_t size)
++{
++    try
++    {
++        auto bus = sdbusplus::bus::new_default();
++        auto method = bus.new_method_call(dumpManagerService, systemDumpPath,
++                                          systemDumpInterface, "Notify");
++        method.append(sourceId, size);
++        bus.call_noreply(method);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to notify system dump entry: {ERROR}", "ERROR", e);
++        return PLDM_ERROR;
++    }
++
++    return PLDM_SUCCESS;
++}
++
++/** @brief Collect one crashlog PLDM file into an archive work directory.
++ *
++ * @param[in] file Crashlog FileDescriptor object to collect.
++ * @param[in] fileInstance Stable index used for logging.
++ * @param[in] workDir Directory used to assemble the crashlog archive.
++ * @param[out] collectedFiles Metadata for successfully downloaded files.
++ * @return PLDM completion code.
++ */
++int collectCrashlogFile(
++    const std::shared_ptr<platform_mc::FileDescriptor>& file,
++    size_t fileInstance, const fs::path& workDir,
++    std::vector<CollectedCrashlogFile>& collectedFiles)
++{
++    auto currentSize = waitForNonZeroCurrentSize(file);
++    if (!currentSize)
++    {
++        lg2::error("Failed to read size from PLDM crashlog file {FILE}", "FILE",
++                   file->getFileName());
++        return PLDM_ERROR_NOT_READY;
++    }
++
++    if (*currentSize == 0)
++    {
++        lg2::info("Skipping crashlog collection; file {FILE} size is "
++                  "still 0 after waiting",
++                  "FILE", file->getFileName());
++        return PLDM_ERROR_NOT_READY;
++    }
++
++    lg2::info("Collecting crashlog file instance {INSTANCE} from {FILE}, "
++              "expected size {SIZE}",
++              "INSTANCE", fileInstance, "FILE", file->getFileName(), "SIZE",
++              *currentSize);
++
++    auto outputPath = workDir / file->getFileName();
++    uint64_t bytesRead = 0;
++    if (!downloadPldmFileToPath(file, outputPath, *currentSize, bytesRead))
++    {
++        return PLDM_ERROR;
++    }
++
++    collectedFiles.push_back({file->getFileName(), *currentSize, bytesRead});
++    return PLDM_SUCCESS;
++}
++
++/** @brief Collect all crashlog files exposed by a terminus.
++ *
++ * A single worker collects every matching crashlog file. Concurrent Device
++ * File events are coalesced by the mutex so sensor 2 and sensor 4 updates do
++ * not start duplicate transfers.
++ *
++ * @param[in] manager Platform manager containing discovered file descriptors.
++ * @param[in] tid Terminus ID that reported the Device File update event.
++ * @return PLDM_SUCCESS when all files collect successfully.
++ */
++int collectCrashlog(platform_mc::Manager& manager, pldm_tid_t tid)
++{
++    std::unique_lock workerGuard(crashlogWorkerMutex, std::try_to_lock);
++    if (!workerGuard.owns_lock())
++    {
++        lg2::info("Crashlog collection is already in progress");
++        return PLDM_SUCCESS;
++    }
++
++    auto files = waitForCrashlogFiles(manager, tid);
++    if (files.empty())
++    {
++        lg2::error("No crashlog PLDM file objects found for terminus {TID}",
++                   "TID", tid);
++        return PLDM_ERROR_NOT_READY;
++    }
++
++    auto sourceId = nextCrashlogSourceId.fetch_add(1);
++    auto timestamp = getUtcTimestamp();
++    std::string terminusName{manager.getTerminusName(tid).value_or("unknown")};
++    auto workDir =
++        fs::path(crashlogArchiveWorkDir) /
++        ("pldm-crashlog-" + std::to_string(sourceId) + "-" + timestamp);
++    auto archivePath =
++        fs::path(systemDumpStagingDir) / std::to_string(sourceId);
++    std::vector<CollectedCrashlogFile> collectedFiles;
++
++    fs::remove_all(workDir);
++    fs::remove(archivePath);
++    fs::create_directories(workDir);
++
++    for (size_t index = 0; index < files.size(); ++index)
++    {
++        auto rc =
++            collectCrashlogFile(files[index], index, workDir, collectedFiles);
++        if (rc != PLDM_SUCCESS)
++        {
++            fs::remove_all(workDir);
++            fs::remove(archivePath);
++            return rc;
++        }
++    }
++
++    if (!writeCrashlogManifest(workDir / "manifest.txt", timestamp, tid,
++                               terminusName, sourceId, collectedFiles))
++    {
++        fs::remove_all(workDir);
++        fs::remove(archivePath);
++        return PLDM_ERROR;
++    }
++
++    if (!createCrashlogArchive(workDir, archivePath))
++    {
++        fs::remove_all(workDir);
++        fs::remove(archivePath);
++        return PLDM_ERROR;
++    }
++
++    auto archiveSize = fs::file_size(archivePath);
++    auto rc = notifySystemDump(sourceId, archiveSize);
++    fs::remove_all(workDir);
++    if (rc != PLDM_SUCCESS)
++    {
++        fs::remove(archivePath);
++        return rc;
++    }
++
++    return PLDM_SUCCESS;
++}
++
++} // namespace
++
++bool isFileStateSensor(uint16_t sensorId)
++{
++    return isCrashlogFileStateSensor(sensorId);
++}
++
++int processFileStateEvent(platform_mc::Manager* manager, pldm_tid_t tid,
++                          uint16_t sensorId, uint8_t eventState)
++{
++    if (!isCrashlogFileStateSensor(sensorId))
++    {
++        lg2::debug(
++            "Ignoring unsupported Arm state sensor event from terminus {TID}, "
++            "sensor {SID}",
++            "TID", tid, "SID", sensorId);
++        return PLDM_SUCCESS;
++    }
++
++    if (manager == nullptr)
++    {
++        return PLDM_ERROR_NOT_READY;
++    }
++
++    auto terminusName = manager->getTerminusName(tid);
++    if (!terminusName.has_value() || terminusName->empty())
++    {
++        return PLDM_SUCCESS;
++    }
++
++    if (eventState == deviceFileNotChangedState)
++    {
++        lg2::debug("Device File state reset to NotChanged from terminus "
++                   "{NAME}, sensor {SID}",
++                   "NAME", *terminusName, "SID", sensorId);
++        return PLDM_SUCCESS;
++    }
++
++    if (eventState != deviceFileUpdatedState)
++    {
++        lg2::debug("Ignoring unsupported Device File state {STATE} from "
++                   "terminus {NAME}, sensor {SID}",
++                   "STATE", eventState, "NAME", *terminusName, "SID", sensorId);
++        return PLDM_SUCCESS;
++    }
++
++    lg2::info("Crashlog file updated event from terminus {NAME}, "
++              "sensor {SID}",
++              "NAME", *terminusName, "SID", sensorId);
++
++    std::thread([manager, tid]() { collectCrashlog(*manager, tid); }).detach();
++
++    return PLDM_SUCCESS;
++}
++
++} // namespace crashlog
++} // namespace oem_arm
++} // namespace pldm
+diff --git a/oem/arm/event/crashlog.hpp b/oem/arm/event/crashlog.hpp
+new file mode 100644
+index 0000000..a139203
+--- /dev/null
++++ b/oem/arm/event/crashlog.hpp
+@@ -0,0 +1,42 @@
++#pragma once
++
++#include <libpldm/base.h>
++
++#include <cstdint>
++
++namespace pldm
++{
++namespace platform_mc
++{
++class Manager;
++}
++
++namespace oem_arm
++{
++namespace crashlog
++{
++
++/** @brief Check whether a state sensor can report crashlog file updates.
++ *
++ * @param[in] sensorId PLDM state sensor ID from the event.
++ * @return true when this sensor is part of the crashlog file-ready set.
++ */
++bool isFileStateSensor(uint16_t sensorId);
++
++/** @brief Process a Device File state sensor event for crashlog collection.
++ *
++ * Valid crashlog file-ready events are coalesced so multiple file instance
++ * notifications create one archive and one System Dump entry.
++ *
++ * @param[in] manager Platform manager containing discovered file descriptors.
++ * @param[in] tid Terminus ID that emitted the state sensor event.
++ * @param[in] sensorId State sensor ID from the event.
++ * @param[in] eventState Decoded Device File state value.
++ * @return PLDM completion code.
++ */
++int processFileStateEvent(platform_mc::Manager* manager, pldm_tid_t tid,
++                          uint16_t sensorId, uint8_t eventState);
++
++} // namespace crashlog
++} // namespace oem_arm
++} // namespace pldm
+diff --git a/oem/arm/event/meson.build b/oem/arm/event/meson.build
+index 900fafc..12eb626 100644
+--- a/oem/arm/event/meson.build
++++ b/oem/arm/event/meson.build
+@@ -1 +1,4 @@
+-oem_files += files('oem_event_manager.cpp')
++oem_files += files(
++    'crashlog.cpp',
++    'oem_event_manager.cpp',
++)
+diff --git a/oem/arm/event/oem_event_manager.cpp b/oem/arm/event/oem_event_manager.cpp
+index 3d0d731..42c2dfb 100644
+--- a/oem/arm/event/oem_event_manager.cpp
++++ b/oem/arm/event/oem_event_manager.cpp
+@@ -1,6 +1,7 @@
+ #include "oem_event_manager.hpp"
+ 
+ #include "common/utils.hpp"
++#include "crashlog.hpp"
+ #include "platform-mc/manager.hpp"
+ 
+ #include <libpldm/platform.h>
+@@ -33,10 +34,6 @@ enum class StateSensorEventType
+ 
+ constexpr auto bootProgressTerminusName = "PHX";
+ constexpr uint16_t bootProgressSensorId = 1;
+-constexpr uint16_t firstCrashlogStateSensorId = 2;
+-constexpr uint8_t crashlogStateSensorStride = 2;
+-constexpr uint8_t deviceFileNotChangedState = 1;
+-constexpr uint8_t deviceFileUpdatedState = 2;
+ constexpr auto bootRawObjectPath = "/xyz/openbmc_project/state/boot/raw0";
+ constexpr auto bootRawInterface = "xyz.openbmc_project.State.Boot.Raw";
+ constexpr auto bootRawProperty = "Value";
+@@ -48,20 +45,9 @@ constexpr auto bootProgressProperty = "BootProgress";
+ constexpr auto bootProgressStageOem =
+     "xyz.openbmc_project.State.Boot.Progress.ProgressStages.OEM";
+ 
+-bool isCrashlogFileStateSensor(uint16_t sensorId)
+-{
+-    if (sensorId < firstCrashlogStateSensorId)
+-    {
+-        return false;
+-    }
+-
+-    auto offset = sensorId - firstCrashlogStateSensorId;
+-    return (offset % crashlogStateSensorStride) == 0;
+-}
+-
+ StateSensorEventType getStateSensorEventType(uint16_t sensorId)
+ {
+-    if (isCrashlogFileStateSensor(sensorId))
++    if (crashlog::isFileStateSensor(sensorId))
+     {
+         return StateSensorEventType::PLDM_FILE_STATE_SENSOR_CRASHLOG;
+     }
+@@ -275,26 +261,8 @@ int OemEventManager::processStateSensorEvent(pldm_tid_t tid, uint16_t sensorId,
+     switch (getStateSensorEventType(sensorId))
+     {
+         case StateSensorEventType::PLDM_FILE_STATE_SENSOR_CRASHLOG:
+-            if (eventState == deviceFileNotChangedState)
+-            {
+-                lg2::debug("Device File state reset to NotChanged from "
+-                           "terminus {TID}, sensor {SID}",
+-                           "TID", tid, "SID", sensorId);
+-                return PLDM_SUCCESS;
+-            }
+-
+-            if (eventState == deviceFileUpdatedState)
+-            {
+-                lg2::info("Crashlog Device File state event from terminus "
+-                          "{TID}, sensor {SID}",
+-                          "TID", tid, "SID", sensorId);
+-                return PLDM_SUCCESS;
+-            }
+-
+-            lg2::debug("Ignoring unsupported Device File state {STATE} from "
+-                       "terminus {TID}, sensor {SID}",
+-                       "STATE", eventState, "TID", tid, "SID", sensorId);
+-            return PLDM_SUCCESS;
++            return crashlog::processFileStateEvent(manager, tid, sensorId,
++                                                   eventState);
+         case StateSensorEventType::PLDM_FILE_STATE_SENSOR_UNSUPPORTED:
+             lg2::debug(
+                 "Ignoring unsupported Arm state sensor event from terminus "
+diff --git a/oem/arm/event/oem_event_manager.hpp b/oem/arm/event/oem_event_manager.hpp
+index 4cf43e2..8c07900 100644
+--- a/oem/arm/event/oem_event_manager.hpp
++++ b/oem/arm/event/oem_event_manager.hpp
+@@ -81,8 +81,7 @@ class OemEventManager
+ 
+     /** @brief Decode and route Arm OEM state sensor events.
+      *
+-     * Device File state sensor events are parsed so the Arm OEM path can react
+-     * to crashlog file-ready notifications.
++     * Device File state sensor events are routed to the crashlog collector.
+      *
+      * @param[in] tid Terminus ID that emitted the event.
+      * @param[in] sensorId State sensor ID.

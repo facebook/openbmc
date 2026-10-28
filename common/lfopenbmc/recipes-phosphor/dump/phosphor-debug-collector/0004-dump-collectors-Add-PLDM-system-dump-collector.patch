@@ -1,0 +1,560 @@
+From c0ca419356b2754452b124bbd7ac60fa38e0e9b8 Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Mon, 15 Jun 2026 11:01:21 +0000
+Subject: [PATCH] dump-collectors: Add PLDM system dump collector
+
+Implement the collector hooks using PLDM File Transfer, gated behind a
+new 'pldm-file-transfer' meson option.
+
+prerequisite patch [1]
+
+refs:
+[1] https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/81694
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-debug-collector/+/91312]
+
+Change-Id: I7f69a9e6ed8090dd4e8681b8ad34113d50f3b767
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+Signed-off-by: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+---
+ dump-collectors/meson.build                   |   8 +-
+ dump-collectors/pldm/common.cpp               | 257 ++++++++++++++++++
+ dump-collectors/pldm/common.hpp               |  69 +++++
+ .../default/pldm_system_dump_collector.cpp    |  91 +++++++
+ dump-collectors/pldm/meson.build              |   8 +
+ dump_manager_system.cpp                       |   2 +-
+ dump_manager_system.hpp                       |   2 +-
+ meson.build                                   |   6 +
+ meson.options                                 |   7 +
+ 9 files changed, 447 insertions(+), 3 deletions(-)
+ create mode 100644 dump-collectors/pldm/common.cpp
+ create mode 100644 dump-collectors/pldm/common.hpp
+ create mode 100644 dump-collectors/pldm/default/pldm_system_dump_collector.cpp
+ create mode 100644 dump-collectors/pldm/meson.build
+
+diff --git a/dump-collectors/meson.build b/dump-collectors/meson.build
+index 628ddfb..09836ba 100644
+--- a/dump-collectors/meson.build
++++ b/dump-collectors/meson.build
+@@ -1,4 +1,10 @@
+ # SPDX-License-Identifier: Apache-2.0
+ 
+ phosphor_dump_manager_incdir += ['dump-collectors']
+-phosphor_dump_manager_sources += ['dump-collectors/system_dump_collector.cpp']
++if get_option('pldm-file-transfer').allowed()
++    subdir('pldm')
++else
++    phosphor_dump_manager_sources += [
++        'dump-collectors/system_dump_collector.cpp',
++    ]
++endif
+diff --git a/dump-collectors/pldm/common.cpp b/dump-collectors/pldm/common.cpp
+new file mode 100644
+index 0000000..c57bfcf
+--- /dev/null
++++ b/dump-collectors/pldm/common.cpp
+@@ -0,0 +1,257 @@
++#include "config.h"
++
++#include "common.hpp"
++
++#include <phosphor-logging/elog-errors.hpp>
++#include <phosphor-logging/elog.hpp>
++#include <phosphor-logging/lg2.hpp>
++#include <xyz/openbmc_project/ObjectMapper/client.hpp>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace collector
++{
++namespace system
++{
++
++bool collectFileObject(
++    Manager* manager, Entry* tmpEntry, sdbusplus::bus_t& bus,
++    sdbusplus::slot_t& slot,
++    std::function<void(Manager* manager, Entry* tmpEntry, sdbusplus::bus_t& bus,
++                       sdbusplus::slot_t& slot, sdbusplus::message_t&& msg)>
++        callback)
++{
++    auto method = bus.new_method_call(ObjectMapper::default_service,
++                                      ObjectMapper::instance_path,
++                                      ObjectMapper::interface, "GetSubTree");
++
++    std::string searchPath = "/";
++    int depth = 0;
++    std::vector<std::string> interfaceList = {FILE_INTERFACE};
++    method.append(searchPath.c_str(), depth, interfaceList);
++
++    try
++    {
++        slot = method.call_async(std::bind_front(
++            callback, manager, tmpEntry, std::ref(bus), std::ref(slot)));
++        if (!slot)
++        {
++            return false;
++        }
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to collect system dump files - error {ERROR}",
++                   "ERROR", e);
++        return false;
++    }
++    return true;
++}
++
++bool handleNotifiedDump(Entry* entry)
++{
++    std::filesystem::path dumpPath(entry->getDumpFilePath());
++    std::filesystem::path tmpPath(TMP_PATH);
++
++    tmpPath /= std::to_string(entry->sourceDumpId());
++    try
++    {
++        if (!std::filesystem::exists(tmpPath))
++        {
++            lg2::error("Temporary dump file does not exist {FILE}", "FILE",
++                       tmpPath.string());
++            return false;
++        }
++        if (!std::filesystem::exists(dumpPath.parent_path()))
++        {
++            std::filesystem::create_directories(dumpPath.parent_path());
++        }
++        std::filesystem::copy_file(
++            tmpPath, dumpPath,
++            std::filesystem::copy_options::overwrite_existing);
++    }
++    catch (std::filesystem::filesystem_error& e)
++    {
++        lg2::info("FileSystem error: {ERROR}", "ERROR", e.what());
++        return false;
++    }
++
++    try
++    {
++        if (std::filesystem::exists(tmpPath))
++        {
++            std::filesystem::remove_all(tmpPath);
++        }
++    }
++    catch (std::filesystem::filesystem_error& e)
++    {
++        lg2::error(
++            "Failed to remove temporary dump directory {PATH} - error {ERROR}",
++            "PATH", tmpPath.string(), "ERROR", e.what());
++        return false;
++    }
++
++    return true;
++}
++
++template <typename T>
++T getDumpProperty(const std::string& objPath, const std::string& property,
++                  sdbusplus::bus_t& bus)
++{
++    auto propVal = readDBusProperty<std::variant<T>>(
++        bus, PLDM_SERVICE, objPath.c_str(), FILE_INTERFACE, property);
++    return std::get<T>(propVal);
++}
++
++std::optional<FileInf::SourceType> collectDumpSource(const std::string& path,
++                                                     sdbusplus::bus_t& bus)
++{
++    auto sourceStr = getDumpProperty<std::string>(path, "Source", bus);
++    return FileInf::convertStringToSourceType(sourceStr);
++}
++
++std::string collectFileName(const std::string& path, sdbusplus::bus_t& bus)
++{
++    return getDumpProperty<std::string>(path, "Name", bus);
++}
++
++bool downloadDumpData(const std::string& objPath,
++                      const std::string& downloadPath, sdbusplus::bus_t& bus,
++                      size_t& size)
++{
++    uint32_t offset = 0;
++    uint32_t length = 0;
++    bool exclusivity = false;
++    sdbusplus::message::unix_fd unixFd;
++
++    auto method = bus.new_method_call(PLDM_SERVICE, objPath.c_str(),
++                                      FILE_INTERFACE, READ_METHOD);
++    method.append(offset, length, exclusivity);
++
++    auto reply = bus.call(method);
++    reply.read(unixFd);
++
++    auto fd = dup(unixFd);
++    if (fd == -1)
++    {
++        lg2::error("Failed to dup D-Bus unix fd {FD}", "FD",
++                   (unsigned)(unixFd));
++        return false;
++    }
++
++    fd_set read_fds;
++    struct timeval timeout;
++    std::vector<char> readBuffer;
++    while (true)
++    {
++        std::array<char, 256> buffer;
++        FD_ZERO(&read_fds);
++        FD_SET(fd, &read_fds);
++
++        timeout.tv_sec = 0;
++        timeout.tv_usec = 2000;
++        int retval = select(fd + 1, &read_fds, nullptr, nullptr, &timeout);
++        if (retval < 0)
++        {
++            close(fd);
++            lg2::error(
++                "Failed to select unix socket, error number - {ERROR_NO}",
++                "ERROR_NO", errno);
++            return 0;
++        }
++        if (retval == 0)
++        {
++            continue;
++        }
++        if ((retval > 0) && (FD_ISSET(fd, &read_fds)))
++        {
++            int bytes = read(fd, buffer.data(), buffer.size());
++            if (bytes < 0)
++            {
++                lg2::error(
++                    "Failed to read from unix socket, error number - {ERROR_NO}",
++                    "ERROR_NO", errno);
++                if (errno == EAGAIN || errno == EWOULDBLOCK)
++                {
++                    lg2::error(
++                        "No data available, but the server socket is still open. Try reading again");
++                    continue;
++                }
++                close(fd);
++                return false;
++            }
++
++            readBuffer.insert(readBuffer.end(), buffer.begin(),
++                              buffer.begin() + bytes);
++            if (bytes == 0)
++            {
++                lg2::info("The other end closed. Reading is done.");
++                lg2::info("Total bytes read - {BYTES}", "BYTES",
++                          readBuffer.size());
++                break;
++            }
++        }
++        else
++        {
++            lg2::error("Read FD is not set. Try reading again");
++            continue;
++        }
++    }
++    close(fd);
++
++    lg2::info("Writing {NUM} bytes out to file {FILE}", "NUM",
++              readBuffer.size(), "FILE", downloadPath);
++    if (!saveDumpData(downloadPath, &readBuffer))
++    {
++        return false;
++    }
++    size = readBuffer.size();
++
++    return true;
++}
++
++bool saveDumpData(std::string downloadPath, const std::vector<char>* readBuffer)
++{
++    std::filesystem::path outputPath(downloadPath);
++    if (!std::filesystem::exists(outputPath.parent_path()))
++    {
++        std::filesystem::create_directories(outputPath.parent_path());
++    }
++
++    std::ofstream outputFile;
++    outputFile.open(outputPath);
++    if (outputFile.is_open())
++    {
++        outputFile.write(readBuffer->data(), readBuffer->size());
++        if (!outputFile.good())
++        {
++            lg2::error("Error writing to file {FILE}.", "FILE",
++                       outputPath.string());
++            outputFile.close();
++            return false;
++        }
++    }
++    else
++    {
++        lg2::error("Error opening to file {FILE}.", "FILE",
++                   outputPath.string());
++        return false;
++    }
++    outputFile.close();
++
++    return true;
++}
++
++uint32_t hashStringToUInt32(const std::string& str)
++{
++    std::hash<std::string> hasher;
++    std::size_t hash_value = hasher(str);
++    return static_cast<uint32_t>(hash_value);
++}
++
++} // namespace system
++} // namespace collector
++} // namespace dump
++} // namespace phosphor
+diff --git a/dump-collectors/pldm/common.hpp b/dump-collectors/pldm/common.hpp
+new file mode 100644
+index 0000000..11d1378
+--- /dev/null
++++ b/dump-collectors/pldm/common.hpp
+@@ -0,0 +1,69 @@
++#pragma once
++#include "dump_utils.hpp"
++#include "system_dump_collector.hpp"
++
++#include <sys/socket.h>
++#include <unistd.h>
++
++#include <phosphor-logging/elog-errors.hpp>
++#include <phosphor-logging/elog.hpp>
++#include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/bus.hpp>
++#include <sdbusplus/server/object.hpp>
++#include <sdbusplus/slot.hpp>
++#include <sdeventplus/source/io.hpp>
++#include <xyz/openbmc_project/ObjectMapper/client.hpp>
++#include <xyz/openbmc_project/PLDM/File/client.hpp>
++
++#include <filesystem>
++#include <functional>
++#include <memory>
++#include <string>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace collector
++{
++namespace system
++{
++
++using namespace phosphor::logging;
++using ObjectPath = std::string;
++using ServiceName = std::string;
++using Interfaces = std::vector<std::string>;
++using MapperServiceMap = std::vector<std::pair<ServiceName, Interfaces>>;
++using GetSubTreeResponse = std::vector<std::pair<ObjectPath, MapperServiceMap>>;
++using ObjectMapper = sdbusplus::client::xyz::openbmc_project::ObjectMapper<>;
++using FileInf = sdbusplus::client::xyz::openbmc_project::pldm::File<>;
++
++constexpr auto PLDM_SERVICE = "xyz.openbmc_project.PLDM";
++constexpr auto FILE_INTERFACE = FileInf::interface;
++constexpr auto READ_METHOD = "Open";
++constexpr auto TMP_PATH = "/tmp/system-dumps";
++
++bool collectFileObject(
++    Manager* manager, Entry* tmpEntry, sdbusplus::bus_t& bus,
++    sdbusplus::slot_t& slot,
++    std::function<void(Manager* manager, Entry* tmpEntry, sdbusplus::bus_t& bus,
++                       sdbusplus::slot_t& slot, sdbusplus::message_t&& msg)>
++        callback);
++bool handleNotifiedDump(Entry* entry);
++template <typename T>
++T getDumpProperty(const std::string& objPath, const std::string& property,
++                  sdbusplus::bus_t& bus);
++std::optional<FileInf::SourceType> collectDumpSource(const std::string& path,
++                                                     sdbusplus::bus_t& bus);
++std::string collectFileName(const std::string& path, sdbusplus::bus_t& bus);
++bool downloadDumpData(const std::string& objPath,
++                      const std::string& downloadPath, sdbusplus::bus_t& bus,
++                      size_t& size);
++bool saveDumpData(std::string downloadPath,
++                  const std::vector<char>* readBuffer);
++uint32_t hashStringToUInt32(const std::string& str);
++
++} // namespace system
++} // namespace collector
++} // namespace dump
++} // namespace phosphor
+diff --git a/dump-collectors/pldm/default/pldm_system_dump_collector.cpp b/dump-collectors/pldm/default/pldm_system_dump_collector.cpp
+new file mode 100644
+index 0000000..6e1e297
+--- /dev/null
++++ b/dump-collectors/pldm/default/pldm_system_dump_collector.cpp
+@@ -0,0 +1,91 @@
++#include "config.h"
++
++#include "common.hpp"
++#include "dump_manager_system.hpp"
++#include "system_dump_collector.hpp"
++#include "system_dump_entry.hpp"
++
++#include <phosphor-logging/elog-errors.hpp>
++#include <phosphor-logging/elog.hpp>
++#include <phosphor-logging/lg2.hpp>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace collector
++{
++namespace system
++{
++
++void handleCollectedDump(Manager* manager, Entry* tmpEntry,
++                         sdbusplus::bus_t& bus, sdbusplus::slot_t& slot,
++                         sdbusplus::message_t&& msg)
++{
++    slot = sdbusplus::slot_t(nullptr);
++
++    if (msg.is_method_error())
++    {
++        lg2::error(
++            "Async DBus call failed for GetSubTree of file objects - error {ERROR}",
++            "ERROR", msg.get_error()->message);
++        tmpEntry->delete_();
++    }
++
++    GetSubTreeResponse resp;
++    msg.read(resp);
++    bool collected = false;
++    for (const auto& [objPath, serviceMap] : resp)
++    {
++        for (const auto& [service, interfaces] : serviceMap)
++        {
++            if (service == PLDM_SERVICE)
++            {
++                auto dumpSource = collectDumpSource(objPath, bus);
++                if (!dumpSource ||
++                    (dumpSource.value() != FileInf::SourceType::ComputerSystem))
++                {
++                    continue;
++                }
++
++                auto sourceDumpId = hashStringToUInt32(objPath);
++
++                std::filesystem::path tmpPath(TMP_PATH);
++                tmpPath /= std::to_string(sourceDumpId);
++                lg2::info("Downloading dump data from {PATH} to {FILE}.",
++                          "PATH", objPath, "FILE", tmpPath.string());
++
++                size_t size;
++                if (!downloadDumpData(objPath, tmpPath.string(), bus, size))
++                {
++                    lg2::error(
++                        "Failed to download dump data from file object {PATH}.",
++                        "PATH", objPath);
++                    break;
++                }
++                manager->notify(sourceDumpId, size);
++                collected = true;
++                break;
++            }
++        }
++    }
++
++    if (!collected)
++    {
++        tmpEntry->delete_();
++    }
++}
++
++void collectDump(Manager* manager, Entry* tmpEntry, sdbusplus::bus_t& bus,
++                 sdbusplus::slot_t& slot)
++{
++    if (!collectFileObject(manager, tmpEntry, bus, slot, handleCollectedDump))
++    {
++        tmpEntry->delete_();
++    }
++}
++
++} // namespace system
++} // namespace collector
++} // namespace dump
++} // namespace phosphor
+diff --git a/dump-collectors/pldm/meson.build b/dump-collectors/pldm/meson.build
+new file mode 100644
+index 0000000..2b3c2b3
+--- /dev/null
++++ b/dump-collectors/pldm/meson.build
+@@ -0,0 +1,8 @@
++# SPDX-License-Identifier: Apache-2.0
++
++phosphor_dump_manager_sources += ['dump-collectors/pldm/common.cpp']
++phosphor_dump_manager_incdir += ['dump-collectors/pldm']
++phosphor_dump_manager_sources += [
++    'dump-collectors/pldm/default/pldm_system_dump_collector.cpp',
++]
++phosphor_dump_manager_incdir += ['dump-collectors/pldm/default']
+diff --git a/dump_manager_system.cpp b/dump_manager_system.cpp
+index c7daf1a..606a32f 100644
+--- a/dump_manager_system.cpp
++++ b/dump_manager_system.cpp
+@@ -129,7 +129,7 @@ void Manager::notify(uint32_t dumpId, uint64_t size)
+     return;
+ }
+ 
+-sdbusplus::message::object_path Manager::createDump(
++sdbusplus::object_path Manager::createDump(
+     phosphor::dump::DumpCreateParams params)
+ {
+     lg2::error("Create system dump");
+diff --git a/dump_manager_system.hpp b/dump_manager_system.hpp
+index e475de7..6b0bee8 100644
+--- a/dump_manager_system.hpp
++++ b/dump_manager_system.hpp
+@@ -77,7 +77,7 @@ class Manager :
+      *
+      *  @return object_path - The path to the new dump entry.
+      */
+-    sdbusplus::message::object_path createDump(
++    sdbusplus::object_path createDump(
+         phosphor::dump::DumpCreateParams params) override;
+ 
+     /** @brief Path to the dump file*/
+diff --git a/meson.build b/meson.build
+index 689552e..0d52ffc 100644
+--- a/meson.build
++++ b/meson.build
+@@ -181,6 +181,12 @@ conf_data.set_quoted(
+     description: 'The system dump file path',
+ )
+ 
++conf_data.set(
++    'PLDM_FILE_TRANSFER',
++    get_option('pldm-file-transfer').allowed(),
++    description: 'User PLDM File Transfer for system dump',
++)
++
+ conf_data.set_quoted(
+     'RESOURCE_DUMP_OBJPATH',
+     get_option('RESOURCE_DUMP_OBJPATH'),
+diff --git a/meson.options b/meson.options
+index a1a6c36..ecba77e 100644
+--- a/meson.options
++++ b/meson.options
+@@ -168,6 +168,13 @@ option(
+     description: 'Directory where system dumps are placed',
+ )
+ 
++option(
++    'pldm-file-transfer',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Use PLDM File Transfer to collect and offload system dump',
++)
++
+ # Resource dump options
+ 
+ option(

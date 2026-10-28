@@ -1,0 +1,377 @@
+From 63e67933432843f8b624c7bb06638726a15f5d6c Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Mon, 15 Jun 2026 10:49:43 +0000
+Subject: [PATCH] dump: Add system dump Manager
+
+Add the Manager class for creating and notifying system dumps, and
+register it in dump_manager_main.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-debug-collector/+/91310]
+
+Change-Id: Ib53074c11953a747fa54edea8ebf9daa6f77e640
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+Signed-off-by: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+---
+ dump_manager_main.cpp   |   7 ++
+ dump_manager_system.cpp | 182 ++++++++++++++++++++++++++++++++++++++++
+ dump_manager_system.hpp |  92 ++++++++++++++++++++
+ meson.build             |   7 ++
+ meson.options           |   7 ++
+ 5 files changed, 295 insertions(+)
+ create mode 100644 dump_manager_system.cpp
+ create mode 100644 dump_manager_system.hpp
+
+diff --git a/dump_manager_main.cpp b/dump_manager_main.cpp
+index a3ce920..f5fcc76 100644
+--- a/dump_manager_main.cpp
++++ b/dump_manager_main.cpp
+@@ -4,6 +4,7 @@
+ #include "dump_manager.hpp"
+ #include "dump_manager_bmc.hpp"
+ #include "dump_manager_faultlog.hpp"
++#include "dump_manager_system.hpp"
+ #include "elog_watch.hpp"
+ #include "watch.hpp"
+ #include "xyz/openbmc_project/Common/error.hpp"
+@@ -78,6 +79,12 @@ int main()
+                 FAULTLOG_DUMP_PATH);
+         dumpMgrList.push_back(std::move(faultLogMgr));
+ 
++        std::unique_ptr<phosphor::dump::system::Manager> systemDumpMgr =
++            std::make_unique<phosphor::dump::system::Manager>(
++                bus, SYSTEM_DUMP_OBJPATH, SYSTEM_DUMP_OBJ_ENTRY,
++                SYSTEM_DUMP_PATH);
++        dumpMgrList.push_back(std::move(systemDumpMgr));
++
+         phosphor::dump::loadExtensions(bus, dumpMgrList);
+ 
+         // Restore dbus objects of all dumps
+diff --git a/dump_manager_system.cpp b/dump_manager_system.cpp
+new file mode 100644
+index 0000000..7493352
+--- /dev/null
++++ b/dump_manager_system.cpp
+@@ -0,0 +1,182 @@
++#include "config.h"
++
++#include "dump_manager_system.hpp"
++
++#include "system_dump_entry.hpp"
++#include "xyz/openbmc_project/Common/error.hpp"
++
++#include <phosphor-logging/elog-errors.hpp>
++#include <phosphor-logging/elog.hpp>
++#include <phosphor-logging/lg2.hpp>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace system
++{
++
++using namespace phosphor::logging;
++using namespace sdbusplus::xyz::openbmc_project::Common::Error;
++
++void Manager::notify(uint32_t dumpId, uint64_t size)
++{
++    uint64_t timeStamp =
++        std::chrono::duration_cast<std::chrono::microseconds>(
++            std::chrono::system_clock::now().time_since_epoch())
++            .count();
++
++    // A system dump can be created due to a fault in the server or by a user
++    // request. A system dump by fault is first reported here, but for a
++    // user-requested dump, an entry will be created first with an invalid
++    // source id. Since only one system dump creation is allowed at a time, if
++    // there's an entry with an invalid sourceId, we will update that entry.
++    phosphor::dump::system::Entry* upEntry = nullptr;
++    for (auto& entry : entries)
++    {
++        phosphor::dump::system::Entry* sysEntry =
++            dynamic_cast<phosphor::dump::system::Entry*>(entry.second.get());
++
++        if ((sysEntry->sourceDumpId() == dumpId))
++        {
++            if ((sysEntry->status() ==
++                 phosphor::dump::OperationStatus::Completed) ||
++                (sysEntry->status() == phosphor::dump::OperationStatus::Failed))
++            {
++                // If the dump id is the same but status is Failed or Completed,
++                // then this is a new dump. So, delete the stale entry and
++                // prepare to create a new one.
++                lg2::info("A previous complete dump entry {ID} found with the "
++                          "same source dump ID {SOURCE_ID}, deleting.",
++                          "SOURCE_ID", dumpId, "ID", sysEntry->getDumpId());
++                sysEntry->delete_();
++                continue;
++                // No 'break' here, as we need to continue checking other
++                // entries.
++            }
++            else
++            {
++                lg2::error("A duplicate notification for an incomplete dump "
++                           "entry {ID} with the same source ID {SOURCE_ID}",
++                           "SOURCE_ID", dumpId, "ID", sysEntry->getDumpId());
++                upEntry = sysEntry;
++                break;
++            }
++        }
++
++        // Save the first entry with INVALID_SOURCE_ID, but continue in the loop
++        // to ensure the new entry is not a duplicate.
++        if ((sysEntry->sourceDumpId() == INVALID_SOURCE_ID) &&
++            (upEntry == nullptr))
++        {
++            upEntry = sysEntry;
++        }
++    }
++
++    if (upEntry != nullptr)
++    {
++        lg2::info("Updating system dump entry {ID} with source dump "
++                  "ID {SOURCE_ID}, size {SIZE}",
++                  "ID", upEntry->getDumpId(), "SOURCE_ID", dumpId, "SIZE",
++                  size);
++        upEntry->update(size, dumpId);
++        return;
++    }
++
++    auto id = lastEntryId + 1;
++    auto idString = std::to_string(id);
++    auto objPath = std::filesystem::path(baseEntryPath) / idString;
++    std::filesystem::path dumpPath(dumpDir);
++    dumpPath /= idString;
++
++    try
++    {
++        lg2::info("Creating new system dump entry with "
++                  "ID {ID}, source dump ID {SOURCE_ID}, and size {SIZE}",
++                  "ID", id, "SOURCE_ID", dumpId, "SIZE", size);
++        auto newEntry = std::make_unique<system::Entry>(
++            bus, objPath.c_str(), id, timeStamp, size, dumpPath, dumpId,
++            phosphor::dump::OperationStatus::InProgress, std::string(),
++            originatorTypes::Internal, *this);
++        entries.insert(std::make_pair(id, std::move(newEntry)));
++    }
++    catch (const std::invalid_argument& e)
++    {
++        lg2::error("Error in creating system dump entry with "
++                   "ID {ID}, source dump ID {SOURCE_ID}, and size {SIZE}"
++                   " - error {ERROR}",
++                   "ID", id, "SOURCE_ID", dumpId, "SIZE", size, "ERROR", e);
++        report<InternalFailure>();
++        return;
++    }
++    lastEntryId++;
++    return;
++}
++
++sdbusplus::message::object_path Manager::createDump(
++    phosphor::dump::DumpCreateParams params)
++{
++    lg2::error("Create system dump");
++
++    if (params.empty())
++    {
++        lg2::warning("No additional parameters received");
++    }
++
++    for (auto& entry : entries)
++    {
++        phosphor::dump::system::Entry* sysEntry =
++            dynamic_cast<phosphor::dump::system::Entry*>(entry.second.get());
++        if (sysEntry->sourceDumpId() == INVALID_SOURCE_ID)
++        {
++            lg2::error(
++                "There's one existing temporary system dump under-processing."
++                " Multiple system dump creations are not allowed.");
++            elog<sdbusplus::xyz::openbmc_project::Common::Error::Unavailable>();
++            return std::string();
++        }
++    }
++
++    // Get the originator id and type from params
++    std::string originatorId;
++    originatorTypes originatorType;
++    phosphor::dump::extractOriginatorProperties(params, originatorId,
++                                                originatorType);
++
++    auto id = lastEntryId + 1;
++    auto idString = std::to_string(id);
++    auto objPath = std::filesystem::path(baseEntryPath) / idString;
++    uint64_t timeStamp =
++        std::chrono::duration_cast<std::chrono::microseconds>(
++            std::chrono::system_clock::now().time_since_epoch())
++            .count();
++
++    std::filesystem::path dumpPath(dumpDir);
++    dumpPath /= idString;
++
++    try
++    {
++        entries.insert(std::make_pair(
++            id,
++            std::make_unique<system::Entry>(
++                bus, objPath.c_str(), id, timeStamp, 0, dumpPath,
++                INVALID_SOURCE_ID, phosphor::dump::OperationStatus::InProgress,
++                originatorId, originatorType, *this)));
++    }
++    catch (const std::invalid_argument& e)
++    {
++        lg2::error("Error in creating system dump entry, error msg: {ERROR}, "
++                   "OBJECTPATH: {OBJECT_PATH}, ID: {ID}",
++                   "ERROR", e, "OBJECT_PATH", objPath, "ID", id);
++        elog<InternalFailure>();
++        return std::string();
++    }
++
++    lastEntryId++;
++
++    return objPath.string();
++}
++
++} // namespace system
++} // namespace dump
++} // namespace phosphor
+diff --git a/dump_manager_system.hpp b/dump_manager_system.hpp
+new file mode 100644
+index 0000000..e475de7
+--- /dev/null
++++ b/dump_manager_system.hpp
+@@ -0,0 +1,92 @@
++#pragma once
++
++#include "dump_manager.hpp"
++#include "dump_utils.hpp"
++#include "xyz/openbmc_project/Dump/NewDump/server.hpp"
++
++#include <sdbusplus/bus.hpp>
++#include <xyz/openbmc_project/Dump/Create/server.hpp>
++
++#include <memory>
++
++namespace phosphor
++{
++namespace dump
++{
++namespace system
++{
++
++using NotifyIface = sdbusplus::server::object_t<
++    sdbusplus::xyz::openbmc_project::Dump::server::Create,
++    sdbusplus::xyz::openbmc_project::Dump::server::NewDump>;
++
++/** @class Manager
++ *  @brief System Dump  manager implementation.
++ *  @details A concrete implementation for the
++ *  xyz.openbmc_project.Dump.Notify DBus API
++ */
++class Manager :
++    virtual public NotifyIface,
++    virtual public phosphor::dump::Manager
++{
++  public:
++    Manager() = delete;
++    Manager(const Manager&) = delete;
++    Manager& operator=(const Manager&) = delete;
++    Manager(Manager&&) = delete;
++    Manager& operator=(Manager&&) = delete;
++    virtual ~Manager() = default;
++
++    /** @brief Constructor to put object onto bus at a dbus path.
++     *  @param[in] bus - Bus to attach to.
++     *  @param[in] event - Dump manager sd_event loop.
++     *  @param[in] path - Path to attach at.
++     *  @param[in] baseEntryPath - Base path of the dump entry.
++     */
++    Manager(sdbusplus::bus_t& bus, const char* path,
++            const std::string& baseEntryPath, const char* filePath) :
++        NotifyIface(bus, path),
++        phosphor::dump::Manager(bus, path, baseEntryPath), dumpDir(filePath)
++    {
++        std::error_code ec;
++        std::filesystem::create_directory(dumpDir, ec);
++        if (ec)
++        {
++            lg2::error(
++                "System Dump Manager directory {DIRECTORY} can not be created - "
++                "Error code {ERROR} - Error message {ERROR_MESSAGE}",
++                "DIRECTORY", dumpDir, "ERROR", ec.value(), "ERROR_MESSAGE",
++                ec.message());
++        }
++    }
++
++    void extractDiagnosticType(phosphor::dump::DumpCreateParams params,
++                               std::string& oemDiagType);
++
++    void restore() override {}
++
++    /** @brief Notify the system dump manager about creation of a new dump.
++     *  @param[in] dumpId - Id from the source of the dump.
++     *  @param[in] size - Size of the dump.
++     */
++    void notify(uint32_t dumpId, uint64_t size) override;
++
++    /** @brief Implementation for CreateDump
++     *  Method to create a new system dump entry when user
++     *  requests for a new system dump.
++     *
++     *  @return object_path - The path to the new dump entry.
++     */
++    sdbusplus::message::object_path createDump(
++        phosphor::dump::DumpCreateParams params) override;
++
++    /** @brief Path to the dump file*/
++    std::string dumpDir;
++
++  private:
++    sdbusplus::slot_t _slot = sdbusplus::slot_t(nullptr);
++};
++
++} // namespace system
++} // namespace dump
++} // namespace phosphor
+diff --git a/meson.build b/meson.build
+index 5586f56..5a65193 100644
+--- a/meson.build
++++ b/meson.build
+@@ -175,6 +175,12 @@ conf_data.set_quoted(
+     description: 'The system dump entry D-Bus object path',
+ )
+ 
++conf_data.set_quoted(
++    'SYSTEM_DUMP_PATH',
++    get_option('SYSTEM_DUMP_PATH'),
++    description: 'The system dump file path',
++)
++
+ conf_data.set_quoted(
+     'RESOURCE_DUMP_OBJPATH',
+     get_option('RESOURCE_DUMP_OBJPATH'),
+@@ -297,6 +303,7 @@ phosphor_dump_manager_sources = [
+     'dump_manager_faultlog.cpp',
+     'faultlog_dump_entry.cpp',
+     'system_dump_entry.cpp',
++    'dump_manager_system.cpp',
+ ]
+ 
+ phosphor_dump_manager_dependency = [
+diff --git a/meson.options b/meson.options
+index 9b88428..a1a6c36 100644
+--- a/meson.options
++++ b/meson.options
+@@ -161,6 +161,13 @@ option(
+     description: 'The system dump entry D-Bus object path',
+ )
+ 
++option(
++    'SYSTEM_DUMP_PATH',
++    type: 'string',
++    value: '/var/lib/phosphor-debug-collector/system-dumps/',
++    description: 'Directory where system dumps are placed',
++)
++
+ # Resource dump options
+ 
+ option(

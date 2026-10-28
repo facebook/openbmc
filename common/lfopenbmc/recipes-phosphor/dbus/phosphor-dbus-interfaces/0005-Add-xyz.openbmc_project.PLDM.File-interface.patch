@@ -1,0 +1,239 @@
+From 1c8d370748db423b400465aed4b83ebcde709270 Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Fri, 22 May 2026 03:52:24 +0000
+Subject: [PATCH] Add xyz.openbmc_project.PLDM.File interface
+
+This commit adds the `xyz.openbmc_project.PLDM.File` interface that
+represents a PLDM file object on D-Bus. This object is a representation
+of a PLDM File Descriptor PDR (DSP0248 v1.3.0 - Table 108 - File
+Descriptor PDR). The interface is then used by client applications to
+query basic file properties or open an fd to the file to read content
+from. The implementation of this interface is in `pldm` repository.
+The result of an `Open` method call is a unix fd to which a client can
+connect and read file data from.
+
+The design doc [1] shows the use case of this PLDM file interface.
+
+[1]: https://gerrit.openbmc.org/c/openbmc/docs/+/76960
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/81694]
+
+Change-Id: I9e2b7412e1dfa42fb47665d38185c74a4ddab4a6
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+---
+ gen/xyz/openbmc_project/PLDM/File/meson.build |  40 ++++++
+ gen/xyz/openbmc_project/PLDM/meson.build      |  25 ++++
+ .../openbmc_project/PLDM/File.interface.yaml  | 115 ++++++++++++++++++
+ 3 files changed, 180 insertions(+)
+ create mode 100644 gen/xyz/openbmc_project/PLDM/File/meson.build
+ create mode 100644 yaml/xyz/openbmc_project/PLDM/File.interface.yaml
+
+diff --git a/gen/xyz/openbmc_project/PLDM/File/meson.build b/gen/xyz/openbmc_project/PLDM/File/meson.build
+new file mode 100644
+index 0000000..3da51c9
+--- /dev/null
++++ b/gen/xyz/openbmc_project/PLDM/File/meson.build
+@@ -0,0 +1,40 @@
++# Generated file; do not modify.
++
++sdbusplus_current_path = 'xyz/openbmc_project/PLDM/File'
++
++generated_sources += custom_target(
++    'xyz/openbmc_project/PLDM/File__cpp'.underscorify(),
++    input: [
++        '../../../../../yaml/xyz/openbmc_project/PLDM/File.interface.yaml',
++    ],
++    output: [
++        'common.hpp',
++        'server.hpp',
++        'server.cpp',
++        'aserver.hpp',
++        'client.hpp',
++    ],
++    depend_files: sdbusplusplus_depfiles,
++    command: [
++        sdbuspp_gen_meson_prog,
++        '--command',
++        'cpp',
++        '--output',
++        meson.current_build_dir(),
++        '--tool',
++        sdbusplusplus_prog,
++        '--directory',
++        meson.current_source_dir() / '../../../../../yaml',
++        'xyz/openbmc_project/PLDM/File',
++    ],
++    install: should_generate_cpp,
++    install_dir: [
++        get_option('includedir') / sdbusplus_current_path,
++        get_option('includedir') / sdbusplus_current_path,
++        false,
++        get_option('includedir') / sdbusplus_current_path,
++        get_option('includedir') / sdbusplus_current_path,
++    ],
++    build_by_default: should_generate_cpp,
++)
++
+diff --git a/gen/xyz/openbmc_project/PLDM/meson.build b/gen/xyz/openbmc_project/PLDM/meson.build
+index 0ba461e..284edc3 100644
+--- a/gen/xyz/openbmc_project/PLDM/meson.build
++++ b/gen/xyz/openbmc_project/PLDM/meson.build
+@@ -1,5 +1,6 @@
+ # Generated file; do not modify.
+ subdir('Event')
++subdir('File')
+ subdir('PDR')
+ subdir('Provider')
+ 
+@@ -29,6 +30,30 @@ generated_markdown += custom_target(
+     build_by_default: should_generate_markdown,
+ )
+ 
++generated_markdown += custom_target(
++    'xyz/openbmc_project/PLDM/File__markdown'.underscorify(),
++    input: [
++        '../../../../yaml/xyz/openbmc_project/PLDM/File.interface.yaml',
++    ],
++    output: ['File.md'],
++    depend_files: sdbusplusplus_depfiles,
++    command: [
++        sdbuspp_gen_meson_prog,
++        '--command',
++        'markdown',
++        '--output',
++        meson.current_build_dir(),
++        '--tool',
++        sdbusplusplus_prog,
++        '--directory',
++        meson.current_source_dir() / '../../../../yaml',
++        'xyz/openbmc_project/PLDM/File',
++    ],
++    install: should_generate_markdown,
++    install_dir: [inst_markdown_dir / sdbusplus_current_path],
++    build_by_default: should_generate_markdown,
++)
++
+ generated_markdown += custom_target(
+     'xyz/openbmc_project/PLDM/PDR__markdown'.underscorify(),
+     input: [
+diff --git a/yaml/xyz/openbmc_project/PLDM/File.interface.yaml b/yaml/xyz/openbmc_project/PLDM/File.interface.yaml
+new file mode 100644
+index 0000000..2d7e0b7
+--- /dev/null
++++ b/yaml/xyz/openbmc_project/PLDM/File.interface.yaml
+@@ -0,0 +1,115 @@
++description: >
++    Implemented to represent a PLDM File Descriptor object on D-Bus. pldm should
++    provide one implementation of xyz.openbmc_project.PLDM.File under each
++    /xyz/openbmc_project/pldm/file/<TerminusName>/[<ParentPath>]/<FileName>
++    object.
++
++methods:
++    - name: Open
++      description: >
++          Get the fd from which the file data can be read.
++      parameters:
++          - name: Offset
++            type: size
++            default: 0
++            description: >
++                Offset to read from.
++          - name: Length
++            type: size
++            default: 0
++            description: >
++                Data length to read.
++          - name: Exclusivity
++            type: boolean
++            default: false
++            description: >
++                Whether to open the file exclusively.
++      returns:
++          - name: Fd
++            type: unixfd
++            description: >
++                The fd from which the file data can be read. Callers are
++                responsible for closing the fd.
++      errors:
++          - xyz.openbmc_project.Common.File.Error.Open
++          - xyz.openbmc_project.Common.File.Error.Seek
++
++properties:
++    - name: Name
++      type: string
++      description: >
++          Name string of the file.
++    - name: Purpose
++      type: enum[self.PurposeType]
++      default: Unknown
++      description: >
++          Purpose of the file.
++    - name: Source
++      type: enum[self.SourceType]
++      default: Unknown
++      description: >
++          Source name of the file.
++    - name: CurrentSize
++      type: size
++      description: >
++          The current size of the file.
++
++enumerations:
++    - name: PurposeType
++      description: >
++          Purposes that a file object can serve.
++      values:
++          - name: BootLog
++            description: >
++                This file provides boot log.
++          - name: SerialTxFIFO
++            description: >
++                This streaming file data is not retained after being transmitted
++                to the receiver or upon FIFO queue overflow.
++          - name: SerialRxFIFO
++            description: >
++                This file is for streaming data back to its host device.
++          - name: DiagnosticLog
++            description: >
++                This file provides log for diagnostic purpose.
++          - name: CrashDump
++            description: >
++                This file provides data upon crash events
++          - name: Security
++            description: >
++                This file provides log for security purpose.
++          - name: FRU
++            description: >
++                This file stores Field Replaceable Unit (FRU) data.
++          - name: TelemetryDataFile
++            description: >
++                This file provides telemetry data.
++          - name: TelemetryDataLog
++            description: >
++                This file provides telemetry log.
++          - name: Directory
++            description: >
++                This is a directory.
++          - name: OEM
++            description: >
++                This file serves OEM purpose.
++          - name: Unknown
++            description: >
++                Purpose not known yet.
++
++    - name: SourceType
++      description: >
++          The origin of a file.
++      values:
++          - name: ComputerSystem
++            description: >
++                This file is originated from outside of BMC.
++          - name: BMC
++            description: >
++                This file is originated from the BMC.
++          - name: Unknown
++            description: >
++                Source not known yet.
++
++paths:
++    - namespace: /xyz/openbmc_project/pldm/file

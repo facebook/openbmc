@@ -1,0 +1,36 @@
+From d696a8eb799b8e21e908bb4f894b1e9ff8b51267 Mon Sep 17 00:00:00 2001
+From: Neil Cheng <Neil.Cheng@quantatw.com>
+Date: Wed, 28 Oct 2026 17:20:02 +0800
+Subject: [PATCH] platform-mc: NumericSensor: fix rebase of useMetricInterface
+ removal
+
+After rebasing onto upstream 3269cd16dc31 ("platform-mc: add support
+for sensor unit bits"), the PLDM_SENSOR_UNIT_BITS case in
+setSensorUnit() still assigned `useMetricInterface = true`. That
+member was removed by the cherry-picked Gerrit 87817 patch, so the
+build fails and the bits case never set its metric unit.
+
+Replace the stale assignment with `sensorUnit = MetricUnit::Bytes`,
+matching how the other metric units are handled in the same switch.
+
+This is a local rebase fix on top of Gerrit 87817 and was not raised
+as a review comment on Gerrit.
+
+Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
+---
+ platform-mc/numeric_sensor.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
+index e3595db..bae88a4 100644
+--- a/platform-mc/numeric_sensor.cpp
++++ b/platform-mc/numeric_sensor.cpp
+@@ -173,7 +173,7 @@ bool NumericSensor::setSensorUnit(uint8_t baseUnit)
+             break;
+         case PLDM_SENSOR_UNIT_BITS:
+             sensorNameSpace = "/xyz/openbmc_project/metric/bytes/";
+-            useMetricInterface = true;
++            sensorUnit = MetricUnit::Bytes;
+             break;
+         default:
+             return false;

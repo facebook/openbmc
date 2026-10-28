@@ -1,0 +1,116 @@
+From 6ee8b3282454f12ee9d46007db7d54d4d931cb6c Mon Sep 17 00:00:00 2001
+From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Date: Tue, 11 Aug 2026 15:20:00 +0530
+Subject: [PATCH] platform-mc: Fix file transfer FD lifetime
+
+FileDescriptor::open() returns the client side of a socketpair to the
+caller. After that point, the caller owns the returned FD. Keep
+FileDescriptor responsible only for the server side used by the PLDM
+transfer task.
+
+This prevents the transfer completion path from closing the
+caller-owned FD while the consumer is still draining it. Create the
+socketpair after any previous transfer task has been drained, detach
+the client FD before starting the new task, and close only the
+daemon-owned server FD on completion.
+
+The D-Bus Open() API and PLDM File Transfer protocol sequence are
+unchanged.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/93722]
+
+Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Change-Id: I183c73103b19fcc7df22defa3b72e2151ec7d071
+---
+ platform-mc/file_descriptor.cpp | 54 ++++++++++++++++++++++++---------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
+
+diff --git a/platform-mc/file_descriptor.cpp b/platform-mc/file_descriptor.cpp
+index d77322e..84cf6e4 100644
+--- a/platform-mc/file_descriptor.cpp
++++ b/platform-mc/file_descriptor.cpp
+@@ -36,6 +36,9 @@ constexpr auto MAX_SOCKET_POLL_RETRY = 120;
+ // Timeout in microsecond used in select() for the server socket.
+ constexpr auto SOCKET_SELECT_TIMEOUT_US = 50000;
+ 
++// Local socket buffer used between the PLDM transfer task and its consumer.
++constexpr int FILE_TRANSFER_SOCKET_BUFFER_SIZE = 1024 * 1024;
++
+ // The transfer part size to be negotiated with File Host.
+ constexpr auto REQUESTER_PART_SIZE = 0x100;
+ 
+@@ -459,15 +462,6 @@ sdbusplus::message::unix_fd FileDescriptor::startFileTransfer(
+         }
+     }
+ 
+-    /* Create a socketpair */
+-    if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, sockets) == -1)
+-    {
+-        lg2::error(
+-            "Failed to setup socketpair for terminus ID {TID}, FileIdentifier {ID}, error number {ERR}.",
+-            "TID", tid, "ID", identifier, "ERR", errno);
+-        elog<InternalFailure>();
+-    }
+-
+     // TODO: Support multiple task handles based on
+     // FileMaximumFileDescriptorCount
+     if (taskHandle.has_value())
+@@ -483,6 +477,37 @@ sdbusplus::message::unix_fd FileDescriptor::startFileTransfer(
+         stdexec::sync_wait(scope.on_empty());
+         taskHandle.reset();
+     }
++
++    /* Create a socketpair */
++    if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, sockets) == -1)
++    {
++        lg2::error(
++            "Failed to setup socketpair for terminus ID {TID}, FileIdentifier {ID}, error number {ERR}.",
++            "TID", tid, "ID", identifier, "ERR", errno);
++        elog<InternalFailure>();
++    }
++
++    if (setsockopt(sockets[SERVER_IDX], SOL_SOCKET, SO_SNDBUF,
++                   &FILE_TRANSFER_SOCKET_BUFFER_SIZE,
++                   sizeof(FILE_TRANSFER_SOCKET_BUFFER_SIZE)) < 0)
++    {
++        lg2::debug(
++            "Failed to set send buffer size for terminus ID {TID}, FileIdentifier {ID}, error number {ERR}.",
++            "TID", tid, "ID", identifier, "ERR", errno);
++    }
++
++    if (setsockopt(sockets[CLIENT_IDX], SOL_SOCKET, SO_RCVBUF,
++                   &FILE_TRANSFER_SOCKET_BUFFER_SIZE,
++                   sizeof(FILE_TRANSFER_SOCKET_BUFFER_SIZE)) < 0)
++    {
++        lg2::debug(
++            "Failed to set receive buffer size for terminus ID {TID}, FileIdentifier {ID}, error number {ERR}.",
++            "TID", tid, "ID", identifier, "ERR", errno);
++    }
++
++    sdbusplus::message::unix_fd clientFd(sockets[CLIENT_IDX]);
++    sockets[CLIENT_IDX] = -1;
++
+     auto& [scope, rcOpt] = taskHandle.emplace();
+     scope.spawn(
+         readTask(offset, length, exclusivity) | stdexec::then([&](int rc) {
+@@ -490,14 +515,15 @@ sdbusplus::message::unix_fd FileDescriptor::startFileTransfer(
+                 "Read finishes for terminus ID {TID}, FileIdentifier {ID}, return code {RC}.",
+                 "TID", tid, "ID", identifier, "RC", rc);
+             rcOpt.emplace(rc);
+-            close(sockets[SERVER_IDX]);
+-            close(sockets[CLIENT_IDX]);
+-            sockets[SERVER_IDX] = -1;
+-            sockets[CLIENT_IDX] = -1;
++            if (sockets[SERVER_IDX] >= 0)
++            {
++                close(sockets[SERVER_IDX]);
++                sockets[SERVER_IDX] = -1;
++            }
+         }),
+         exec::default_task_context<void>(stdexec::inline_scheduler{}));
+ 
+-    return sockets[CLIENT_IDX];
++    return clientFd;
+ }
+ 
+ sdbusplus::message::unix_fd FileDescriptor::open(size_t offset, size_t length,

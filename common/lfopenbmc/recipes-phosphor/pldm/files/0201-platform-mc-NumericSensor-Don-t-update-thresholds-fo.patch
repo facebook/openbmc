@@ -1,0 +1,55 @@
+From a1b9b8ee4c5cdeb9fcbd48a6bf9e86e7cfbec8f4 Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Wed, 25 Feb 2026 08:47:04 +0000
+Subject: [PATCH] platform-mc: NumericSensor: Don't update thresholds for
+ metric objects
+
+A NumericSensor object with Metric interface does not have threshold
+interfaces, so its value should not be checked against thresholds and
+cause alarm events. In other words, only a sensor object with
+Sensor.Value interface can be subject to threshold checks.
+
+This commit let `updateThresholds` function returns with error log when
+the Sensor.Value interface is not present for a NumericSensor object.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/87816]
+
+Change-Id: Iaffa4b62cdb43d89dede4057aa50f9efb12fdd4c
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+(cherry picked from commit 73a9266952b0faa91beb1ab1953c0bc0d49f4038)
+---
+ platform-mc/numeric_sensor.cpp | 16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
+
+diff --git a/platform-mc/numeric_sensor.cpp b/platform-mc/numeric_sensor.cpp
+index 1e5d1a0..18ad840 100644
+--- a/platform-mc/numeric_sensor.cpp
++++ b/platform-mc/numeric_sensor.cpp
+@@ -1093,22 +1093,16 @@ void NumericSensor::createNormalRangeLog(double value) const
+ void NumericSensor::updateThresholds()
+ {
+     double value = std::numeric_limits<double>::quiet_NaN();
+-
+-    if ((!useMetricInterface && !valueIntf) ||
+-        (useMetricInterface && !metricIntf))
+-    {
+-        lg2::error(
+-            "Failed to update thresholds sensor {NAME} D-Bus interfaces don't exist.",
+-            "NAME", sensorName);
+-        return;
+-    }
+-    if (!useMetricInterface)
++    if (valueIntf)
+     {
+         value = valueIntf->value();
+     }
+     else
+     {
+-        value = metricIntf->value();
++        lg2::error(
++            "Failed to update thresholds sensor {NAME} D-Bus interfaces don't exist.",
++            "NAME", sensorName);
++        return;
+     }
+ 
+     for (auto level : allThresholdLevels)

@@ -1,0 +1,42 @@
+From 4b9609554f8b68ac8bdddfb3595c077f7b87b66c Mon Sep 17 00:00:00 2001
+From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Date: Thu, 13 Aug 2026 18:10:00 +0530
+Subject: [PATCH] platform-mc: Increase file transfer socket wait tolerance
+
+Large PLDM file transfers can briefly hit local socket back-pressure
+while the consumer drains the stream. Increase the socket write retry
+count and select timeout so the transfer task tolerates those short
+local stalls.
+
+This only changes the local in-process socket wait tolerance. The PLDM
+File Transfer protocol sequence and D-Bus Open() API are unchanged.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/93721]
+
+Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Change-Id: Ib0b7f73dc76a5e38e37c18cc91e22fb9b75ae6cb
+---
+ platform-mc/file_descriptor.cpp | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/platform-mc/file_descriptor.cpp b/platform-mc/file_descriptor.cpp
+index 54e86c9..d77322e 100644
+--- a/platform-mc/file_descriptor.cpp
++++ b/platform-mc/file_descriptor.cpp
+@@ -29,12 +29,12 @@ using NotAllowedMetaData = xyz::openbmc_project::Common::NotAllowed;
+ using PurposeType =
+     sdbusplus::common::xyz::openbmc_project::pldm::File::PurposeType;
+ 
+-// Maximum retry allowed to tolerate failures in polling for the server socket
+-// readiness, or tolerate EAGAIN/EWOULDBLOCK in writing data to it.
+-constexpr auto MAX_SOCKET_POLL_RETRY = 5;
++// Maximum retry allowed to tolerate local socket back-pressure while the
++// consumer drains a large file-transfer stream.
++constexpr auto MAX_SOCKET_POLL_RETRY = 120;
+ 
+ // Timeout in microsecond used in select() for the server socket.
+-constexpr auto SOCKET_SELECT_TIMEOUT_US = 2000;
++constexpr auto SOCKET_SELECT_TIMEOUT_US = 50000;
+ 
+ // The transfer part size to be negotiated with File Host.
+ constexpr auto REQUESTER_PART_SIZE = 0x100;

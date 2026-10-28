@@ -1,0 +1,60 @@
+From a62ae1b6c2db443cd0e5403c84da85066f2aac35 Mon Sep 17 00:00:00 2001
+From: Neil Cheng <Neil.Cheng@quantatw.com>
+Date: Thu, 15 Oct 2026 15:28:43 +0800
+Subject: [PATCH] platform-mc: update object_path namespace for sdbusplus
+
+Update sdbusplus::message::object_path to sdbusplus::object_path
+following the unresolved review comment on Gerrit 82342.
+
+This is a local compatibility fix and is not part of patchset 30.
+
+Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
+---
+ platform-mc/terminus.cpp | 4 ++--
+ platform-mc/terminus.hpp | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index 784186d..83dfa73 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -1045,7 +1045,7 @@ std::shared_ptr<pldm_platform_file_descriptor_pdr>
+ 
+ void Terminus::constructFilePathRecursive(
+     std::shared_ptr<FileInfoStruct> file,
+-    const sdbusplus::message::object_path& basePath)
++    const sdbusplus::object_path& basePath)
+ {
+     if (!file)
+     {
+@@ -1158,7 +1158,7 @@ void Terminus::buildFileHierarchy()
+     }
+ 
+     // Recursively construct file hierarchy
+-    const sdbusplus::message::object_path basePath(
++    const sdbusplus::object_path basePath(
+         "/xyz/openbmc_project/pldm/file/");
+     auto& topMostFile = fileInfoMap[virtualTopMostFileId];
+     constructFilePathRecursive(topMostFile, basePath);
+diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
+index 1ed92d3..cbb3151 100644
+--- a/platform-mc/terminus.hpp
++++ b/platform-mc/terminus.hpp
+@@ -31,7 +31,7 @@ struct FileInfoStruct
+ {
+     std::string name; //!< File name
+     FileID parentId;  //!< FileIdentifier of the parent file
+-    sdbusplus::message::object_path objPath; //!< File object path
++    sdbusplus::object_path objPath; //!< File object path
+     std::shared_ptr<pldm_platform_file_descriptor_pdr>
+         pdr;                                 //!< Pointer to file descriptor pdr
+     std::vector<std::shared_ptr<FileInfoStruct>>
+@@ -353,7 +353,7 @@ class Terminus
+      */
+     void constructFilePathRecursive(
+         std::shared_ptr<FileInfoStruct> file,
+-        const sdbusplus::message::object_path& basePath);
++        const sdbusplus::object_path& basePath);
+ 
+     /** @brief Build file info map for the terminus
+      */

@@ -3,6 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI:append = "\
     file://anacapa-info \
     file://ncsi-thor2 \
+    file://amc-dreport \
 "
 
 # For online debug, BMC OOB is unreachable (FBA-862). and ncsi-thor2 script
@@ -15,4 +16,6 @@ EXTRA_OEMESON:append = " -DBMC_DUMP_MIN_SPACE_REQD=3072"
 do_install:append() {
     install -m 0755 ${UNPACKDIR}/anacapa-info ${S}/tools/dreport.d/plugins.d/
     install -m 0755 ${UNPACKDIR}/ncsi-thor2 ${S}/tools/dreport.d/plugins.d/
+    # collect amc's dreport
+    install -m 0755 ${UNPACKDIR}/amc-dreport ${S}/tools/dreport.d/plugins.d/
 }

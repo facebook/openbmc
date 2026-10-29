@@ -11,3 +11,6 @@ IMAGE_INSTALL += "mfg-tool"
 
 # Add overlay-helper for developers
 IMAGE_INSTALL += "overlay-helper"
+
+# Ad-hoc sensors and Meta OEM metrics (bmc-oem-metric)
+IMAGE_INSTALL += "adhoc-sensor"

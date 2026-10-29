@@ -1,0 +1,245 @@
+From 6aa3792d726b7d2527f37bd148025a235fd4b640 Mon Sep 17 00:00:00 2001
+From: Eldin Lee <eldin.lee@quantatw.com>
+Date: Tue, 27 Oct 2026 15:47:27 +0800
+Subject: [PATCH] valve-monitor: Improve config validation and inotify error
+ handling
+
+Handle invalid JSON configurations when JSON_NOEXCEPTION is enabled.
+Validate required fields and types before accessing them to prevent
+aborts. Preserve the existing configuration if validation fails.
+
+Align inotify error handling with phosphor-bmc-code-mgmt change 94020.
+Handle transient read errors (EAGAIN, EWOULDBLOCK, EINTR) without
+terminating the event loop, as nonblocking reads may fail even after
+a readiness notification.
+
+Keep the inotify event loop running until shutdown and strip trailing
+null bytes from event filenames.
+
+Reference:
+https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-code-mgmt/+/94020
+
+Change-Id: I0f31c31a1e6fa5571c8436138285bfc3dee654d5
+Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
+---
+ src/NotifyWatch.cpp               | 66 +++++++++++++++++++++++++------
+ src/NotifyWatch.hpp               | 10 +++++
+ src/valve-monitor/LocalConfig.cpp | 46 ++++++++++-----------
+ 3 files changed, 89 insertions(+), 33 deletions(-)
+
+diff --git a/src/NotifyWatch.cpp b/src/NotifyWatch.cpp
+index f795464..37dbbc7 100644
+--- a/src/NotifyWatch.cpp
++++ b/src/NotifyWatch.cpp
+@@ -5,11 +5,14 @@
+ 
+ #include <sdbusplus/async.hpp>
+ 
++#include <algorithm>
+ #include <array>
+ #include <cerrno>
++#include <cstddef>
+ #include <cstdint>
+ #include <filesystem>
+ #include <memory>
++#include <optional>
+ #include <span>
+ #include <string>
+ #include <system_error>
+@@ -76,18 +79,60 @@ auto NotifyWatch::readNotifyAsync() -> sdbusplus::async::task<>
+     {
+         co_return;
+     }
+-    co_await fdioInstance->next();
+-
+     alignas(inotify_event) std::array<uint8_t, 4096> buffer{};
+ 
++    while (!ctx.stop_requested())
++    {
++        co_await fdioInstance->next();
++
++        auto bytes = readNotifyEvents(buffer);
++        if (!bytes)
++        {
++            continue;
++        }
++
++        co_await processNotifyEvents(std::span<uint8_t>(buffer.data(), *bytes));
++    }
++}
++
++bool NotifyWatch::isTransientReadError(int error)
++{
++    if ((error == EAGAIN) || (error == EINTR))
++    {
++        return true;
++    }
++#ifdef EWOULDBLOCK
++    if constexpr (EWOULDBLOCK != EAGAIN)
++    {
++        return error == EWOULDBLOCK;
++    }
++#endif
++    return false;
++}
++
++auto NotifyWatch::readNotifyEvents(std::span<uint8_t> buffer) const
++    -> std::optional<size_t>
++{
+     auto bytes = read(fd, buffer.data(), buffer.size());
+-    if (bytes < 0)
++    if (bytes >= 0)
+     {
+-        throw std::system_error(errno, std::system_category(),
+-                                "Failed to read notify event");
++        return static_cast<size_t>(bytes);
+     }
+ 
+-    for (auto* iter = buffer.data(); iter < buffer.data() + bytes;)
++    const int error = errno;
++    if (isTransientReadError(error))
++    {
++        return std::nullopt;
++    }
++
++    throw std::system_error(error, std::system_category(),
++                            "Failed to read notify event");
++}
++
++auto NotifyWatch::processNotifyEvents(std::span<uint8_t> buffer)
++    -> sdbusplus::async::task<>
++{
++    for (auto* iter = buffer.data(); iter < buffer.data() + buffer.size();)
+     {
+         // Bypassed clang tidy warning about reinterpret_cast as cast is being
+         // performed to avoid copying of buffer data.
+@@ -102,16 +147,15 @@ auto NotifyWatch::readNotifyAsync() -> sdbusplus::async::task<>
+                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                 std::span<char> name{reinterpret_cast<char*>(event[0].name),
+                                      event[0].len};
+-                co_await callback(std::string(name.begin(), name.end()));
++                auto fileName = std::string(
++                    name.begin(), std::find(name.begin(), name.end(), '\0'));
++                co_await callback(std::move(fileName));
+             }
+         }
+         iter += sizeof(inotify_event) + event[0].len;
+     }
+ 
+-    if (!ctx.stop_requested())
+-    {
+-        ctx.spawn(readNotifyAsync());
+-    }
++    co_return;
+ }
+ 
+ } // namespace notify_watch
+diff --git a/src/NotifyWatch.hpp b/src/NotifyWatch.hpp
+index b82a594..7436396 100644
+--- a/src/NotifyWatch.hpp
++++ b/src/NotifyWatch.hpp
+@@ -2,8 +2,12 @@
+ 
+ #include <sdbusplus/async.hpp>
+ 
++#include <cstddef>
++#include <cstdint>
+ #include <functional>
+ #include <memory>
++#include <optional>
++#include <span>
+ #include <string>
+ 
+ namespace notify_watch
+@@ -23,6 +27,12 @@ class NotifyWatch
+     auto readNotifyAsync() -> sdbusplus::async::task<>;
+ 
+   private:
++    static bool isTransientReadError(int error);
++    auto readNotifyEvents(std::span<uint8_t> buffer) const
++        -> std::optional<size_t>;
++    auto processNotifyEvents(std::span<uint8_t> buffer)
++        -> sdbusplus::async::task<>;
++
+     sdbusplus::async::context& ctx;
+     Callback_t callback;
+     int wd = -1;
+diff --git a/src/valve-monitor/LocalConfig.cpp b/src/valve-monitor/LocalConfig.cpp
+index 65c2424..f63557c 100644
+--- a/src/valve-monitor/LocalConfig.cpp
++++ b/src/valve-monitor/LocalConfig.cpp
+@@ -5,7 +5,6 @@
+ #include <sdbusplus/async.hpp>
+ 
+ #include <cstring>
+-#include <exception>
+ #include <filesystem>
+ #include <fstream>
+ #include <functional>
+@@ -66,15 +65,11 @@ auto LocalConfig::loadConfig() -> void
+         return;
+     }
+ 
+-    json jsonConfig;
+-    try
++    // JSON_NOEXCEPTION is enabled; report invalid input instead of aborting.
++    const auto jsonConfig = json::parse(jsonFile, nullptr, false);
++    if (jsonConfig.is_discarded())
+     {
+-        jsonConfig = json::parse(jsonFile, nullptr, true);
+-    }
+-    catch (const json::parse_error& e)
+-    {
+-        error("Failed to parse valve config {PATH}: {ERROR}", "PATH",
+-              configFilePath, "ERROR", e);
++        error("Failed to parse valve config {PATH}", "PATH", configFilePath);
+         return;
+     }
+ 
+@@ -85,23 +80,30 @@ auto LocalConfig::loadConfig() -> void
+     }
+ 
+     static constexpr auto valvesProperty = "Valves";
+-    std::map<std::string, double> newMap;
++    if (!jsonConfig.contains(valvesProperty) ||
++        !jsonConfig.at(valvesProperty).is_array())
++    {
++        error("Invalid Valves in valve config {PATH}", "PATH", configFilePath);
++        return;
++    }
+ 
+-    try
++    std::map<std::string, double> newMap;
++    for (const auto& valve : jsonConfig.at(valvesProperty))
+     {
+-        for (const auto& valve : jsonConfig.at(valvesProperty))
++        // Check keys and types before at()/get(), which otherwise abort.
++        if (!valve.contains("Name") || !valve.at("Name").is_string() ||
++            !valve.contains("FlowRate") || !valve.at("FlowRate").is_number())
+         {
+-            auto name = valve.at("Name").get<std::string>();
+-            auto flowRate = valve.at("FlowRate").get<double>();
+-            newMap[name] = flowRate;
+-            debug("Valve config: {NAME} flow-rate={RATE}", "NAME", name, "RATE",
+-                  flowRate);
++            error("Invalid Name or FlowRate in valve config {PATH}", "PATH",
++                  configFilePath);
++            return;
+         }
+-    }
+-    catch (const std::exception& e)
+-    {
+-        error("Failed to parse valve config: {ERROR}", "ERROR", e);
+-        return;
++
++        auto name = valve.at("Name").get<std::string>();
++        auto flowRate = valve.at("FlowRate").get<double>();
++        newMap[name] = flowRate;
++        debug("Valve config: {NAME} flow-rate={RATE}", "NAME", name, "RATE",
++              flowRate);
+     }
+ 
+     flowRateMap = std::move(newMap);
+-- 
+2.34.1
+

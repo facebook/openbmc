@@ -1,4 +1,4 @@
-From 89e007dcf6891140f0fe7bfa58eb27b8da4fcb7d Mon Sep 17 00:00:00 2001
+From f9dae7d4db7d7a44644b869873b8872d9d56a677 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Thu, 26 Jun 2025 03:29:52 +0000
 Subject: [PATCH] platform-mc: Support PLDM File Transfer commands
@@ -431,3 +431,6 @@ index 0000000..c9d5a07
 +} // namespace platform_mc
 +
 +} // namespace pldm
+-- 
+2.53.0-Meta
+

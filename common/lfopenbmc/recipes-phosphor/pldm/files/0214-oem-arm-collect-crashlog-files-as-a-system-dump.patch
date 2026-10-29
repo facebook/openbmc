@@ -1,4 +1,4 @@
-From da1d0ce86004ec4e9e3460c197a52ae44736075b Mon Sep 17 00:00:00 2001
+From 94e61dc47d442a81d41e108c05ba1b37f5036d46 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Wed, 19 Aug 2026 16:52:33 +0530
 Subject: [PATCH] oem: arm: collect crashlog files as a system dump
@@ -845,3 +845,6 @@ index 4cf43e2..8c07900 100644
       *
       * @param[in] tid Terminus ID that emitted the event.
       * @param[in] sensorId State sensor ID.
+-- 
+2.53.0-Meta
+

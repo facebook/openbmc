@@ -1,4 +1,4 @@
-From 6aa0be505e2e9a156af2e090a77a0985b0426e1b Mon Sep 17 00:00:00 2001
+From 97b2737e15b2dd8d70c9a0bbe106dcd38e6c9b18 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH] platform-mc: Add option for discovering FRU data
@@ -18,7 +18,7 @@ Upstream-Status: Pending
  4 files changed, 59 insertions(+), 3 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 4bf5d27..80bde94 100644
+index 5b70d14..8835d22 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -119,6 +119,10 @@ elif get_option('transport-implementation') == 'af-mctp'
@@ -140,10 +140,10 @@ index c5ef1c3..cd649ba 100644
  
  } // namespace platform_mc
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 2d3555e..b992388 100644
+index 6c766ea..2dc6ec3 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -109,7 +109,8 @@ uint16_t Terminus::findTerminusEntityType()
+@@ -131,7 +131,8 @@ EntityInstance Terminus::findTerminusEntityInstanceIdx()
      return 0;
  }
  
@@ -153,7 +153,7 @@ index 2d3555e..b992388 100644
  {
      if (tName.empty())
      {
-@@ -125,8 +126,15 @@ bool Terminus::createInventoryPath(std::string tName, uint16_t entityType)
+@@ -147,8 +148,15 @@ bool Terminus::createInventoryPath(std::string tName, uint16_t entityType)
      inventoryPath = "/xyz/openbmc_project/inventory/system/board/" + tName;
      try
      {
@@ -169,7 +169,7 @@ index 2d3555e..b992388 100644
          return true;
      }
      catch (const sdbusplus::exception_t& e)
-@@ -651,8 +659,8 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
+@@ -674,8 +682,8 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
   *  @param[in] p - pointer to each record of FRU record table
   *  @param[in] tableSize - FRU table size
   */
@@ -180,7 +180,7 @@ index 2d3555e..b992388 100644
  {
      auto offset = p - table;
      return (tableSize - offset) < sizeof(struct pldm_fru_record_data_format);
-@@ -661,6 +669,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
+@@ -684,6 +692,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
  void Terminus::updateInventoryWithFru(const uint8_t* fruData,
                                        const size_t fruLen)
  {
@@ -188,7 +188,7 @@ index 2d3555e..b992388 100644
      auto tmp = getTerminusName();
      if (!tmp || tmp.value().empty())
      {
-@@ -779,6 +788,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
+@@ -802,6 +811,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
              ptr += sizeof(pldm_fru_record_tlv) - 1 + tlv->length;
          }
      }

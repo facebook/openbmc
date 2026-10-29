@@ -1,4 +1,4 @@
-From 99b487f78aa471141e30760c7ca1cd25bbe21247 Mon Sep 17 00:00:00 2001
+From 148167593d94272bacc49f04a71d4bb448d8197f Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Wed, 25 Feb 2026 09:42:41 +0000
 Subject: [PATCH] platform-mc: NumericSensor: Remove useMetricInterface member
@@ -356,3 +356,6 @@ index 8db316e..85346c7 100644
  
      /** @brief An internal mapping of thresholds and its associated log
       * entry. */
+-- 
+2.53.0-Meta
+

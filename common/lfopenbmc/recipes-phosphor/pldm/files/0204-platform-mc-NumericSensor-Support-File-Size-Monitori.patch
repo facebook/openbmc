@@ -1,4 +1,4 @@
-From 77e18f9da2c718f6a41485b8df8e1f26ce84561b Mon Sep 17 00:00:00 2001
+From 93e71cf09b9c3a6d1b78d38c76c4f84c01bf8c36 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Wed, 17 Sep 2025 02:37:21 +0000
 Subject: [PATCH] platform-mc: NumericSensor: Support File Size Monitoring
@@ -39,3 +39,6 @@ index 2b4e939..e3595db 100644
      return false;
  }
  
+-- 
+2.53.0-Meta
+

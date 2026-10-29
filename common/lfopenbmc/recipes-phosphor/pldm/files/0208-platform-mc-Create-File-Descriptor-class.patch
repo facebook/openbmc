@@ -1,4 +1,4 @@
-From 6f2f89d8917d7ea1e73d4afbe041043e736a105a Mon Sep 17 00:00:00 2001
+From 92bbae9c18b32825572b0eec59c4ff5dbffc8b6e Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Thu, 26 Jun 2025 04:03:02 +0000
 Subject: [PATCH] platform-mc: Create File Descriptor class
@@ -808,7 +808,7 @@ index 0000000..161d55b
 +} // namespace platform_mc
 +} // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 78d850e..784186d 100644
+index e154d3c..e6e05f0 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -21,10 +21,12 @@ static const std::regex objPathAntiPattern("[^a-zA-Z0-9_/]+");
@@ -826,7 +826,7 @@ index 78d850e..784186d 100644
  {}
  
  bool Terminus::doesSupportType(uint8_t type)
-@@ -1187,8 +1189,21 @@ void Terminus::buildFileHierarchy()
+@@ -1210,8 +1212,21 @@ void Terminus::buildFileHierarchy()
              continue;
          }
  
@@ -851,7 +851,7 @@ index 78d850e..784186d 100644
  }
  } // namespace platform_mc
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 2b8ef56..1ed92d3 100644
+index 2bd63c6..7d2e4c0 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -2,6 +2,7 @@
@@ -890,7 +890,7 @@ index 2b8ef56..1ed92d3 100644
      /** @brief The flag indicates that the terminus FIFO contains a large
       *         message that will require a multipart transfer via the
       *         PollForPlatformEvent command
-@@ -417,6 +423,9 @@ class Terminus
+@@ -426,6 +432,9 @@ class Terminus
  
      /** @brief Iteration to loop through sensor PDRs when adding sensors */
      SensorID sensorPdrIt = 0;
@@ -959,7 +959,7 @@ index e2411db..ed3ddd4 100644
          '../../requester/mctp_endpoint_discovery.cpp',
      ],
 diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
-index 4253766..dc47e65 100644
+index 4fd89b2..39780e7 100644
 --- a/platform-mc/test/platform_manager_test.cpp
 +++ b/platform-mc/test/platform_manager_test.cpp
 @@ -37,7 +37,7 @@ TEST_F(PlatformManagerTest, initTerminusTest)
@@ -1022,7 +1022,7 @@ index aa2167a..c7e3e42 100644
      termini[tid]->pdrs.push_back(pdr2);
      termini[tid]->parseTerminusPDRs();
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index 41a0eca..c0949dc 100644
+index 27e1a93..9c77078 100644
 --- a/platform-mc/test/terminus_manager_test.cpp
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -569,7 +569,7 @@ TEST_F(TerminusManagerTest, getActiveEidByNameTest)
@@ -1035,7 +1035,7 @@ index 41a0eca..c0949dc 100644
  
      auto mappedTid1 = terminusManager.mapTid(mctpInfo);
 diff --git a/platform-mc/test/terminus_test.cpp b/platform-mc/test/terminus_test.cpp
-index 56f519c..c0d58db 100644
+index 5ab3957..2027bad 100644
 --- a/platform-mc/test/terminus_test.cpp
 +++ b/platform-mc/test/terminus_test.cpp
 @@ -1,24 +1,49 @@
@@ -1119,7 +1119,7 @@ index 56f519c..c0d58db 100644
          0x0,
          0x0,
 @@ -119,11 +143,10 @@ TEST(TerminusTest, parseSensorAuxiliaryNamesPDRTest)
-     EXPECT_EQ("S0", t1.getTerminusName().value());
+     EXPECT_EQ("S0_1", t1.getTerminusName().value());
  }
  
 -TEST(TerminusTest, parseSensorAuxiliaryMultiNamesPDRTest)
@@ -1133,7 +1133,7 @@ index 56f519c..c0d58db 100644
          0x0,
          0x0,
 @@ -239,11 +262,10 @@ TEST(TerminusTest, parseSensorAuxiliaryMultiNamesPDRTest)
-     EXPECT_EQ("S0", t1.getTerminusName().value());
+     EXPECT_EQ("S0_1", t1.getTerminusName().value());
  }
  
 -TEST(TerminusTest, parseSensorAuxiliaryNamesMultiSensorsPDRTest)
@@ -1147,7 +1147,7 @@ index 56f519c..c0d58db 100644
          0x0,
          0x0,
 @@ -361,7 +383,7 @@ TEST(TerminusTest, parseSensorAuxiliaryNamesMultiSensorsPDRTest)
-     EXPECT_EQ("S0", t1.getTerminusName().value());
+     EXPECT_EQ("S0_1", t1.getTerminusName().value());
  }
  
 -TEST(TerminusTest, createPldmEntityTest)
@@ -1190,3 +1190,6 @@ index 2865cdd..fc7025c 100644
      Invoker invoker{};
      requester::Handler<requester::Request> reqHandler(&pldmTransport, event,
                                                        instanceIdDb, verbose);
+-- 
+2.53.0-Meta
+

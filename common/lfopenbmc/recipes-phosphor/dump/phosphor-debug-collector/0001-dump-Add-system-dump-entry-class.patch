@@ -1,4 +1,4 @@
-From 5d1222d0a0d92f4160a310d1ffd8c410005cd758 Mon Sep 17 00:00:00 2001
+From 13fa5f402d4b6402571806c4a665afec6f99976a Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Mon, 15 Jun 2026 10:48:43 +0000
 Subject: [PATCH] dump: Add system dump entry class
@@ -223,3 +223,6 @@ index 0000000..0b575a9
 +} // namespace system
 +} // namespace dump
 +} // namespace phosphor
+-- 
+2.53.0-Meta
+

@@ -1,4 +1,4 @@
-From dcb974239863cea533122e457ec77893c58ec688 Mon Sep 17 00:00:00 2001
+From 0dd9c36b2eb1492e71b5420827e41ae63030ff7e Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Wed, 8 Jul 2026 10:16:27 +0800
 Subject: [PATCH] spi: Report flashcp update progress during BIOS update
@@ -24,10 +24,10 @@ Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
  2 files changed, 183 insertions(+), 4 deletions(-)
 
 diff --git a/spi-flash/spi_device.cpp b/spi-flash/spi_device.cpp
-index 0bed38c..1aab3e2 100644
+index 85b06fc..59cdd03 100644
 --- a/spi-flash/spi_device.cpp
 +++ b/spi-flash/spi_device.cpp
-@@ -397,11 +397,10 @@ sdbusplus::async::task<bool> SPIDevice::writeSPIFlashWithFlashcp(
+@@ -403,11 +403,10 @@ sdbusplus::async::task<bool> SPIDevice::writeSPIFlashWithFlashcp(
          co_return false;
      }
  
@@ -42,7 +42,7 @@ index 0bed38c..1aab3e2 100644
  
      std::filesystem::remove(path);
  
-@@ -494,3 +493,180 @@ std::optional<std::string> SPIDevice::getMTDDevicePath() const
+@@ -500,3 +499,180 @@ std::optional<std::string> SPIDevice::getMTDDevicePath() const
  
      return std::nullopt;
  }

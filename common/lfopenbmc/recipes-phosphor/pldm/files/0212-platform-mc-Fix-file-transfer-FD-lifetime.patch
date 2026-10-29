@@ -1,4 +1,4 @@
-From 6ee8b3282454f12ee9d46007db7d54d4d931cb6c Mon Sep 17 00:00:00 2001
+From 47bc28c071043869a19d140252490b466e1c246b Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 11 Aug 2026 15:20:00 +0530
 Subject: [PATCH] platform-mc: Fix file transfer FD lifetime
@@ -114,3 +114,6 @@ index d77322e..84cf6e4 100644
  }
  
  sdbusplus::message::unix_fd FileDescriptor::open(size_t offset, size_t length,
+-- 
+2.53.0-Meta
+

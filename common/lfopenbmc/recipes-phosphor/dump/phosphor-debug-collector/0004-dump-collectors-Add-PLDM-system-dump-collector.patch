@@ -1,4 +1,4 @@
-From c0ca419356b2754452b124bbd7ac60fa38e0e9b8 Mon Sep 17 00:00:00 2001
+From 7e95924166410713d1ea921876fd5153adc944fc Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Mon, 15 Jun 2026 11:01:21 +0000
 Subject: [PATCH] dump-collectors: Add PLDM system dump collector
@@ -558,3 +558,6 @@ index a1a6c36..ecba77e 100644
  # Resource dump options
  
  option(
+-- 
+2.53.0-Meta
+

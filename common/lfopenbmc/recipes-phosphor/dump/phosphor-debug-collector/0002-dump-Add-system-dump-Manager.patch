@@ -1,4 +1,4 @@
-From 63e67933432843f8b624c7bb06638726a15f5d6c Mon Sep 17 00:00:00 2001
+From 20c7938327807b5043abdcc93ae92aae75e2a376 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Mon, 15 Jun 2026 10:49:43 +0000
 Subject: [PATCH] dump: Add system dump Manager
@@ -375,3 +375,6 @@ index 9b88428..a1a6c36 100644
  # Resource dump options
  
  option(
+-- 
+2.53.0-Meta
+

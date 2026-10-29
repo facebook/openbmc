@@ -1,4 +1,4 @@
-From 8f5d179ffa88ebd11c67825c7342d865b8103e47 Mon Sep 17 00:00:00 2001
+From e78ef1524b6aa3b59b6710f2c17839f94a0a61ba Mon Sep 17 00:00:00 2001
 From: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
 Date: Fri, 12 Jun 2026 12:41:23 +0530
 Subject: [PATCH] pldmtool: Add pldm file parsing
@@ -457,3 +457,6 @@ index d230eaa..5242a07 100644
  
  #ifdef OEM_IBM
      pldmtool::oem_ibm::registerCommand(app);
+-- 
+2.53.0-Meta
+

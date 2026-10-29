@@ -1,4 +1,4 @@
-From 683273031149e376a7e731af7866678ecc27ea76 Mon Sep 17 00:00:00 2001
+From 132cd02389db7c713d473d801e4d8dc4a106d126 Mon Sep 17 00:00:00 2001
 From: Carl Lee <carl.lee@amd.com>
 Date: Mon, 19 Oct 2026 11:42:17 +0800
 Subject: [PATCH] platform-mc: Add option to control terminus D-Bus objects
@@ -57,10 +57,10 @@ index 636e79f..27c923a 100644
  option(
      'sensor-polling-time',
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index f2a1a7e..0ea4135 100644
+index f4779a7..aa2ff1b 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -268,11 +268,13 @@ void Terminus::parseTerminusPDRs()
+@@ -291,11 +291,13 @@ void Terminus::parseTerminusPDRs()
      }
      else
      {
@@ -74,7 +74,7 @@ index f2a1a7e..0ea4135 100644
      }
  
      addNextSensorFromPDRs();
-@@ -282,6 +284,9 @@ void Terminus::addNextSensorFromPDRs()
+@@ -305,6 +307,9 @@ void Terminus::addNextSensorFromPDRs()
  {
      sensorCreationEvent.reset();
  
@@ -84,7 +84,7 @@ index f2a1a7e..0ea4135 100644
      if (terminusName.empty())
      {
          lg2::error(
-@@ -317,6 +322,7 @@ void Terminus::addNextSensorFromPDRs()
+@@ -340,6 +345,7 @@ void Terminus::addNextSensorFromPDRs()
  
      // Move the iteration to the next sensor PDR
      sensorPdrIt++;
@@ -92,7 +92,7 @@ index f2a1a7e..0ea4135 100644
  }
  
  std::shared_ptr<SensorAuxiliaryNames> Terminus::getSensorAuxiliaryNames(
-@@ -659,8 +665,10 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
+@@ -682,8 +688,10 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
      }
      if (!numericSensors.size())
      {
@@ -103,7 +103,7 @@ index f2a1a7e..0ea4135 100644
          return nullptr;
      }
  
-@@ -704,13 +712,15 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
+@@ -727,13 +735,15 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
              "TID", tid);
          return;
      }
@@ -122,5 +122,5 @@ index f2a1a7e..0ea4135 100644
      {
          fruDecoratorsIntf = std::make_unique<pldm::dbus_api::PldmFruDecorators>(
 -- 
-2.34.1
+2.53.0-Meta
 

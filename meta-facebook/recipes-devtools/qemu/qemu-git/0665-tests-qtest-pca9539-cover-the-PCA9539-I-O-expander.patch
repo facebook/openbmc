@@ -1,4 +1,4 @@
-From 6c2a057c8920a2648082a3d60844ee6626bd4401 Mon Sep 17 00:00:00 2001
+From 4170708d071c3b886bb636bb859f56ef6bfdfea8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 17:24:49 +0200
 Subject: [PATCH] tests/qtest: pca9539: cover the PCA9539 I/O expander
@@ -27,10 +27,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 tests/qtest/pca9539-test.c
 
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 574af848f3..595730ebb8 100644
+index a5f3306219..ff2fae9e7a 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -349,6 +349,7 @@ qos_test_ss.add(
+@@ -351,6 +351,7 @@ qos_test_ss.add(
    'pca9552-test.c',
    'pca9554-test.c',
    'pca9555-test.c',

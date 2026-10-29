@@ -1,4 +1,4 @@
-From 41fc4b150b5ca07ed706296973e298ad2fe2b001 Mon Sep 17 00:00:00 2001
+From cc76d3e38e47fb65e9901e8db01a99c94e0aa52f Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:20 +0200
 Subject: [PATCH] tests/functional/arm: sanmiguel: add BMC boot test
@@ -23,7 +23,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  create mode 100644 tests/functional/arm/test_aspeed_sanmiguel.py
 
 diff --git a/tests/functional/arm/meson.build b/tests/functional/arm/meson.build
-index bb78dcf3e4..4b263dd3e0 100644
+index e5c8ebbb75..6a7f04e47e 100644
 --- a/tests/functional/arm/meson.build
 +++ b/tests/functional/arm/meson.build
 @@ -17,6 +17,7 @@ test_arm_timeouts = {
@@ -34,7 +34,7 @@ index bb78dcf3e4..4b263dd3e0 100644
    'bpim2u' : 500,
    'collie' : 180,
    'cubieboard' : 360,
-@@ -53,6 +54,7 @@ tests_arm_system_thorough = [
+@@ -55,6 +56,7 @@ tests_arm_system_thorough = [
    'aspeed_catalina',
    'aspeed_gb200nvl_bmc',
    'aspeed_rainier',
@@ -122,5 +122,5 @@ index 0000000000..303cc3da11
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.52.0
+2.53.0-Meta
 

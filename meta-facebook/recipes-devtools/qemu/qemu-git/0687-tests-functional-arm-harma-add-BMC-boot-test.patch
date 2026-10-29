@@ -1,4 +1,4 @@
-From eed1d91aceec58ebe1d1ce4fc93bf75933a76e29 Mon Sep 17 00:00:00 2001
+From f1ddbd920d9e827ca43b5bc0bc90a29b37d644b0 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 16:16:03 +0200
 Subject: [PATCH] tests/functional/arm: harma: add BMC boot test
@@ -16,7 +16,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 tests/functional/arm/test_aspeed_harma.py
 
 diff --git a/tests/functional/arm/meson.build b/tests/functional/arm/meson.build
-index 64b2d7e17e..91b2410013 100644
+index 509b7e73d4..bfa5051bbc 100644
 --- a/tests/functional/arm/meson.build
 +++ b/tests/functional/arm/meson.build
 @@ -17,6 +17,7 @@ test_arm_timeouts = {
@@ -27,7 +27,7 @@ index 64b2d7e17e..91b2410013 100644
    'aspeed_minerva' : 480,
    'aspeed_rainier' : 480,
    'aspeed_sanmiguel' : 480,
-@@ -58,6 +59,7 @@ tests_arm_system_thorough = [
+@@ -60,6 +61,7 @@ tests_arm_system_thorough = [
    'aspeed_catalina',
    'aspeed_clemente',
    'aspeed_gb200nvl_bmc',
@@ -152,5 +152,5 @@ index 0000000000..de2e7575e3
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 64dddd83c63d3cbf6b6a2c877b032fcb19e5491a Mon Sep 17 00:00:00 2001
+From 705e05c430a27ad6db7fa44119fcc4da106d9b42 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 14:33:13 +0200
 Subject: [PATCH] hw/sensor: ina238: add current/voltage/power monitor
@@ -30,10 +30,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 include/hw/sensor/ina238.h
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index 80e2562edb..3b78ccea22 100644
+index 68fc477c25..16ba84b59a 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
-@@ -541,6 +541,7 @@ config ASPEED_SOC
+@@ -559,6 +559,7 @@ config ASPEED_SOC
      select TMP421
      select EMC141X
      select INA230
@@ -906,5 +906,5 @@ index 0000000000..3bc3c02073
 +
 +#endif
 -- 
-2.52.0
+2.53.0-Meta
 

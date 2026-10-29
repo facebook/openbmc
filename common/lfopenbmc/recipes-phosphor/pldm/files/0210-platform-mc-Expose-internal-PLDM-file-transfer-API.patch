@@ -1,4 +1,4 @@
-From 09b5d2f72eebef307a8cbedf11f0f5159a81c836 Mon Sep 17 00:00:00 2001
+From 8c199ce143cdbac3c0504756dae447369ee9cb29 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Sun, 9 Aug 2026 00:00:00 +0530
 Subject: [PATCH] platform-mc: Expose internal PLDM file transfer API
@@ -150,3 +150,6 @@ index 7d7230f..cea88d2 100644
      /** @brief Register OEM flow to poll the PLDM Event use
       *         PollForPlatformEventMessage command
       *
+-- 
+2.53.0-Meta
+

@@ -1,4 +1,4 @@
-From a111a67c103d88af35748bec92af7564eb1a440b Mon Sep 17 00:00:00 2001
+From 993b3ee87357b219105b2b2a6b9ad6db0e5dfb07 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Wed, 25 Feb 2026 10:23:30 +0000
 Subject: [PATCH] platform-mc: NumericSensor: Introduce non-DBus implementation
@@ -358,3 +358,6 @@ index 85346c7..afc4c7b 100644
      /** @brief An internal mapping of thresholds and its associated log
       * entry. */
      std::map<std::tuple<pldm::utils::Level, pldm::utils::Direction>,
+-- 
+2.53.0-Meta
+

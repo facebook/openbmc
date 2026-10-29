@@ -1,4 +1,4 @@
-From 3ac5309f1193695f52b20eaafc8d454455135828 Mon Sep 17 00:00:00 2001
+From de088d9eb5dde14e00a977c28139c6c04c279e34 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:45:21 +0200
 Subject: [PATCH] tests/functional/arm: minerva: add BMC boot test
@@ -17,7 +17,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 tests/functional/arm/test_aspeed_minerva.py
 
 diff --git a/tests/functional/arm/meson.build b/tests/functional/arm/meson.build
-index 4b263dd3e0..81c67e3733 100644
+index 6a7f04e47e..9e76652bcd 100644
 --- a/tests/functional/arm/meson.build
 +++ b/tests/functional/arm/meson.build
 @@ -16,6 +16,7 @@ test_arm_timeouts = {
@@ -28,7 +28,7 @@ index 4b263dd3e0..81c67e3733 100644
    'aspeed_rainier' : 480,
    'aspeed_sanmiguel' : 480,
    'bpim2u' : 500,
-@@ -53,6 +54,7 @@ tests_arm_system_thorough = [
+@@ -55,6 +56,7 @@ tests_arm_system_thorough = [
    'aspeed_bletchley',
    'aspeed_catalina',
    'aspeed_gb200nvl_bmc',
@@ -73,5 +73,5 @@ index 0000000000..925a82b139
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.52.0
+2.53.0-Meta
 

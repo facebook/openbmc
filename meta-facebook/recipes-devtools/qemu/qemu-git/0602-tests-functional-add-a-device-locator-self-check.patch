@@ -1,4 +1,4 @@
-From 5185944600c4b8e1326e344d358fd9deda06dae8 Mon Sep 17 00:00:00 2001
+From f43e8e489a18c36dbe8c9222b567bf2d276f1f67 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:18 +0200
 Subject: [PATCH] tests/functional: add a device-locator self-check
@@ -25,10 +25,10 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  create mode 100644 tests/functional/arm/test_device_locator.py
 
 diff --git a/tests/functional/arm/meson.build b/tests/functional/arm/meson.build
-index 61b00932db..bb78dcf3e4 100644
+index e657ecd278..e5c8ebbb75 100644
 --- a/tests/functional/arm/meson.build
 +++ b/tests/functional/arm/meson.build
-@@ -29,6 +29,7 @@ test_arm_timeouts = {
+@@ -31,6 +31,7 @@ test_arm_timeouts = {
  }
  
  tests_arm_system_quick = [
@@ -163,5 +163,5 @@ index 0000000000..3807a49361
 +if __name__ == '__main__':
 +    QemuSystemTest.main()
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 69ac232a2b0c233ab72c5d15a29a3c7fdd53b444 Mon Sep 17 00:00:00 2001
+From 60b18dccf73580d1fe6ee2a8746739c169de19af Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Mon, 15 Jun 2026 11:00:24 +0000
 Subject: [PATCH] dump-collectors: Add system dump collector hooks
@@ -168,3 +168,6 @@ index 5a65193..689552e 100644
  subdir('service_files')
  
  phosphor_dump_monitor_sources = [
+-- 
+2.53.0-Meta
+

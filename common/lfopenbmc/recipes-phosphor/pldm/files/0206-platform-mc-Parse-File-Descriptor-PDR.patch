@@ -1,4 +1,4 @@
-From 764053ba137355f67a62c2b6989aed68cbddf17a Mon Sep 17 00:00:00 2001
+From b24a2fc0b5a0deb342b8668b8587ece957bf34d0 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Mon, 5 May 2025 03:28:40 +0000
 Subject: [PATCH] platform-mc: Parse File Descriptor PDR
@@ -52,7 +52,7 @@ index 298f426..70fe09d 100644
 +
  } // namespace pldm
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 0ea4135..78d850e 100644
+index aa2ff1b..e154d3c 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -10,12 +10,16 @@
@@ -72,7 +72,7 @@ index 0ea4135..78d850e 100644
  Terminus::Terminus(pldm_tid_t tid, uint64_t supportedTypes,
                     sdeventplus::Event& event) :
      initialized(false), maxBufferSize(PLDM_PLATFORM_EVENT_MSG_MAX_BUFFER_SIZE),
-@@ -221,6 +225,20 @@ void Terminus::parseTerminusPDRs()
+@@ -243,6 +247,20 @@ void Terminus::parseTerminusPDRs()
                  entityAuxiliaryNamesTbl.emplace_back(std::move(entityNames));
                  break;
              }
@@ -93,7 +93,7 @@ index 0ea4135..78d850e 100644
              default:
              {
                  lg2::error("Unsupported PDR with type {TYPE} handle {HANDLE}",
-@@ -277,6 +295,10 @@ void Terminus::parseTerminusPDRs()
+@@ -300,6 +318,10 @@ void Terminus::parseTerminusPDRs()
  #endif
      }
  
@@ -104,7 +104,7 @@ index 0ea4135..78d850e 100644
      addNextSensorFromPDRs();
  }
  
-@@ -998,5 +1020,176 @@ int Terminus::fetchEntityManagerConfiguration()
+@@ -1021,5 +1043,176 @@ int Terminus::fetchEntityManagerConfiguration()
      return 0;
  }
  
@@ -282,7 +282,7 @@ index 0ea4135..78d850e 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 00ce5f2..2b8ef56 100644
+index 3fb7efe..2bd63c6 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -22,6 +22,18 @@ namespace platform_mc
@@ -304,7 +304,7 @@ index 00ce5f2..2b8ef56 100644
  
  /**
   * @brief Terminus
-@@ -319,6 +331,28 @@ class Terminus
+@@ -328,6 +340,28 @@ class Terminus
       */
      void addNextSensorFromPDRs();
  
@@ -333,7 +333,7 @@ index 00ce5f2..2b8ef56 100644
      /* @brief The terminus's TID */
      pldm_tid_t tid;
  
-@@ -377,6 +411,10 @@ class Terminus
+@@ -386,6 +420,10 @@ class Terminus
      std::vector<std::shared_ptr<pldm_compact_numeric_sensor_pdr>>
          compactNumericSensorPdrs{};
  
@@ -344,3 +344,6 @@ index 00ce5f2..2b8ef56 100644
      /** @brief Iteration to loop through sensor PDRs when adding sensors */
      SensorID sensorPdrIt = 0;
  };
+-- 
+2.53.0-Meta
+

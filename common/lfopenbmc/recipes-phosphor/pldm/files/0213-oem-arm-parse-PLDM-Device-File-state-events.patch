@@ -1,4 +1,4 @@
-From 4dac4c9a79ecfc51ce9839c9af2aa742349e18b1 Mon Sep 17 00:00:00 2001
+From 7ef3d1b76aef19a9b142bf8e431c321683c73230 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Wed, 19 Aug 2026 16:52:15 +0530
 Subject: [PATCH] oem: arm: parse PLDM Device File state events
@@ -188,3 +188,6 @@ index 99545aa..4cf43e2 100644
      /** @brief Update boot progress D-Bus properties
       *
       *  @param[in] presentReading - Boot progress reading from the sensor event
+-- 
+2.53.0-Meta
+

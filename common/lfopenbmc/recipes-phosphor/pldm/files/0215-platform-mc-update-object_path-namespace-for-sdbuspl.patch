@@ -1,4 +1,4 @@
-From a62ae1b6c2db443cd0e5403c84da85066f2aac35 Mon Sep 17 00:00:00 2001
+From de9fb6a1f6de7756cbd546eb6b967c94c050b6b3 Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Thu, 15 Oct 2026 15:28:43 +0800
 Subject: [PATCH] platform-mc: update object_path namespace for sdbusplus
@@ -15,10 +15,10 @@ Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
  2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 784186d..83dfa73 100644
+index e6e05f0..0c7ecd9 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -1045,7 +1045,7 @@ std::shared_ptr<pldm_platform_file_descriptor_pdr>
+@@ -1068,7 +1068,7 @@ std::shared_ptr<pldm_platform_file_descriptor_pdr>
  
  void Terminus::constructFilePathRecursive(
      std::shared_ptr<FileInfoStruct> file,
@@ -27,7 +27,7 @@ index 784186d..83dfa73 100644
  {
      if (!file)
      {
-@@ -1158,7 +1158,7 @@ void Terminus::buildFileHierarchy()
+@@ -1181,7 +1181,7 @@ void Terminus::buildFileHierarchy()
      }
  
      // Recursively construct file hierarchy
@@ -37,7 +37,7 @@ index 784186d..83dfa73 100644
      auto& topMostFile = fileInfoMap[virtualTopMostFileId];
      constructFilePathRecursive(topMostFile, basePath);
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 1ed92d3..cbb3151 100644
+index 7d2e4c0..a5221b4 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -31,7 +31,7 @@ struct FileInfoStruct
@@ -49,7 +49,7 @@ index 1ed92d3..cbb3151 100644
      std::shared_ptr<pldm_platform_file_descriptor_pdr>
          pdr;                                 //!< Pointer to file descriptor pdr
      std::vector<std::shared_ptr<FileInfoStruct>>
-@@ -353,7 +353,7 @@ class Terminus
+@@ -362,7 +362,7 @@ class Terminus
       */
      void constructFilePathRecursive(
          std::shared_ptr<FileInfoStruct> file,
@@ -58,3 +58,6 @@ index 1ed92d3..cbb3151 100644
  
      /** @brief Build file info map for the terminus
       */
+-- 
+2.53.0-Meta
+

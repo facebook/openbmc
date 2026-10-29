@@ -1,4 +1,4 @@
-From 1c8d370748db423b400465aed4b83ebcde709270 Mon Sep 17 00:00:00 2001
+From 63f32aa7e33240fb9c966227e2dc31bd0b521116 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Fri, 22 May 2026 03:52:24 +0000
 Subject: [PATCH] Add xyz.openbmc_project.PLDM.File interface
@@ -30,7 +30,7 @@ Signed-off-by: Chau Ly <chaul@amperecomputing.com>
 
 diff --git a/gen/xyz/openbmc_project/PLDM/File/meson.build b/gen/xyz/openbmc_project/PLDM/File/meson.build
 new file mode 100644
-index 0000000..3da51c9
+index 00000000..3da51c97
 --- /dev/null
 +++ b/gen/xyz/openbmc_project/PLDM/File/meson.build
 @@ -0,0 +1,40 @@
@@ -75,7 +75,7 @@ index 0000000..3da51c9
 +)
 +
 diff --git a/gen/xyz/openbmc_project/PLDM/meson.build b/gen/xyz/openbmc_project/PLDM/meson.build
-index 0ba461e..284edc3 100644
+index 0ba461e1..284edc38 100644
 --- a/gen/xyz/openbmc_project/PLDM/meson.build
 +++ b/gen/xyz/openbmc_project/PLDM/meson.build
 @@ -1,5 +1,6 @@
@@ -118,7 +118,7 @@ index 0ba461e..284edc3 100644
      input: [
 diff --git a/yaml/xyz/openbmc_project/PLDM/File.interface.yaml b/yaml/xyz/openbmc_project/PLDM/File.interface.yaml
 new file mode 100644
-index 0000000..2d7e0b7
+index 00000000..2d7e0b7e
 --- /dev/null
 +++ b/yaml/xyz/openbmc_project/PLDM/File.interface.yaml
 @@ -0,0 +1,115 @@
@@ -237,3 +237,6 @@ index 0000000..2d7e0b7
 +
 +paths:
 +    - namespace: /xyz/openbmc_project/pldm/file
+-- 
+2.53.0-Meta
+

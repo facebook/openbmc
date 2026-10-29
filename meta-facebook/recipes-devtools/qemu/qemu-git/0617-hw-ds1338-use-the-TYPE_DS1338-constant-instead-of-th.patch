@@ -1,4 +1,4 @@
-From 9dbb9b9fa95123723ba7bef14d06ab02226a5186 Mon Sep 17 00:00:00 2001
+From 62b8ef4c76d9b8d49e02468f10afb7a432a48ed0 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:36:17 +0200
 Subject: [PATCH] hw: ds1338: use the TYPE_DS1338 constant instead of the
@@ -239,18 +239,18 @@ index 1876882a04..469cef9d2f 100644
      /* eSDHC */
      if (pmc->has_esdhc) {
 diff --git a/hw/riscv/tt_atlantis.c b/hw/riscv/tt_atlantis.c
-index 4e6c39982c..eba81c741e 100644
+index 311de64eda..df89a52543 100644
 --- a/hw/riscv/tt_atlantis.c
 +++ b/hw/riscv/tt_atlantis.c
-@@ -28,6 +28,7 @@
+@@ -27,6 +27,7 @@
+ #include "hw/char/dw8250.h"
  #include "hw/intc/riscv_aclint.h"
- #include "hw/misc/unimp.h"
  #include "hw/misc/tt_atlantis_prcm.h"
 +#include "hw/rtc/ds1338.h"
  
  #include "system/system.h"
  #include "system/device_tree.h"
-@@ -766,7 +767,7 @@ static void tt_atlantis_machine_init(MachineState *machine)
+@@ -768,7 +769,7 @@ static void tt_atlantis_machine_init(MachineState *machine)
      qdev_realize(DEVICE(&ams->soc), NULL, &error_fatal);
  
      /* I2C peripherals: qemu specific */
@@ -260,5 +260,5 @@ index 4e6c39982c..eba81c741e 100644
  
      /* Load or create device tree */
 -- 
-2.52.0
+2.53.0-Meta
 

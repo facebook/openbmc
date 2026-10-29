@@ -1,4 +1,4 @@
-From 3e5751902ec43fc633e34624581a85b0f99f9f2e Mon Sep 17 00:00:00 2001
+From 7e83ad64ed68009a3d235fa2e5d07581b7c0d136 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
 Subject: [PATCH] hw/misc/aspeed: Add fby35 server board bridge IC
@@ -361,10 +361,10 @@ index 0000000000..c7b1d420e2
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 55379acd90..496bfa3194 100644
+index c0baa60053..409f9c46bd 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -154,6 +154,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -152,6 +152,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'aspeed_sli.c',

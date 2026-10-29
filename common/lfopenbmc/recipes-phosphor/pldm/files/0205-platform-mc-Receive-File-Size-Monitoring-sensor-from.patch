@@ -1,4 +1,4 @@
-From b1f2f139a68b26c13ccc5448e9578bd65115ea61 Mon Sep 17 00:00:00 2001
+From 5c5039adf053763c2b1c810567c9e0edb1446ad8 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Wed, 27 Aug 2025 08:53:55 +0000
 Subject: [PATCH] platform-mc: Receive File Size Monitoring sensor from entity
@@ -138,3 +138,6 @@ index 003f0f7..3a60ac1 100644
    private:
      struct MctpEndpointKey
      {
+-- 
+2.53.0-Meta
+

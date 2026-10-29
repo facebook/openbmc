@@ -2,15 +2,18 @@
 # VID:PID 0438:000a = AMD Mortaro
 #
 # Auto-start obmc-console-server when ttyACM devices appear
+# ttyACMx kernel numbers are assigned dynamically by USB enumeration order,
+# so they cannot be used to pin a NIC to a fixed console. Instead we match on
+# the stable USB physical port path (KERNELS), create a persistent symlink
+# (/dev/ttyACM-nicx), and auto-start the matching obmc-console instance.
+#
+# Physical port -> console mapping:
+#   1-1.5.1 -> ttyACM-nic1 -> ainic1
+#   1-1.5.4 -> ttyACM-nic3 -> ainic3
+#   1-1.4.2 -> ttyACM-nic5 -> ainic5
+#   1-1.4.4 -> ttyACM-nic7 -> ainic7
 
-SUBSYSTEM=="tty", KERNEL=="ttyACM0", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", \
-    TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM0.service"
-
-SUBSYSTEM=="tty", KERNEL=="ttyACM1", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", \
-    TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM1.service"
-
-SUBSYSTEM=="tty", KERNEL=="ttyACM2", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", \
-    TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM2.service"
-
-SUBSYSTEM=="tty", KERNEL=="ttyACM3", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", \
-    TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM3.service"
+SUBSYSTEM=="tty", KERNEL=="ttyACM*", KERNELS=="1-1.5.1", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", SYMLINK+="ttyACM-nic1", TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM-nic1.service"
+SUBSYSTEM=="tty", KERNEL=="ttyACM*", KERNELS=="1-1.5.4", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", SYMLINK+="ttyACM-nic3", TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM-nic3.service"
+SUBSYSTEM=="tty", KERNEL=="ttyACM*", KERNELS=="1-1.4.2", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", SYMLINK+="ttyACM-nic5", TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM-nic5.service"
+SUBSYSTEM=="tty", KERNEL=="ttyACM*", KERNELS=="1-1.4.4", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0438", ATTRS{idProduct}=="000a", SYMLINK+="ttyACM-nic7", TAG+="systemd", ENV{SYSTEMD_WANTS}+="obmc-console@ttyACM-nic7.service"

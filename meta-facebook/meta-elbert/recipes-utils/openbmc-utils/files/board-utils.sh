@@ -37,6 +37,18 @@ BOARD_VER_VAL="1.0"
 TMP_BIOS_FILE="/tmp/.tmp_bios_image"
 BIOS_VER_CACHE="/mnt/data/.bios_ver.txt"
 
+wait_until() {
+    local deadline="$1" msg="$2"
+    shift 2
+    until "$@"; do
+        if [ "$SECONDS" -ge "$deadline" ]; then
+            echo "$msg"
+            return 62  # ETIME
+        fi
+        sleep 1
+    done
+}
+
 wedge_iso_buf_enable() {
     return 0
 }
@@ -80,6 +92,10 @@ wedge_is_us_on() {
     else
         return 1
     fi
+}
+
+wedge_is_us_off() {
+    ! wedge_is_us_on
 }
 
 wedge_is_smb_powergood() {
@@ -168,6 +184,8 @@ wedge_power_off_asic() {
     echo 1 > "$SMB_TH4_PCI_RST_ON_SYSFS"
     # Turn off power to ASIC
     echo 0 > "$SMB_FULL_POWER_SYSFS"
+    local deadline=$(( SECONDS + 15 ))
+    wait_until "$deadline" "asic failed to power off" wedge_is_us_off
 }
 
 wedge_power_on_asic() {
@@ -185,12 +203,14 @@ wedge_power_on_asic() {
     echo 0 > "$SMB_TH4_RST_ON_SYSFS"
     usleep 250000
     echo 0 > "$SMB_TH4_PCI_RST_ON_SYSFS"
+    local deadline=$(( SECONDS + 15 ))
+    wait_until "$deadline" "asic failed to power on" wedge_is_us_on
 }
 
 wedge_power_on_board() {
     wedge_power_off_asic
-    wedge_power_on_asic
     echo 1 > "$SCM_PWR_ON_SYSFS"
+    wedge_power_on_asic
 }
 
 wedge_power_off_board() {

@@ -190,8 +190,7 @@ do_reset() {
         echo " Failed"
         return 254
     else
-        do_off
-        sleep 1
+        do_off || return $?
         do_on
     fi
 

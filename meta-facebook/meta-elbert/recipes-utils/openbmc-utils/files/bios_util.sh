@@ -20,6 +20,8 @@ cleanup() {
     rm -f $TEMP_ACONF_IMAGE
 }
 
+ORIG_POWER_STATE=$(wedge_is_us_on; echo $?)
+
 bind_spi_nor() {
     # Unbind spidev
     if [ -e /dev/"$SCM_SPIDEV" ]; then
@@ -71,9 +73,16 @@ disconnect_spi() {
     # Set GPIOV0 to 0 (default GPIO state)
     gpio_set_value BMC_SPI1_CS0_MUX_SEL 0
     unbind_spi_nor
+
+    if [ "$ORIG_POWER_STATE" -eq 0 ]; then
+       wedge_power_on_board
+    fi
 }
 
 connect_spi() {
+    if [ "$ORIG_POWER_STATE" -eq 0 ]; then
+        wedge_power_off_board
+    fi
     # Set GPIOV0 to 0
     gpio_set_value BMC_SPI1_CS0_MUX_SEL 0
     # connect through CPLD

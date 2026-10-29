@@ -1,0 +1,40 @@
+From 53a14ecaa4d54b8851cbae348368044189aac4ce Mon Sep 17 00:00:00 2001
+From: Eldin Lee <eldin.lee@quantatw.com>
+Date: Wed, 28 Oct 2026 09:08:48 +0800
+Subject: [PATCH] valve-monitor: always apply Open and Close commands
+
+Remove the state-based early return in AnalogValve::setState() so
+repeated Open commands can update the DAC setpoint without requiring
+a Close command first.
+
+A zero feedback reading does not guarantee that the DAC is configured
+to close the valve. Always write the closed setpoint on Close commands,
+regardless of the current feedback state.
+
+Change-Id: I58f3aa4b3b2e864765f8613f8eb2e38be5d8e5c2
+Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
+---
+ src/valve-monitor/AnalogValve.cpp | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/src/valve-monitor/AnalogValve.cpp b/src/valve-monitor/AnalogValve.cpp
+index efbd609..0038053 100644
+--- a/src/valve-monitor/AnalogValve.cpp
++++ b/src/valve-monitor/AnalogValve.cpp
+@@ -185,13 +185,6 @@ auto AnalogValve::setState(State state) -> bool
+     debug("Setting {VALVE} to {STATE}", "VALVE", baseConfig.name, "STATE",
+           Valve::convertStateToString(state));
+ 
+-    if ((!isOpen && state == State::Close) || (isOpen && state == State::Open))
+-    {
+-        info("Ignoring, as new state {STATE} matches the current state",
+-             "STATE", Valve::convertStateToString(state));
+-        return true;
+-    }
+-
+     double targetVoltage = analogConfig.setPointVoltageRange[0];
+ 
+     if (state == State::Open)
+-- 
+2.34.1
+

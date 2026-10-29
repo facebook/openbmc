@@ -39,6 +39,7 @@ SRC_URI:append:mf-fb-liquid-cooled = " \
     file://0105-Add-200ms-delay-before-creating-vt-status-log.patch \
     file://0106-valve-monitor-expose-ObjectManagers-by-namespace.patch \
     file://0107-valve-monitor-Improve-config-validation-and-inotify-.patch \
+    file://0108-valve-monitor-always-apply-Open-and-Close-commands.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

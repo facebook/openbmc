@@ -1,0 +1,110 @@
+From 586cd22249ed3ae776ce08e3ff7e3ed7a179775f Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Fri, 21 Aug 2026 10:04:24 +0800
+Subject: [PATCH] mctpd: Remove downstream peers when bridge node is removed
+
+Currently, remove_bridged_peers() checks 'if (!sources)' and returns
+early if bridge_ep_poll.sources is NULL. The sources array is only
+allocated when periodic bridge endpoint polling is enabled.
+
+However, downstream endpoints within the allocated bridge pool range
+can still be discovered and added to the network via the LearnEndpoint
+D-Bus method (or static assignment) even when periodic polling is not
+active.
+
+When a bridge node is removed, the early return in
+remove_bridged_peers() causes the pool iteration loop to be skipped if
+polling was inactive. As a result, downstream node EID objects remain
+registered in mctpd and published on D-Bus as orphaned endpoints.
+
+Fix this by:
+1. Replacing the early 'if (!sources) return 0;' check with network
+   validation ('if (!n) return -EPROTO;').
+2. Guarding polling timer teardown with 'if (sources && sources[idx])'.
+
+This ensures remove_bridged_peers() always iterates across the bridge's
+allocated pool range [pool_start, pool_end] and invokes remove_peer() on
+all existing downstream node EID objects when the parent bridge node is
+removed.
+
+Minor testcase changes from Jeremy Kerr <jk@codeconstruct.com.au>.
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Signed-off-by: Jeremy Kerr <jk@codeconstruct.com.au>
+
+[1] Link: https://github.com/CodeConstruct/mctp/commit/586cd22249ed3ae776ce08e3ff7e3ed7a179775f
+---
+ src/mctpd.c         |  6 +++---
+ tests/test_mctpd.py | 36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+), 3 deletions(-)
+
+diff --git a/src/mctpd.c b/src/mctpd.c
+index e74f118..3949e0d 100644
+--- a/src/mctpd.c
++++ b/src/mctpd.c
+@@ -2103,15 +2103,15 @@ static int remove_bridged_peers(struct peer *bridge)
+ 	n = lookup_net(bridge->ctx, bridge->net);
+ 	pool_start = bridge->pool_start;
+ 
+-	if (!sources)
+-		return 0;
++	if (!n)
++		return -EPROTO;
+ 
+ 	for (ep = pool_start; ep <= pool_end; ep++) {
+ 		// stop endpoint polling before removing peer
+ 		// else next trigger will create peer again.
+ 		int idx = ep - pool_start;
+ 
+-		if (sources[idx]) {
++		if (sources && sources[idx]) {
+ 			pctx = sd_event_source_get_userdata(sources[idx]);
+ 			rc = sd_event_source_set_enabled(sources[idx],
+ 							 SD_EVENT_OFF);
+diff --git a/tests/test_mctpd.py b/tests/test_mctpd.py
+index 4f75954..b2abff8 100644
+--- a/tests/test_mctpd.py
++++ b/tests/test_mctpd.py
+@@ -2155,6 +2155,42 @@ def ep_removed(ep_path, interfaces):
+     assert res == 0
+ 
+ 
++async def test_bridged_learn_endpoint_remove(dbus, mctpd):
++    """Test that removing a bridge node removes downstream endpoints learned
++    via LearnEndpoint.
++    """
++    iface = mctpd.system.interfaces[0]
++    ep = mctpd.network.endpoints[0]
++    br_ep = Endpoint(iface, bytes(), eid=10, types=[0, 2])
++    ep.add_bridged_ep(br_ep)
++    mctpd.network.add_endpoint(br_ep)
++
++    mctp = await mctpd_mctp_iface_obj(dbus, iface)
++    (bridge_eid, _, bridge_path, new) = await mctp.call_assign_endpoint(
++        ep.lladdr
++    )
++    assert new
++    assert ep.allocated_pool is not None
++
++    await mctpd.system.add_route(mctpd.system.Route(br_ep.eid, 1, iface=iface))
++    await mctpd.system.add_neighbour(
++        mctpd.system.Neighbour(iface, ep.lladdr, br_ep.eid)
++    )
++
++    net = await mctpd_mctp_network_obj(dbus, iface.net)
++    (downstream_path, new_ds) = await net.call_learn_endpoint(br_ep.eid)
++    assert new_ds
++
++    ds_obj = await mctpd_mctp_endpoint_common_obj(dbus, downstream_path)
++    assert ds_obj is not None
++
++    bridge_obj = await mctpd_mctp_endpoint_control_obj(dbus, bridge_path)
++    await bridge_obj.call_remove()
++
++    with pytest.raises(asyncdbus.errors.DBusError):
++        await mctpd_mctp_endpoint_common_obj(dbus, downstream_path)
++
++
+ async def test_bridged_endpoint_poll_stop(
+     dbus, sysnet, nursery, autojump_clock
+ ):

@@ -4,6 +4,7 @@ SRC_URI:append = " \
     file://ncsi-bounce.timer \
     file://91-bmc-mctpusb-network.rules \
     file://92-mctpusb-hotplug.rules \
+    file://00-amc-usb0.network \
     "
 
 SYSTEMD_SERVICE:${PN}:append = " ncsi-bounce.timer"
@@ -11,6 +12,7 @@ SYSTEMD_SERVICE:${PN}:append = " ncsi-bounce.timer"
 FILES:${PN}:append = " \
     ${sysconfdir}/udev/rules.d/91-bmc-mctpusb-network.rules \
     ${sysconfdir}/udev/rules.d/92-mctpusb-hotplug.rules \
+    ${sysconfdir}/systemd/network/00-amc-usb0.network \
     "
 
 do_install:append() {
@@ -20,4 +22,7 @@ do_install:append() {
     install -d ${D}${sysconfdir}/udev/rules.d
     install -m 0644 ${UNPACKDIR}/91-bmc-mctpusb-network.rules ${D}${sysconfdir}/udev/rules.d/91-bmc-mctpusb-network.rules
     install -m 0644 ${UNPACKDIR}/92-mctpusb-hotplug.rules ${D}${sysconfdir}/udev/rules.d/92-mctpusb-hotplug.rules
+
+    install -d ${D}${sysconfdir}/systemd/network/
+    install -m 0644 ${UNPACKDIR}/00-amc-usb0.network ${D}${sysconfdir}/systemd/network/00-amc-usb0.network
 }

@@ -61,7 +61,10 @@ SRC_URI:append = " \
     file://0420-ManagerDiagnosticData-report-Oem-Meta-Metrics-from-m.patch \
 "
 
-# Collect PortMetrics (Metric.Value) properties into MetricReports
+# Collect PortMetrics (Metric.Value) properties into MetricReports.
+# 0430 is upstream https://gerrit.openbmc.org/c/openbmc/bmcweb/+/93495
+# (unmerged); 0440 builds on its nicPortMetrics table.
 SRC_URI:append = " \
+    file://0430-port-look-up-port-metrics-through-a-table.patch \
     file://0440-MetricReportDefinition-accept-PortMetrics-properties.patch \
 "

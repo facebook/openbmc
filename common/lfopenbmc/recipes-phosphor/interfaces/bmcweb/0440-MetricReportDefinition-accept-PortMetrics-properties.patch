@@ -1,4 +1,4 @@
-From 9ed799d63c80bfdeeb5661762120009bf96eb3fc Mon Sep 17 00:00:00 2001
+From b4766309252dc9ea2f92f5110d270d134c5acd4d Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Wed, 21 Oct 2026 15:26:58 -0700
 Subject: [PATCH] MetricReportDefinition: accept PortMetrics properties
@@ -11,25 +11,26 @@ Accept MetricProperties of the form
   /redfish/v1/Chassis/<c>/NetworkAdapters/<n>/Ports/<p>/Metrics#/<property>
 and resolve them by walking the same chassis -> adapter -> port ->
 measured_by associations the PortMetrics GET handler uses.  The
-mapping from Metric.Value object name to PortMetrics property moves
-into a table so the GET handler and the resolver share it.
+resolver looks up each Metric.Value object in the nicPortMetrics
+table the GET handler uses, so the two can't disagree on which
+properties exist.
 
 The telemetry service must also be able to read Metric.Value objects
 for such a report to be created.
 
 Signed-off-by: Pete O_o <pmb@meta.com>
 ---
- .../include/utils/telemetry_utils.hpp         |  22 +-
- redfish-core/lib/metric_report_definition.hpp |  27 +-
- redfish-core/lib/network_adapter.hpp          | 239 +++++++++---------
- test/meson.build                              |   1 +
- .../include/utils/telemetry_utils_test.cpp    |  48 ++++
- .../redfish-core/lib/network_adapter_test.cpp |  40 +++
- 6 files changed, 257 insertions(+), 120 deletions(-)
+ .../include/utils/telemetry_utils.hpp         | 22 ++++-
+ redfish-core/lib/metric_report_definition.hpp | 27 ++++--
+ redfish-core/lib/network_adapter.hpp          | 87 +++++++++++++++++++
+ test/meson.build                              |  1 +
+ .../include/utils/telemetry_utils_test.cpp    | 48 ++++++++++
+ .../redfish-core/lib/network_adapter_test.cpp | 40 +++++++++
+ 6 files changed, 219 insertions(+), 6 deletions(-)
  create mode 100644 test/redfish-core/lib/network_adapter_test.cpp
 
 diff --git a/redfish-core/include/utils/telemetry_utils.hpp b/redfish-core/include/utils/telemetry_utils.hpp
-index 4490a4a..8ff05f5 100644
+index 4490a4a4..8ff05f59 100644
 --- a/redfish-core/include/utils/telemetry_utils.hpp
 +++ b/redfish-core/include/utils/telemetry_utils.hpp
 @@ -20,6 +20,7 @@
@@ -78,7 +79,7 @@ index 4490a4a..8ff05f5 100644
          // sensors exist at the moment of parsing.
          std::string ignoredSenorId;
 diff --git a/redfish-core/lib/metric_report_definition.hpp b/redfish-core/lib/metric_report_definition.hpp
-index 812ae18..aefa8fd 100644
+index 812ae186..aefa8fd7 100644
 --- a/redfish-core/lib/metric_report_definition.hpp
 +++ b/redfish-core/lib/metric_report_definition.hpp
 @@ -12,6 +12,7 @@
@@ -163,7 +164,7 @@ index 812ae18..aefa8fd 100644
  
  inline void handleMetricReportHead(
 diff --git a/redfish-core/lib/network_adapter.hpp b/redfish-core/lib/network_adapter.hpp
-index 9619c24..75c2f2f 100644
+index 476c74e1..daca866b 100644
 --- a/redfish-core/lib/network_adapter.hpp
 +++ b/redfish-core/lib/network_adapter.hpp
 @@ -19,7 +19,9 @@
@@ -176,42 +177,10 @@ index 9619c24..75c2f2f 100644
  #include <string>
  #include <string_view>
  #include <utility>
-@@ -30,6 +32,58 @@ static constexpr std::array<std::string_view, 1> networkAdapterInterface = {
- namespace redfish
- {
+@@ -55,6 +57,26 @@ static constexpr std::array<std::pair<std::string_view, std::string_view>, 21>
+         {"tx_excessive_collisions", "/Networking/TXExcessiveCollisions"},
+     }};
  
-+struct NicMetricProperty
-+{
-+    std::string_view dbusName;
-+    std::string_view jsonPointer;
-+};
-+
-+// Metric.Value objects named .../nic/<dbusName>, and the PortMetrics property
-+// each one populates.
-+inline constexpr std::array<NicMetricProperty, 21> nicMetricProperties{{
-+    {"rx_bytes", "/RXBytes"},
-+    {"tx_bytes", "/TXBytes"},
-+    {"rx_multicast_frames", "/Networking/RXMulticastFrames"},
-+    {"tx_multicast_frames", "/Networking/TXMulticastFrames"},
-+    {"rx_broadcast_frames", "/Networking/RXBroadcastFrames"},
-+    {"tx_broadcast_frames", "/Networking/TXBroadcastFrames"},
-+    {"rx_unicast_frames", "/Networking/RXUnicastFrames"},
-+    {"tx_unicast_frames", "/Networking/TXUnicastFrames"},
-+    {"rx_fcs_errors", "/Networking/RXFCSErrors"},
-+    {"rx_frame_alignment_errors", "/Networking/RXFrameAlignmentErrors"},
-+    {"rx_false_carrier_errors", "/Networking/RXFalseCarrierErrors"},
-+    {"rx_undersize_frames", "/Networking/RXUndersizeFrames"},
-+    {"rx_oversize_frames", "/Networking/RXOversizeFrames"},
-+    {"rx_pause_xon_frames", "/Networking/RXPauseXONFrames"},
-+    {"rx_pause_xoff_frames", "/Networking/RXPauseXOFFFrames"},
-+    {"tx_pause_xon_frames", "/Networking/TXPauseXONFrames"},
-+    {"tx_pause_xoff_frames", "/Networking/TXPauseXOFFFrames"},
-+    {"tx_single_collisions", "/Networking/TXSingleCollisions"},
-+    {"tx_multiple_collisions", "/Networking/TXMultipleCollisions"},
-+    {"tx_late_collisions", "/Networking/TXLateCollisions"},
-+    {"tx_excessive_collisions", "/Networking/TXExcessiveCollisions"},
-+}};
-+
 +// Returns the PortMetrics JSON pointer for a Metric.Value object path, or
 +// nothing if the object isn't a NIC metric that PortMetrics carries.
 +inline std::optional<std::string_view> getNicMetricJsonPointer(
@@ -222,11 +191,11 @@ index 9619c24..75c2f2f 100644
 +        return std::nullopt;
 +    }
 +    const std::string name = path.filename();
-+    for (const NicMetricProperty& property : nicMetricProperties)
++    for (const auto& [dbusName, jsonPointer] : nicPortMetrics)
 +    {
-+        if (property.dbusName == name)
++        if (dbusName == name)
 +        {
-+            return property.jsonPointer;
++            return jsonPointer;
 +        }
 +    }
 +    return std::nullopt;
@@ -235,138 +204,7 @@ index 9619c24..75c2f2f 100644
  inline void handleNetworkAdapterPortMetricsPathsPortMetricsGet(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
      const boost::system::error_code& ec,
-@@ -49,124 +103,16 @@ inline void handleNetworkAdapterPortMetricsPathsPortMetricsGet(
-             continue;
-         }
- 
--        sdbusplus::object_path objectPah(path);
--
--        const std::string metricType = objectPah.parent_path().filename();
--        const std::string metricName = objectPah.filename();
--
--        if (metricType != "nic")
-+        std::optional<std::string_view> jsonPointer =
-+            getNicMetricJsonPointer(sdbusplus::object_path(path));
-+        if (!jsonPointer)
-         {
-             continue;
-         }
- 
--        const auto& serviceName = service.begin()->first;
--
--        if (metricName == "rx_bytes")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/RXBytes"_json_pointer);
--        }
--        else if (metricName == "tx_bytes")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/TXBytes"_json_pointer);
--        }
--        else if (metricName == "rx_multicast_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXMulticastFrames"_json_pointer);
--        }
--        else if (metricName == "tx_multicast_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXMulticastFrames"_json_pointer);
--        }
--        else if (metricName == "rx_broadcast_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXBroadcastFrames"_json_pointer);
--        }
--        else if (metricName == "tx_broadcast_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXBroadcastFrames"_json_pointer);
--        }
--        else if (metricName == "rx_unicast_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXUnicastFrames"_json_pointer);
--        }
--        else if (metricName == "tx_unicast_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXUnicastFrames"_json_pointer);
--        }
--        else if (metricName == "rx_fcs_errors")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXFCSErrors"_json_pointer);
--        }
--        else if (metricName == "rx_frame_alignment_errors")
--        {
--            getMetricProperty(
--                asyncResp, serviceName, path,
--                "/Networking/RXFrameAlignmentErrors"_json_pointer);
--        }
--        else if (metricName == "rx_false_carrier_errors")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXFalseCarrierErrors"_json_pointer);
--        }
--        else if (metricName == "rx_undersize_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXUndersizeFrames"_json_pointer);
--        }
--        else if (metricName == "rx_oversize_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXOversizeFrames"_json_pointer);
--        }
--        else if (metricName == "rx_pause_xon_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXPauseXONFrames"_json_pointer);
--        }
--        else if (metricName == "rx_pause_xoff_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/RXPauseXOFFFrames"_json_pointer);
--        }
--        else if (metricName == "tx_pause_xon_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXPauseXONFrames"_json_pointer);
--        }
--        else if (metricName == "tx_pause_xoff_frames")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXPauseXOFFFrames"_json_pointer);
--        }
--        else if (metricName == "tx_single_collisions")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXSingleCollisions"_json_pointer);
--        }
--        else if (metricName == "tx_multiple_collisions")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXMultipleCollisions"_json_pointer);
--        }
--        else if (metricName == "tx_late_collisions")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXLateCollisions"_json_pointer);
--        }
--        else if (metricName == "tx_excessive_collisions")
--        {
--            getMetricProperty(asyncResp, serviceName, path,
--                              "/Networking/TXExcessiveCollisions"_json_pointer);
--        }
-+        getMetricProperty(
-+            asyncResp, service.begin()->first, path,
-+            nlohmann::json::json_pointer(std::string(*jsonPointer)));
-     }
- }
- 
-@@ -509,6 +455,71 @@ inline void handleNetworkAdapterPortCollectionGet(
+@@ -428,6 +450,71 @@ inline void handleNetworkAdapterPortCollectionGet(
                                            chassisId, networkAdapterId));
  }
  
@@ -439,10 +277,10 @@ index 9619c24..75c2f2f 100644
  {
      BMCWEB_ROUTE(app, "/redfish/v1/Chassis/<str>/NetworkAdapters/")
 diff --git a/test/meson.build b/test/meson.build
-index 57caf93..3a537b1 100644
+index 1fea114c..0700ef30 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -67,6 +67,7 @@ srcfiles_unittest = files(
+@@ -65,6 +65,7 @@ srcfiles_unittest = files(
      'redfish-core/lib/memory_test.cpp',
      'redfish-core/lib/metadata_test.cpp',
      'redfish-core/lib/metric_report_definition_test.cpp',
@@ -451,7 +289,7 @@ index 57caf93..3a537b1 100644
      'redfish-core/lib/pcie_test.cpp',
      'redfish-core/lib/power_subsystem_test.cpp',
 diff --git a/test/redfish-core/include/utils/telemetry_utils_test.cpp b/test/redfish-core/include/utils/telemetry_utils_test.cpp
-index d910a1f..6779172 100644
+index d910a1f8..6779172a 100644
 --- a/test/redfish-core/include/utils/telemetry_utils_test.cpp
 +++ b/test/redfish-core/include/utils/telemetry_utils_test.cpp
 @@ -3,13 +3,16 @@
@@ -531,7 +369,7 @@ index d910a1f..6779172 100644
  } // namespace redfish::telemetry
 diff --git a/test/redfish-core/lib/network_adapter_test.cpp b/test/redfish-core/lib/network_adapter_test.cpp
 new file mode 100644
-index 0000000..f002ac7
+index 00000000..f002ac70
 --- /dev/null
 +++ b/test/redfish-core/lib/network_adapter_test.cpp
 @@ -0,0 +1,40 @@

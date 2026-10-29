@@ -1,0 +1,287 @@
+From 479b9dd3a4730484ffca3d875797d3ce3c6c88bd Mon Sep 17 00:00:00 2001
+From: Ender Hsieh <andhsieh@nvidia.com>
+Date: Thu, 13 Aug 2026 23:51:37 +0900
+Subject: [PATCH] port: look up port metrics through a table
+
+Replace the metricName if/else chains in the Fabric switch and network
+adapter port metrics handlers with a name-to-JSON-pointer table, so
+adding a counter is one table row rather than another branch.
+
+Tested: Ran the bmcweb unit-test CI locally against this change: build,
+69/69 unit tests, and clang-tidy all pass.
+
+1. The mapping is unchanged - every D-Bus metric name and every Redfish
+   JSON pointer in the two tables matches the branch it replaces.
+2. No Redfish output change is expected; this is a refactor of the
+   decode step only.
+
+Change-Id: I19867ea60b27eaef58f51bf5857955c9cebe68d9
+Signed-off-by: Ender Hsieh <andhsieh@nvidia.com>
+---
+ redfish-core/lib/network_adapter.hpp | 135 ++++++---------------------
+ redfish-core/lib/switch_port.hpp     |  82 +++++++---------
+ 2 files changed, 61 insertions(+), 156 deletions(-)
+
+diff --git a/redfish-core/lib/network_adapter.hpp b/redfish-core/lib/network_adapter.hpp
+index 9619c244..476c74e1 100644
+--- a/redfish-core/lib/network_adapter.hpp
++++ b/redfish-core/lib/network_adapter.hpp
+@@ -30,6 +30,31 @@ static constexpr std::array<std::string_view, 1> networkAdapterInterface = {
+ namespace redfish
+ {
+ 
++static constexpr std::array<std::pair<std::string_view, std::string_view>, 21>
++    nicPortMetrics = {{
++        {"rx_bytes", "/RXBytes"},
++        {"tx_bytes", "/TXBytes"},
++        {"rx_multicast_frames", "/Networking/RXMulticastFrames"},
++        {"tx_multicast_frames", "/Networking/TXMulticastFrames"},
++        {"rx_broadcast_frames", "/Networking/RXBroadcastFrames"},
++        {"tx_broadcast_frames", "/Networking/TXBroadcastFrames"},
++        {"rx_unicast_frames", "/Networking/RXUnicastFrames"},
++        {"tx_unicast_frames", "/Networking/TXUnicastFrames"},
++        {"rx_fcs_errors", "/Networking/RXFCSErrors"},
++        {"rx_frame_alignment_errors", "/Networking/RXFrameAlignmentErrors"},
++        {"rx_false_carrier_errors", "/Networking/RXFalseCarrierErrors"},
++        {"rx_undersize_frames", "/Networking/RXUndersizeFrames"},
++        {"rx_oversize_frames", "/Networking/RXOversizeFrames"},
++        {"rx_pause_xon_frames", "/Networking/RXPauseXONFrames"},
++        {"rx_pause_xoff_frames", "/Networking/RXPauseXOFFFrames"},
++        {"tx_pause_xon_frames", "/Networking/TXPauseXONFrames"},
++        {"tx_pause_xoff_frames", "/Networking/TXPauseXOFFFrames"},
++        {"tx_single_collisions", "/Networking/TXSingleCollisions"},
++        {"tx_multiple_collisions", "/Networking/TXMultipleCollisions"},
++        {"tx_late_collisions", "/Networking/TXLateCollisions"},
++        {"tx_excessive_collisions", "/Networking/TXExcessiveCollisions"},
++    }};
++
+ inline void handleNetworkAdapterPortMetricsPathsPortMetricsGet(
+     const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+     const boost::system::error_code& ec,
+@@ -59,114 +84,8 @@ inline void handleNetworkAdapterPortMetricsPathsPortMetricsGet(
+             continue;
+         }
+ 
+-        const auto& serviceName = service.begin()->first;
+-
+-        if (metricName == "rx_bytes")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/RXBytes"_json_pointer);
+-        }
+-        else if (metricName == "tx_bytes")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/TXBytes"_json_pointer);
+-        }
+-        else if (metricName == "rx_multicast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXMulticastFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_multicast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXMulticastFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_broadcast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXBroadcastFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_broadcast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXBroadcastFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_unicast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXUnicastFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_unicast_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXUnicastFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_fcs_errors")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXFCSErrors"_json_pointer);
+-        }
+-        else if (metricName == "rx_frame_alignment_errors")
+-        {
+-            getMetricProperty(
+-                asyncResp, serviceName, path,
+-                "/Networking/RXFrameAlignmentErrors"_json_pointer);
+-        }
+-        else if (metricName == "rx_false_carrier_errors")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXFalseCarrierErrors"_json_pointer);
+-        }
+-        else if (metricName == "rx_undersize_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXUndersizeFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_oversize_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXOversizeFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_pause_xon_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXPauseXONFrames"_json_pointer);
+-        }
+-        else if (metricName == "rx_pause_xoff_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/RXPauseXOFFFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_pause_xon_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXPauseXONFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_pause_xoff_frames")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXPauseXOFFFrames"_json_pointer);
+-        }
+-        else if (metricName == "tx_single_collisions")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXSingleCollisions"_json_pointer);
+-        }
+-        else if (metricName == "tx_multiple_collisions")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXMultipleCollisions"_json_pointer);
+-        }
+-        else if (metricName == "tx_late_collisions")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXLateCollisions"_json_pointer);
+-        }
+-        else if (metricName == "tx_excessive_collisions")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/Networking/TXExcessiveCollisions"_json_pointer);
+-        }
++        getMappedMetricProperty(asyncResp, service.begin()->first, path,
++                                metricName, nicPortMetrics);
+     }
+ }
+ 
+diff --git a/redfish-core/lib/switch_port.hpp b/redfish-core/lib/switch_port.hpp
+index 1327b3e0..a4e8aad0 100644
+--- a/redfish-core/lib/switch_port.hpp
++++ b/redfish-core/lib/switch_port.hpp
+@@ -27,6 +27,7 @@
+ #include <limits>
+ #include <memory>
+ #include <optional>
++#include <span>
+ #include <string>
+ #include <string_view>
+ #include <utility>
+@@ -194,6 +195,37 @@ inline void getMetricProperty(
+         std::bind_front(populateMetricsProperty, asyncResp, jsonPtr));
+ }
+ 
++inline void getMappedMetricProperty(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& serviceName, const sdbusplus::object_path& objectPath,
++    std::string_view metricName,
++    std::span<const std::pair<std::string_view, std::string_view>> table)
++{
++    for (const auto& [name, pointer] : table)
++    {
++        if (name != metricName)
++        {
++            continue;
++        }
++        getMetricProperty(asyncResp, serviceName, objectPath,
++                          nlohmann::json::json_pointer(std::string(pointer)));
++        return;
++    }
++}
++
++static constexpr std::array<std::pair<std::string_view, std::string_view>, 9>
++    pciePortMetrics = {{
++        {"correctable_error_count", "/PCIeErrors/CorrectableErrorCount"},
++        {"non_fatal_error_count", "/PCIeErrors/NonFatalErrorCount"},
++        {"fatal_error_count", "/PCIeErrors/FatalErrorCount"},
++        {"l0_to_recovery_count", "/PCIeErrors/L0ToRecoveryCount"},
++        {"replay_count", "/PCIeErrors/ReplayCount"},
++        {"replay_rollover_count", "/PCIeErrors/ReplayRolloverCount"},
++        {"nak_sent_count", "/PCIeErrors/NAKSentCount"},
++        {"nak_received_count", "/PCIeErrors/NAKReceivedCount"},
++        {"unsupported_request_count", "/PCIeErrors/UnsupportedRequestCount"},
++    }};
++
+ inline void handleFabricSwitchPortMetricsPathPortMetricsGet(
+     const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+     const boost::system::error_code& ec,
+@@ -223,54 +255,8 @@ inline void handleFabricSwitchPortMetricsPathPortMetricsGet(
+             continue;
+         }
+ 
+-        const auto& serviceName = service.begin()->first;
+-
+-        if (metricName == "correctable_error_count")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/PCIeErrors/CorrectableErrorCount"_json_pointer);
+-        }
+-        else if (metricName == "non_fatal_error_count")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/PCIeErrors/NonFatalErrorCount"_json_pointer);
+-        }
+-        else if (metricName == "fatal_error_count")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/PCIeErrors/FatalErrorCount"_json_pointer);
+-        }
+-        else if (metricName == "l0_to_recovery_count")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/PCIeErrors/L0ToRecoveryCount"_json_pointer);
+-        }
+-        else if (metricName == "replay_count")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/PCIeErrors/ReplayCount"_json_pointer);
+-        }
+-        else if (metricName == "replay_rollover_count")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/PCIeErrors/ReplayRolloverCount"_json_pointer);
+-        }
+-        else if (metricName == "nak_sent_count")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/PCIeErrors/NAKSentCount"_json_pointer);
+-        }
+-        else if (metricName == "nak_received_count")
+-        {
+-            getMetricProperty(asyncResp, serviceName, path,
+-                              "/PCIeErrors/NAKReceivedCount"_json_pointer);
+-        }
+-        else if (metricName == "unsupported_request_count")
+-        {
+-            getMetricProperty(
+-                asyncResp, serviceName, path,
+-                "/PCIeErrors/UnsupportedRequestCount"_json_pointer);
+-        }
++        getMappedMetricProperty(asyncResp, service.begin()->first, path,
++                                metricName, pciePortMetrics);
+     }
+ }
+ 
+-- 
+2.53.0-Meta
+

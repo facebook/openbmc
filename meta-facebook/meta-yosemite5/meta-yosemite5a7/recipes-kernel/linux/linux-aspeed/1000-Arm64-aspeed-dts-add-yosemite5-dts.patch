@@ -696,7 +696,7 @@ index 000000000..38ac86dbc
 +						"DEBUG_UART_SEL_1","BMC_REMOTEJTAG_EN_N",
 +						"JTAG_BMC_3V3_CTL_CLR_N","DDR_CH02_I2C_MUX_SEL",
 +						"DDR_CH13_I2C_MUX_SEL","SYS_OK",
-+						"CXL_VRHOT_ALERT_R1_N","";
++						"CXL_VRHOT_ALERT_R1_N","BOOT_READY";
 +					};
 +
 +					temperature-sensor@4a {

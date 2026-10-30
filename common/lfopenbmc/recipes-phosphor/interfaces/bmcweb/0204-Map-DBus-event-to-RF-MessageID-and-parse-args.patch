@@ -1,4 +1,4 @@
-From 7454559c43e54b4c429e5210a9a53a0a64ebf708 Mon Sep 17 00:00:00 2001
+From c85a81a360e703b8b75557e84447717e328ae3c4 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH] Map DBus event to RF MessageID and parse args
@@ -108,11 +108,11 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
 
 diff --git a/config/meson.build b/config/meson.build
-index a0452a8e..e8a3584b 100644
+index 7a905413..fa95e17b 100644
 --- a/config/meson.build
 +++ b/config/meson.build
-@@ -28,6 +28,7 @@ feature_options = [
-     'redfish-allow-deprecated-indicatorled',
+@@ -27,6 +27,7 @@ feature_options = [
+     'redfish-aggregation',
      'redfish-allow-deprecated-power-thermal',
      'redfish-allow-rotational-fans',
 +    'redfish-allow-dbus-messages-mapping',
@@ -154,10 +154,10 @@ index a2ddcd48..48c3d1e5 100644
      'redfish-core/src/utils/json_utils.cpp',
      'redfish-core/src/utils/time_utils.cpp',
 diff --git a/meson.options b/meson.options
-index b0d07304..5d667f13 100644
+index 7ac8bad6..c9ab4d80 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -381,6 +381,21 @@ option(
+@@ -371,6 +371,21 @@ option(
                      option will be removed by June 2027.''',
  )
  
@@ -823,7 +823,7 @@ index 00000000..5d41f2f1
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/test/meson.build b/test/meson.build
-index c0b3b15f..57caf938 100644
+index 53ea86a1..b6fe4f96 100644
 --- a/test/meson.build
 +++ b/test/meson.build
 @@ -62,6 +62,7 @@ srcfiles_unittest = files(

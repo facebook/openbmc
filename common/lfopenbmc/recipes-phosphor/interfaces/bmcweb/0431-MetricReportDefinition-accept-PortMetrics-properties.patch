@@ -1,4 +1,4 @@
-From 05d672b4e382b3d4a8c966ea43e4c86b990fbf0e Mon Sep 17 00:00:00 2001
+From e2451f37def9693fdd09ab04c04752097b48c4c8 Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Wed, 21 Oct 2026 15:26:58 -0700
 Subject: [PATCH] MetricReportDefinition: accept PortMetrics properties
@@ -164,7 +164,7 @@ index 812ae186..aefa8fd7 100644
  
  inline void handleMetricReportHead(
 diff --git a/redfish-core/lib/network_adapter.hpp b/redfish-core/lib/network_adapter.hpp
-index 9619c244..75c2f2ff 100644
+index 476c74e1..daca866b 100644
 --- a/redfish-core/lib/network_adapter.hpp
 +++ b/redfish-core/lib/network_adapter.hpp
 @@ -19,7 +19,9 @@
@@ -277,10 +277,10 @@ index 9619c244..75c2f2ff 100644
  {
      BMCWEB_ROUTE(app, "/redfish/v1/Chassis/<str>/NetworkAdapters/")
 diff --git a/test/meson.build b/test/meson.build
-index 57caf938..3a537b1a 100644
+index b6fe4f96..c3674e41 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -65,6 +65,7 @@ srcfiles_unittest = files(
+@@ -67,6 +67,7 @@ srcfiles_unittest = files(
      'redfish-core/lib/memory_test.cpp',
      'redfish-core/lib/metadata_test.cpp',
      'redfish-core/lib/metric_report_definition_test.cpp',

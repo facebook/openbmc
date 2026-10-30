@@ -1,4 +1,4 @@
-From 7fd9becacd91565efc45ee0185a1f937e5aebdfb Mon Sep 17 00:00:00 2001
+From 189d7781ad00dbb77128638bf4c801cd2f9cc105 Mon Sep 17 00:00:00 2001
 From: Meghana H <Meghana.H@arm.com>
 Date: Fri, 17 Apr 2026 14:19:47 +0000
 Subject: [PATCH] redfish: Add FaultLog attachment download support
@@ -62,10 +62,10 @@ Change-Id: I086de6fcf79b6c8ed92e7668ead61e4215678cb8
  3 files changed, 19 insertions(+), 2 deletions(-)
 
 diff --git a/redfish-core/include/utils/dump_utils.hpp b/redfish-core/include/utils/dump_utils.hpp
-index cb34fed..93ddafe 100644
+index 512c3564..49889577 100644
 --- a/redfish-core/include/utils/dump_utils.hpp
 +++ b/redfish-core/include/utils/dump_utils.hpp
-@@ -380,6 +380,9 @@ inline void afterGetManagedObjectsDumpEntryCollection(
+@@ -395,6 +395,9 @@ inline void afterGetManagedObjectsDumpEntryCollection(
                  thisEntry["AdditionalDataSizeBytes"] = size;
                  break;
              case DumpType::FaultLog:
@@ -75,7 +75,7 @@ index cb34fed..93ddafe 100644
                  break;
              default:
                  BMCWEB_LOG_ERROR("Invalid dumpType: {}",
-@@ -499,6 +502,10 @@ inline void afterGetManagedObjectsDumpEntryById(
+@@ -514,6 +517,10 @@ inline void afterGetManagedObjectsDumpEntryById(
                  asyncResp->res.jsonValue["AdditionalDataSizeBytes"] = size;
                  break;
              case DumpType::FaultLog:
@@ -86,7 +86,7 @@ index cb34fed..93ddafe 100644
                  break;
              default:
                  BMCWEB_LOG_ERROR("Invalid dumpType: {}",
-@@ -611,6 +618,7 @@ inline void downloadDumpEntry(
+@@ -626,6 +633,7 @@ inline void downloadDumpEntry(
      {
          case DumpType::BMC:
          case DumpType::System:
@@ -95,7 +95,7 @@ index cb34fed..93ddafe 100644
                  asyncResp, std::move(downloadDumpEntryHandler),
                  "xyz.openbmc_project.Dump.Manager", *dumpEntryPath,
 diff --git a/redfish-core/include/utils/log_services_utils.hpp b/redfish-core/include/utils/log_services_utils.hpp
-index 3ed3097..8637341 100644
+index 3ed3097a..8637341b 100644
 --- a/redfish-core/include/utils/log_services_utils.hpp
 +++ b/redfish-core/include/utils/log_services_utils.hpp
 @@ -75,7 +75,8 @@ inline void downloadEntryCallback(
@@ -118,7 +118,7 @@ index 3ed3097..8637341 100644
          if (!asyncResp->res.openFd(fd))
          {
 diff --git a/redfish-core/lib/manager_logservices_dump.hpp b/redfish-core/lib/manager_logservices_dump.hpp
-index 89f3d34..5ad7799 100644
+index 89f3d341..5ad77999 100644
 --- a/redfish-core/lib/manager_logservices_dump.hpp
 +++ b/redfish-core/lib/manager_logservices_dump.hpp
 @@ -221,6 +221,14 @@ inline void requestRoutesManagersLogServicesDumpAndFaultLog(App& app)

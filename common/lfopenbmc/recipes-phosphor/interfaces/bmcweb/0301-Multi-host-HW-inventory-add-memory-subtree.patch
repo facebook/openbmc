@@ -1,4 +1,4 @@
-From 9160ef56c1034878daaf0fc68c896cf9fd551318 Mon Sep 17 00:00:00 2001
+From e950fcc8b32537d277546cc688228cf888876e95 Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Tue, 23 Sep 2025 10:24:36 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
@@ -165,7 +165,7 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 103 insertions(+), 34 deletions(-)
 
 diff --git a/redfish-core/lib/memory.hpp b/redfish-core/lib/memory.hpp
-index c9dafac6..b79de76d 100644
+index d0d7d4d2..9a8b32c2 100644
 --- a/redfish-core/lib/memory.hpp
 +++ b/redfish-core/lib/memory.hpp
 @@ -21,6 +21,7 @@
@@ -375,10 +375,10 @@ index c9dafac6..b79de76d 100644
  
  inline void requestRoutesMemory(App& app)
 diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
-index 2b5d14f0..b20cc14f 100644
+index f0753c22..eb154fdd 100644
 --- a/redfish-core/lib/systems.hpp
 +++ b/redfish-core/lib/systems.hpp
-@@ -3094,8 +3094,6 @@ inline void processComputerSystemGet(
+@@ -3095,8 +3095,6 @@ inline void processComputerSystemGet(
      {
          asyncResp->res.jsonValue["Bios"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Bios", systemName);
@@ -387,7 +387,7 @@ index 2b5d14f0..b20cc14f 100644
          asyncResp->res.jsonValue["Storage"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Storage", systemName);
          asyncResp->res.jsonValue["FabricAdapters"]["@odata.id"] =
-@@ -3103,6 +3101,8 @@ inline void processComputerSystemGet(
+@@ -3104,6 +3102,8 @@ inline void processComputerSystemGet(
                                  systemName);
      }
  

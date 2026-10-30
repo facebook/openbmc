@@ -4,8 +4,7 @@ SRC_URI:append = " \
     file://0100-Set-request-timeout-to-40s-on-bmcweb-http-http_conne.patch \
     file://0101-Up-the-max-connections-from-200-to-1000.patch \
     file://0102-parsing-add-parseTrustedStringAsJson-for-internal-pa.patch \
-    file://0103-parsing-increase-maxValues-to-5000-for-telemetry.patch \
-    file://0104-Add-option-to-disable-password-authentication.patch \
+    file://0103-Add-option-to-disable-password-authentication.patch \
 "
 
 EXTRA_OEMESON:append = " -Dredfish-updateservice-use-dbus=enabled"
@@ -66,5 +65,5 @@ SRC_URI:append = " \
 # (unmerged); 0440 builds on its nicPortMetrics table.
 SRC_URI:append = " \
     file://0430-port-look-up-port-metrics-through-a-table.patch \
-    file://0440-MetricReportDefinition-accept-PortMetrics-properties.patch \
+    file://0431-MetricReportDefinition-accept-PortMetrics-properties.patch \
 "

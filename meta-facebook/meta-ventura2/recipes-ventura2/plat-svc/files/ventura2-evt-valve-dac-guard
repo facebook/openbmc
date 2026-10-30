@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# Ventura2 RMC EVT only: valve DAC guard
+#
+# On EVT the valve DAC (AD5612 @ i2c-6 0x0c) shares the bus with the PCF8563
+# RTC, and an RTC read can write a wrong value into the DAC.
+#
+# AD5612 read returns the last received command once, then 0x00 0x00.
+# If the readback does not match the value the driver last wrote
+# (out_voltage0_raw), re-write that value.
+
+BUS=6
+ADDR=0x0c
+EVT_FRU=/xyz/openbmc_project/FruDevice/Ventura2_RMC_EVT
+DEV_DIR="/sys/bus/i2c/devices/$BUS-00${ADDR#0x}"
+
+if ! timeout 30 mapper wait "$EVT_FRU" >/dev/null 2>&1; then
+    echo "Not an EVT board, exit"
+    exit 0
+fi
+echo "EVT board, start monitoring DAC $ADDR on i2c-$BUS"
+
+# Clear the readback before starting
+i2ctransfer -f -y $BUS r2@$ADDR >/dev/null 2>&1
+
+while sleep 2; do
+    for IIO in "$DEV_DIR"/iio:device*; do break; done
+    [ -e "$IIO/out_voltage0_raw" ] || continue
+
+    val=$(i2ctransfer -f -y $BUS r2@$ADDR 2>/dev/null) || continue
+    [ "$val" = "0x00 0x00" ] && continue        # not written since last check
+
+    raw=$(cat "$IIO/out_voltage0_raw")
+    [ "$raw" -eq 0 ] && continue                # driver has not set the DAC yet
+
+    # Written by the driver: readback = raw << 4 (raw << 2 also accepted)
+    [ "$val" = "$(printf '0x%02x 0x%02x' $((raw >> 4)) $(((raw << 4) & 0xff)))" ] && continue
+    [ "$val" = "$(printf '0x%02x 0x%02x' $((raw >> 6)) $(((raw << 2) & 0xff)))" ] && continue
+
+    # The driver sends raw with PD bits = 00, so this also brings the DAC back
+    # to normal mode if the unintended write put it into a power-down mode.
+    echo "Unexpected DAC write, readback [$val], restore raw=$raw"
+    echo "$raw" > "$IIO/out_voltage0_raw"
+    echo "Restored, readback [$(i2ctransfer -f -y $BUS r2@$ADDR 2>/dev/null)]"
+done
+

@@ -1,0 +1,14 @@
+[Unit]
+Description=Ventura2 EVT valve DAC guard
+Wants=xyz.openbmc_project.ObjectMapper.service
+After=xyz.openbmc_project.ObjectMapper.service xyz.openbmc_project.FruDevice.service
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/plat-svc/ventura2-evt-valve-dac-guard
+Restart=on-failure
+RestartSec=10
+SyslogIdentifier=Ventura2-EVT-Valve-DAC-Guard
+
+[Install]
+WantedBy=multi-user.target
